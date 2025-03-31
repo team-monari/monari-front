@@ -11,8 +11,7 @@ interface LessonCardProps {
   period: string;
   description: string;
   price: number;
-  originalPrice?: number;
-  discount?: number;
+  minStudents: number;
   location: string;
   currentStudents: number;
   maxStudents: number;
@@ -25,14 +24,24 @@ export default function LessonCard({
   period,
   description,
   price,
-  originalPrice,
-  discount,
+  minStudents,
   location,
   currentStudents,
   maxStudents
 }: LessonCardProps) {
   const router = useRouter();
   const isFull = currentStudents >= maxStudents;
+
+  const calculateDiscount = () => {
+    if (currentStudents <= minStudents) return null;
+    const extraStudents = currentStudents - minStudents;
+    const discountPerPerson = 13;
+    return discountPerPerson;
+  };
+
+  const discount = calculateDiscount();
+  const originalPrice = discount ? price : undefined;
+  const discountedPrice = discount ? Math.floor(price * (1 - discount / 100)) : price;
 
   const handleClick = () => {
     router.push(`/lessons/${id}`);
@@ -70,22 +79,22 @@ export default function LessonCard({
 
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <span className={`font-bold text-lg ${originalPrice && discount ? 'text-[#1B9AF5]' : 'text-black'}`}>
-            ₩{price.toLocaleString()}
+          <span className={`font-bold text-lg ${discount ? 'text-[#1B9AF5]' : 'text-black'}`}>
+            ₩{discountedPrice.toLocaleString()}
           </span>
           {originalPrice && discount && (
             <>
               <span className="text-gray-400 line-through text-sm">
                 ₩{originalPrice.toLocaleString()}
               </span>
-              <span className="text-[#1B9AF5] text-sm">{discount}% 할인</span>
+              <span className="text-[#FF0000] text-sm">{discount}% 할인</span>
             </>
           )}
         </div>
 
         <div className="mb-3">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-500">모집 현황</span>
+            <span className="text-sm font-bold text-gray-800">모집 현황</span>
             <span className="text-sm text-gray-500">{currentStudents}/{maxStudents}명</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">

@@ -51,37 +51,37 @@ const Header = () => {
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-[1280px] mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-8">
-          <Link href="/" className="text-2xl font-bold text-blue-500">
+          <Link href="/" className="text-2xl font-bold text-[#1B9AF5]">
             모나리
           </Link>
           <nav className="flex items-center space-x-6">
             <Link
               href="/lessons"
-              className={`text-sm ${
+              className={`text-base ${
                 router.pathname === "/lessons"
-                  ? "text-blue-500"
+                  ? "text-[#1B9AF5]"
                   : "text-gray-600"
-              } hover:text-blue-500`}
+              } hover:text-[#1B9AF5]`}
             >
               수업 찾기
             </Link>
             <Link
               href="/create-study"
-              className={`text-sm ${
+              className={`text-base ${
                 router.pathname === "/create-study"
-                  ? "text-blue-500"
+                  ? "text-[#1B9AF5]"
                   : "text-gray-600"
-              } hover:text-blue-500`}
+              } hover:text-[#1B9AF5]`}
             >
               스터디 만들기
             </Link>
             <Link
               href="/create-lesson"
-              className={`text-sm ${
+              className={`text-base ${
                 router.pathname === "/create-lesson"
-                  ? "text-blue-500"
+                  ? "text-[#1B9AF5]"
                   : "text-gray-600"
-              } hover:text-blue-500`}
+              } hover:text-[#1B9AF5]`}
             >
               수업 개설
             </Link>
@@ -92,30 +92,30 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             <Link
               href={getMyPagePath()}
-              className={`text-sm ${
+              className={`text-base ${
                 router.pathname === getMyPagePath()
-                  ? "text-blue-500"
+                  ? "text-[#1B9AF5]"
                   : "text-gray-600"
-              } hover:text-blue-500`}
+              } hover:text-[#1B9AF5]`}
             >
               마이페이지
             </Link>
             <button
               onClick={handleEditProfile}
-              className="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors"
+              className="text-base bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
             >
               프로필 편집
             </button>
             <button
               onClick={handleLogout}
-              className="text-sm text-gray-600 hover:text-blue-500"
+              className="text-base text-gray-600 hover:text-[#1B9AF5]"
             >
               로그아웃
             </button>
           </div>
         ) : (
           <button
-            className="text-sm text-gray-600 hover:text-blue-500"
+            className="text-base text-gray-600 hover:text-[#1B9AF5]"
             onClick={openLoginModal}
           >
             로그인
@@ -131,13 +131,13 @@ const Header = () => {
         <div className="fixed bottom-4 right-4 bg-white p-2 rounded-lg shadow-lg z-50 flex flex-col space-y-2">
           <button
             onClick={() => handleTestLogin("student")}
-            className="bg-blue-500 text-white px-3 py-1 rounded text-xs"
+            className="bg-[#1B9AF5] text-white px-3 py-1 rounded text-xs"
           >
             학생으로 로그인
           </button>
           <button
             onClick={() => handleTestLogin("teacher")}
-            className="bg-purple-500 text-white px-3 py-1 rounded text-xs"
+            className="bg-[#1B9AF5] text-white px-3 py-1 rounded text-xs"
           >
             선생님으로 로그인
           </button>

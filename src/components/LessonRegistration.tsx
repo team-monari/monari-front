@@ -33,10 +33,10 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
 
   return (
     <div className="max-w-3xl mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-2">수업 등록하기</h1>
+      <h1 className="text-3xl font-bold mb-2 text-[#1B9AF5]">수업 개설</h1>
       <p className="text-gray-600 mb-8">현재 진행중인 인기 팀딩 프로젝트를 확인해보세요</p>
       
-      <div className="bg-white rounded-lg border border-gray-200 p-8">
+      <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-lg">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -122,16 +122,19 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
 
           <div>
             <label className="block text-sm text-gray-600 mb-2">월 수업 총액</label>
-            <div className="relative">
-              <input
-                type="text"
-                name="monthlyFee"
-                placeholder="900,000"
-                value={lessonData.monthlyFee}
-                onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">원</span>
+            <div className="relative flex items-center space-x-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  name="monthlyFee"
+                  placeholder="900,000"
+                  value={lessonData.monthlyFee}
+                  onChange={handleChange}
+                  className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">원</span>
+              </div>
+              <div className="text-red-500 font-medium">13% 할인</div>
             </div>
           </div>
 
@@ -179,9 +182,9 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
           <div className="flex justify-center pt-4">
             <button
               type="submit"
-              className="bg-blue-500 text-white px-8 py-3 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+              className="bg-[#1B9AF5] text-white px-8 py-3 rounded-md text-sm font-medium hover:bg-[#1B9AF5]/90 transition-colors"
             >
-              수업 등록하기
+              수업 개설
             </button>
           </div>
         </form>
