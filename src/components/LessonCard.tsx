@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 
 interface LessonCardProps {
-  id: string;
+  id: number;
   title: string;
   teacher: {
     name: string;
@@ -24,7 +24,7 @@ export default function LessonCard({
   period,
   description,
   price,
-  minStudents,
+  minStudents = 4,
   location,
   currentStudents,
   maxStudents
@@ -32,16 +32,16 @@ export default function LessonCard({
   const router = useRouter();
   const isFull = currentStudents >= maxStudents;
 
+  const showDiscount = currentStudents > minStudents;
   const calculateDiscount = () => {
-    if (currentStudents <= minStudents) return null;
-    const extraStudents = currentStudents - minStudents;
-    const discountPerPerson = 13;
-    return discountPerPerson;
+    if (!showDiscount) return 0;
+    
+    const discountRate = Math.floor((1 - (minStudents / currentStudents)) * 100);
+    return discountRate;
   };
 
-  const discount = calculateDiscount();
-  const originalPrice = discount ? price : undefined;
-  const discountedPrice = discount ? Math.floor(price * (1 - discount / 100)) : price;
+  const discountRate = calculateDiscount();
+  const discountedPrice = showDiscount ? Math.floor(price * minStudents / currentStudents) : price;
 
   const handleClick = () => {
     router.push(`/lessons/${id}`);
@@ -79,16 +79,20 @@ export default function LessonCard({
 
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <span className={`font-bold text-lg ${discount ? 'text-[#1B9AF5]' : 'text-black'}`}>
-            ₩{discountedPrice.toLocaleString()}
-          </span>
-          {originalPrice && discount && (
+          {showDiscount ? (
             <>
               <span className="text-gray-400 line-through text-sm">
-                ₩{originalPrice.toLocaleString()}
+                ₩{price.toLocaleString()}
               </span>
-              <span className="text-[#FF0000] text-sm">{discount}% 할인</span>
+              <span className="font-bold text-lg text-[#1B9AF5]">
+                ₩{discountedPrice.toLocaleString()}
+              </span>
+              <span className="text-[#FF0000] text-sm font-medium">{discountRate}% 할인</span>
             </>
+          ) : (
+            <span className="font-bold text-lg text-black">
+              ₩{price.toLocaleString()}
+            </span>
           )}
         </div>
 
