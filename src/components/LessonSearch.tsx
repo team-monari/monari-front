@@ -1,136 +1,349 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import LessonCard from './LessonCard';
 import FilterSection from './FilterSection';
 
-interface LessonSearchProps {
-  filters: {
-    subject: string;
-    educationLevel: string;
-    course: string;
-    region: string;
-  };
-  setFilters: React.Dispatch<React.SetStateAction<{
-    subject: string;
-    educationLevel: string;
-    course: string;
-    region: string;
-  }>>;
-  lessons: Array<{
-    id: number;
-    title: string;
-    teacher: string;
-    period: string;
-    description: string;
-    price: number;
-    originalPrice: number;
-    discount: number;
-    location: string;
-    progress: string;
-  }>;
-}
+const mockLessons = [
+  {
+    id: '1',
+    title: '국어 독해력 향상반',
+    teacher: {
+      name: '박선생님',
+      image: '/teachers/teacher1.jpg'
+    },
+    period: '2024.03.10 ~ 2024.06.20',
+    description: '중학생을 위한 국어 독해력 향상 수업입니다. 다양한 지문을 통해 실전 연습을 진행합니다.',
+    price: 190000,
+    originalPrice: 220000,
+    discount: 15,
+    location: '경기 분당구',
+    currentStudents: 8,
+    maxStudents: 15
+  },
+  {
+    id: '2',
+    title: '수학 기초 완성반',
+    teacher: {
+      name: '김선생님',
+      image: '/teachers/teacher2.jpg'
+    },
+    period: '2024.03.01 ~ 2024.06.30',
+    description: '중학교 1학년을 위한 수학 기초 완성 수업입니다. 기초 개념부터 차근차근 설명해드립니다.',
+    price: 180000,
+    originalPrice: 200000,
+    discount: 10,
+    location: '서울 강남구',
+    currentStudents: 12,
+    maxStudents: 15
+  },
+  {
+    id: '3',
+    title: '영어 회화 실전반',
+    teacher: {
+      name: '이선생님',
+      image: '/teachers/teacher3.jpg'
+    },
+    period: '2024.03.15 ~ 2024.07.15',
+    description: '고등학생을 위한 실전 영어 회화 수업입니다. 원어민과 함께하는 실전 회화 훈련!',
+    price: 250000,
+    location: '서울 서초구',
+    currentStudents: 15,
+    maxStudents: 15
+  },
+  {
+    id: '4',
+    title: '과학 실험 탐구반',
+    teacher: {
+      name: '정선생님',
+      image: '/teachers/teacher4.jpg'
+    },
+    period: '2024.04.01 ~ 2024.07.31',
+    description: '중학생을 위한 과학 실험 탐구 수업입니다. 직접 실험하며 과학의 원리를 이해합니다.',
+    price: 220000,
+    originalPrice: 250000,
+    discount: 12,
+    location: '서울 송파구',
+    currentStudents: 10,
+    maxStudents: 12
+  },
+  {
+    id: '5',
+    title: '사회 논술 심화반',
+    teacher: {
+      name: '최선생님',
+      image: '/teachers/teacher5.jpg'
+    },
+    period: '2024.03.20 ~ 2024.07.20',
+    description: '고등학생을 위한 사회 논술 심화 수업입니다. 시사 이슈를 통한 비판적 사고력 향상!',
+    price: 200000,
+    location: '경기 성남시',
+    currentStudents: 8,
+    maxStudents: 10
+  },
+  {
+    id: '6',
+    title: '수학 문제풀이반',
+    teacher: {
+      name: '한선생님',
+      image: '/teachers/teacher6.jpg'
+    },
+    period: '2024.04.05 ~ 2024.08.05',
+    description: '고등학교 2학년을 위한 수학 문제풀이 수업입니다. 실전 문제 풀이로 실력 향상!',
+    price: 230000,
+    originalPrice: 260000,
+    discount: 12,
+    location: '서울 강동구',
+    currentStudents: 14,
+    maxStudents: 15
+  },
+  {
+    id: '7',
+    title: '영어 문법 마스터반',
+    teacher: {
+      name: '조선생님',
+      image: '/teachers/teacher7.jpg'
+    },
+    period: '2024.04.10 ~ 2024.08.10',
+    description: '고등학교 3학년을 위한 영어 문법 마스터 수업입니다. 수능 영어 문법 완벽 대비!',
+    price: 210000,
+    originalPrice: 240000,
+    discount: 13,
+    location: '서울 마포구',
+    currentStudents: 11,
+    maxStudents: 15
+  },
+  {
+    id: '8',
+    title: '과학 개념 정리반',
+    teacher: {
+      name: '윤선생님',
+      image: '/teachers/teacher8.jpg'
+    },
+    period: '2024.04.15 ~ 2024.08.15',
+    description: '중학교 3학년을 위한 과학 개념 정리 수업입니다. 고등학교 과학 준비하기!',
+    price: 190000,
+    location: '경기 수원시',
+    currentStudents: 9,
+    maxStudents: 12
+  },
+  {
+    id: '9',
+    title: '국사 심화 학습반',
+    teacher: {
+      name: '송선생님',
+      image: '/teachers/teacher9.jpg'
+    },
+    period: '2024.04.20 ~ 2024.08.20',
+    description: '고등학생을 위한 국사 심화 학습 수업입니다. 수능 한국사 완벽 대비!',
+    price: 200000,
+    originalPrice: 230000,
+    discount: 13,
+    location: '서울 영등포구',
+    currentStudents: 13,
+    maxStudents: 15
+  },
+  {
+    id: '10',
+    title: '수학 고득점 대비반',
+    teacher: {
+      name: '강선생님',
+      image: '/teachers/teacher10.jpg'
+    },
+    period: '2024.05.01 ~ 2024.09.01',
+    description: '고등학교 3학년을 위한 수학 고득점 대비 수업입니다. 수능 수학 만점을 향해!',
+    price: 250000,
+    originalPrice: 280000,
+    discount: 11,
+    location: '경기 일산시',
+    currentStudents: 12,
+    maxStudents: 15
+  }
+];
 
-const LessonSearch: React.FC<LessonSearchProps> = ({ filters, setFilters, lessons }) => {
+export default function LessonSearch() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    search: '',
+    educationLevel: '',
+    subject: '',
+    region: '',
+    sort: '최신순'
+  });
+
+  const filteredLessons = useMemo(() => {
+    let filtered = mockLessons.filter(lesson => {
+      const matchesSearch = !filters.search || 
+        lesson.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        lesson.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+        lesson.teacher.name.toLowerCase().includes(filters.search.toLowerCase());
+
+      const matchesEducationLevel = !filters.educationLevel || 
+        lesson.description.includes(filters.educationLevel);
+
+      const matchesSubject = !filters.subject || 
+        lesson.title.includes(filters.subject);
+
+      const matchesRegion = !filters.region || 
+        lesson.location.includes(filters.region);
+
+      return matchesSearch && matchesEducationLevel && matchesSubject && matchesRegion;
+    });
+
+    // Sort the filtered lessons
+    switch (filters.sort) {
+      case '최신순':
+        filtered.sort((a, b) => new Date(b.period.split(' ~ ')[0]).getTime() - new Date(a.period.split(' ~ ')[0]).getTime());
+        break;
+      case '인기순':
+        filtered.sort((a, b) => (b.currentStudents / b.maxStudents) - (a.currentStudents / a.maxStudents));
+        break;
+      case '가격 낮은순':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case '가격 높은순':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [filters]);
+
+  const lessonsPerPage = 6;
+  const totalPages = Math.ceil(filteredLessons.length / lessonsPerPage);
+
+  const startIndex = (currentPage - 1) * lessonsPerPage;
+  const endIndex = startIndex + lessonsPerPage;
+  const currentLessons = filteredLessons.slice(startIndex, endIndex);
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+      >
+        &lt;
+      </button>
+    );
+
+    // First page
+    if (startPage > 1) {
+      buttons.push(
+        <button
+          key={1}
+          onClick={() => setCurrentPage(1)}
+          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(
+          <span key="dots1" className="px-2">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => setCurrentPage(i)}
+          className={`w-8 h-8 flex items-center justify-center rounded ${
+            currentPage === i
+              ? 'bg-[#1B9AF5] text-white'
+              : 'border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(
+          <span key="dots2" className="px-2">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={totalPages}
+          onClick={() => setCurrentPage(totalPages)}
+          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"
+        >
+          {totalPages}
+        </button>
+      );
+    }
+
+    // Next button
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+        className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+      >
+        &gt;
+      </button>
+    );
+
+    return buttons;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-[1280px]">
-        <FilterSection filters={filters} setFilters={setFilters} />
-        
-        <div className="flex justify-between items-center mt-8 mb-6">
-          <div className="flex items-center gap-4">
-            <button className="text-sm text-gray-900 font-medium">최신순</button>
-            <div className="w-px h-3 bg-gray-300"></div>
-            <button className="text-sm text-gray-500">인기순</button>
+      <div className="max-w-7xl mx-auto px-4">
+        <h2 className="text-2xl font-bold mb-6 pl-6">수업 찾기</h2>
+        <FilterSection onFilterChange={handleFilterChange} />
+        <div className="mt-6">
+          <div className="text-sm text-gray-600 mb-4">
+            총 {filteredLessons.length}개의 수업
           </div>
-          <select
-            className="h-[38px] appearance-none bg-white border border-gray-200 rounded pl-3 pr-8 text-sm text-gray-900 focus:outline-none"
-          >
-            <option value="최신순">최신순</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {lessons.map((lesson) => (
-            <div key={lesson.id} className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden">
-                  <img src={`/teacher-${lesson.id}.jpg`} alt={lesson.teacher} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{lesson.title}</h3>
-                  <p className="text-sm text-gray-600">{lesson.teacher}</p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {currentLessons.map((lesson) => (
+              <LessonCard
+                key={lesson.id}
+                {...lesson}
+              />
+            ))}
+            {currentLessons.length === 0 && (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                검색 결과가 없습니다.
               </div>
-              
-              <div className="text-sm text-gray-500 mb-4">{lesson.period}</div>
-              
-              <p className="text-sm text-gray-600 mb-6 line-clamp-2">{lesson.description}</p>
-              
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-gray-900">
-                    ₩{lesson.price.toLocaleString()}
-                  </span>
-                  {lesson.discount > 0 && (
-                    <>
-                      <span className="text-sm text-gray-400 line-through">
-                        ₩{lesson.originalPrice.toLocaleString()}
-                      </span>
-                      <span className="text-sm text-red-500 font-medium">
-                        {lesson.discount}% 할인
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">모집 현황</span>
-                  <div className="flex items-center gap-1">
-                    <div className="w-[100px] h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${
-                          parseInt(lesson.progress.split('/')[0]) / parseInt(lesson.progress.split('/')[1]) >= 1
-                            ? 'bg-red-500'
-                            : 'bg-blue-500'
-                        }`}
-                        style={{
-                          width: `${(parseInt(lesson.progress.split('/')[0]) / parseInt(lesson.progress.split('/')[1])) * 100}%`
-                        }}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-gray-600">{lesson.progress}</span>
-                  </div>
-                </div>
-                <span className="text-sm text-gray-500">{lesson.location}</span>
-              </div>
-
-              <button className="w-full h-[44px] bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
-                참여하기
-              </button>
-            </div>
-          ))}
+            )}
+          </div>
         </div>
-
-        <div className="flex justify-center items-center gap-1 mt-10">
-          <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-400">
-            &lt;
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded bg-blue-500 text-white">
-            1
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600">
-            2
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600">
-            3
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-400">
-            &gt;
-          </button>
-        </div>
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center gap-2">
+            {renderPaginationButtons()}
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default LessonSearch; 
+} 

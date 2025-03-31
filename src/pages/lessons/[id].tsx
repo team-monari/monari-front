@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import LessonDetail from '../../components/LessonDetail';
-import Header from '../../components/Header';
-import { lessonApi } from '../../services/api';
-import { Lesson } from '../../types/lesson';
+import { useEffect, useState } from 'react';
+import LessonDetail from '@/components/LessonDetail';
+import Header from '@/components/Header';
+import { lessonApi } from '@/services/api';
+import type { Lesson } from '@/types/lesson';
 
-const LessonDetailPage = () => {
+export default function LessonDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -13,59 +13,67 @@ const LessonDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLesson = async () => {
-      if (!id) return;
-
-      try {
-        setLoading(true);
-        const data = await lessonApi.getLessonById(Number(id));
-        setLesson(data);
-        setError(null);
-      } catch (err) {
-        setError('수업 정보를 불러오는데 실패했습니다.');
-        console.error('Failed to fetch lesson:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLesson();
+    if (id) {
+      fetchLesson();
+    }
   }, [id]);
 
-  const handleApply = async () => {
-    if (!lesson) return;
-
+  const fetchLesson = async () => {
     try {
-      await lessonApi.applyForLesson(lesson.id);
-      alert('수업 신청이 완료되었습니다.');
-      router.push('/my-lessons'); // 내 수업 목록 페이지로 이동
+      setLoading(true);
+      const data = await lessonApi.getLessonById(id as string);
+      setLesson(data);
     } catch (err) {
-      alert('수업 신청에 실패했습니다. 다시 시도해주세요.');
-      console.error('Failed to apply for lesson:', err);
+      setError('수업 정보를 불러오는데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div>
         <Header />
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">수업 정보를 불러오는 중...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error || !lesson) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div>
         <Header />
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          <div className="text-center text-red-500">
-            <p>{error || '수업을 찾을 수 없습니다.'}</p>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
             <button
               onClick={() => router.back()}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="text-blue-500 hover:underline"
+            >
+              이전 페이지로 돌아가기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lesson) {
+    return (
+      <div>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">존재하지 않는 수업입니다.</p>
+            <button
+              onClick={() => router.back()}
+              className="text-blue-500 hover:underline"
             >
               이전 페이지로 돌아가기
             </button>
@@ -78,9 +86,7 @@ const LessonDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <LessonDetail lesson={lesson} onApply={handleApply} />
+      <LessonDetail {...lesson} />
     </div>
   );
-};
-
-export default LessonDetailPage; 
+} 

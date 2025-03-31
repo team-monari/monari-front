@@ -2,19 +2,23 @@ import React from 'react';
 import { useRouter } from 'next/router';
 
 interface LessonCardProps {
-  id: number;
+  id: string;
   title: string;
-  teacher: string;
+  teacher: {
+    name: string;
+    image?: string;
+  };
   period: string;
   description: string;
   price: number;
-  originalPrice: number;
-  discount: number;
+  originalPrice?: number;
+  discount?: number;
   location: string;
-  progress: number;
+  currentStudents: number;
+  maxStudents: number;
 }
 
-const LessonCard: React.FC<LessonCardProps> = ({
+export default function LessonCard({
   id,
   title,
   teacher,
@@ -24,70 +28,98 @@ const LessonCard: React.FC<LessonCardProps> = ({
   originalPrice,
   discount,
   location,
-  progress
-}) => {
+  currentStudents,
+  maxStudents
+}: LessonCardProps) {
   const router = useRouter();
+  const isFull = currentStudents >= maxStudents;
 
   const handleClick = () => {
     router.push(`/lessons/${id}`);
   };
 
+  const handleParticipate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isFull) return;
+    router.push(`/lessons/${id}`);
+  };
+
   return (
     <div 
-      className="bg-white rounded-lg border border-gray-200 p-6 cursor-pointer hover:shadow-lg transition-shadow"
+      className="bg-white rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow shadow-md"
       onClick={handleClick}
     >
-      <h3 className="text-lg font-bold mb-2">{title}</h3>
-      <p className="text-gray-600 text-sm mb-4">{description}</p>
-      
-      <div className="mb-4">
-        <div className="text-sm text-gray-600 mb-1">{teacher}</div>
-        <div className="text-sm text-gray-600">{period}</div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full overflow-hidden">
+          <img 
+            src={teacher.image || "/placeholder-teacher.jpg"} 
+            alt={teacher.name} 
+            className="w-full h-full object-cover" 
+          />
+        </div>
+        <div>
+          <h3 className="font-medium text-base">{title}</h3>
+          <p className="text-gray-600 text-sm">{teacher.name}</p>
+        </div>
       </div>
 
-      <div className="mb-4">
-        <div className="text-sm text-gray-600 mb-1">{location}</div>
-        <div className="flex items-center">
-          <span className="text-lg font-bold">{price.toLocaleString()}원</span>
-          {discount > 0 && (
-            <>
-              <span className="ml-2 text-sm line-through text-gray-400">
-                {originalPrice.toLocaleString()}원
-              </span>
-              <span className="ml-2 text-sm text-blue-500">
-                {discount}% 할인
-              </span>
-            </>
-          )}
-        </div>
+      <div className="mb-3">
+        <p className="text-gray-600 text-sm">기간: {period}</p>
+        <p className="text-sm text-gray-700 line-clamp-2 mt-1">{description}</p>
       </div>
 
       <div>
-        <div className="relative h-2 bg-gray-200 rounded mb-1">
-          <div 
-            className={`absolute left-0 top-0 h-full rounded ${
-              progress >= 100 ? 'bg-red-500' : 'bg-blue-500'
-            }`}
-            style={{ width: `${Math.min(progress, 100)}%` }}
-          />
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`font-bold text-lg ${originalPrice && discount ? 'text-[#1B9AF5]' : 'text-black'}`}>
+            ₩{price.toLocaleString()}
+          </span>
+          {originalPrice && discount && (
+            <>
+              <span className="text-gray-400 line-through text-sm">
+                ₩{originalPrice.toLocaleString()}
+              </span>
+              <span className="text-[#1B9AF5] text-sm">{discount}% 할인</span>
+            </>
+          )}
         </div>
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            현재 달성률 {progress}%
+
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-500">모집 현황</span>
+            <span className="text-sm text-gray-500">{currentStudents}/{maxStudents}명</span>
           </div>
-          <button 
-            className="px-4 h-[44px] bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              // TODO: 참여하기 로직 구현
-            }}
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full ${
+                isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'
+              }`}
+              style={{ width: `${(currentStudents / maxStudents) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-gray-500 text-sm">{location}</span>
+          </div>
+
+          <button
+            onClick={handleParticipate}
+            disabled={isFull}
+            className={`px-4 py-2 rounded text-sm transition-colors ${
+              isFull
+                ? 'bg-red-500 text-white cursor-not-allowed'
+                : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
+            }`}
           >
-            참여하기
+            {isFull ? '모집 완료' : '참여하기'}
           </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default LessonCard; 
+} 

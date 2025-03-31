@@ -1,160 +1,139 @@
 import React from 'react';
-import Image from 'next/image';
 
 interface LessonDetailProps {
-  lesson: {
-    title: string;
-    teacher: {
-      name: string;
-      university: string;
-      rating: number;
-      experience: string;
-    };
-    educationLevel: string;
-    subject: string;
-    period: string;
-    capacity: {
-      current: number;
-      max: number;
-    };
-    description: {
-      goals: string[];
-      schedule: string[];
-      curriculum: {
-        title: string;
-        details: string[];
-      }[];
-    };
-    location: string;
-    price: {
-      current: number;
-      original: number;
-      discount: number;
-    };
-    progress: number;
+  id: string;
+  title: string;
+  teacher: {
+    name: string;
+    university: string;
+    rating: number;
+    experience: number;
+    image?: string;
   };
+  period: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  discount?: number;
+  location: string;
+  progress: number;
+  curriculum: string[];
+  maxStudents: number;
+  currentStudents: number;
 }
 
-const LessonDetail: React.FC<LessonDetailProps> = ({ lesson }) => {
+export default function LessonDetail({
+  title,
+  teacher,
+  period,
+  description,
+  price,
+  originalPrice,
+  discount,
+  location,
+  progress,
+  curriculum,
+  maxStudents,
+  currentStudents,
+}: LessonDetailProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">{lesson.title}</h1>
-          <p className="text-gray-600">{`${lesson.subject} 교과 내신 대비 특별 수업`}</p>
+    <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+        {/* 교사 정보 */}
+        <div className="flex items-start gap-6 mb-8">
+          <div className="w-24 h-24 bg-gray-200 rounded-full flex-shrink-0">
+            <img
+              src={teacher.image || "/placeholder-teacher.jpg"}
+              alt={teacher.name}
+              className="w-full h-full rounded-full object-cover"
+            />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold mb-4">{title}</h1>
+            <p className="text-lg text-gray-700 mb-2">
+              {teacher.name} 선생님 | {teacher.university}
+            </p>
+            <div className="flex items-center gap-4 text-gray-600">
+              <span>⭐ {teacher.rating.toFixed(1)}</span>
+              <span>수업 경력 {teacher.experience}년</span>
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          <div className="flex items-start mb-8">
-            <div className="w-16 h-16 bg-gray-200 rounded-full mr-4 overflow-hidden">
-              <Image
-                src="/placeholder-teacher.png"
-                alt="선생님 프로필"
-                width={64}
-                height={64}
-                className="object-cover"
-              />
+        {/* 수업 정보 */}
+        <div className="border-t border-gray-200 pt-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">수업 정보</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-600 mb-2">수업 기간</p>
+              <p className="font-medium">{period}</p>
             </div>
             <div>
-              <h2 className="text-lg font-bold mb-1">{lesson.teacher.name} 선생님</h2>
-              <p className="text-gray-600 text-sm mb-2">{lesson.teacher.university}</p>
-              <div className="flex items-center">
-                <span className="text-yellow-400 mr-1">★</span>
-                <span className="text-gray-900">{lesson.teacher.rating}</span>
-                <span className="text-gray-400 mx-2">·</span>
-                <span className="text-gray-600">수업 경력 {lesson.teacher.experience}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <h3 className="text-gray-600 text-sm mb-2">교육 대상</h3>
-              <p>{lesson.educationLevel}</p>
+              <p className="text-gray-600 mb-2">수업 장소</p>
+              <p className="font-medium">{location}</p>
             </div>
             <div>
-              <h3 className="text-gray-600 text-sm mb-2">과목</h3>
-              <p>{lesson.subject}</p>
+              <p className="text-gray-600 mb-2">수강 인원</p>
+              <p className="font-medium">
+                {currentStudents}/{maxStudents}명
+              </p>
             </div>
             <div>
-              <h3 className="text-gray-600 text-sm mb-2">수업 정원</h3>
-              <p>{`${lesson.capacity.current}-${lesson.capacity.max}명`}</p>
-              <div className="text-blue-500 text-sm">현재 3/4명</div>
-            </div>
-            <div>
-              <h3 className="text-gray-600 text-sm mb-2">수업 기간</h3>
-              <p>{lesson.period}</p>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <h3 className="text-lg font-bold mb-4">수업 설명</h3>
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-bold mb-2">1. 수업 목표</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  {lesson.description.goals.map((goal, index) => (
-                    <li key={index}>{goal}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-bold mb-2">2. 수업 방식</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  {lesson.description.schedule.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-bold mb-2">3. 커리큘럼</h4>
-                {lesson.description.curriculum.map((item, index) => (
-                  <div key={index} className="mb-2">
-                    <p className="mb-1">{item.title}</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {item.details.map((detail, detailIndex) => (
-                        <li key={detailIndex}>{detail}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <h3 className="text-gray-600 text-sm mb-2">수업 장소</h3>
-            <p>{lesson.location}</p>
-          </div>
-
-          <div className="border-t border-gray-200 pt-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <p className="text-sm text-gray-600">월 수업료</p>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold">{lesson.price.current.toLocaleString()}원</span>
-                  <span className="ml-2 line-through text-gray-400">{lesson.price.original.toLocaleString()}원</span>
-                  <span className="ml-2 text-blue-500">{lesson.price.discount}% 할인</span>
+              <p className="text-gray-600 mb-2">모집률</p>
+              <div className="flex items-center gap-2">
+                <div className="w-32 h-2 bg-gray-200 rounded-full">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
+                <span className="text-sm text-gray-600">{progress}%</span>
               </div>
-              <button className="bg-blue-500 text-white px-8 py-3 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors">
-                수업 신청하기
-              </button>
             </div>
-            <div className="relative h-2 bg-gray-200 rounded">
-              <div 
-                className={`absolute left-0 top-0 h-full rounded ${
-                  lesson.progress >= 100 ? 'bg-red-500' : 'bg-blue-500'
-                }`}
-                style={{ width: `${Math.min(lesson.progress, 100)}%` }}
-              />
+          </div>
+        </div>
+
+        {/* 수업 설명 */}
+        <div className="border-t border-gray-200 pt-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">수업 설명</h2>
+          <p className="text-gray-700 whitespace-pre-line">{description}</p>
+        </div>
+
+        {/* 커리큘럼 */}
+        <div className="border-t border-gray-200 pt-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">커리큘럼</h2>
+          <ul className="list-disc pl-5 space-y-2">
+            {curriculum.map((item, index) => (
+              <li key={index} className="text-gray-700">{item}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* 수강료 및 신청 버튼 */}
+        <div className="border-t border-gray-200 pt-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 mb-1">수강료</p>
+              <div className="flex items-center gap-2">
+                {originalPrice && discount && (
+                  <span className="text-gray-400 line-through">
+                    {originalPrice.toLocaleString()}원
+                  </span>
+                )}
+                <span className="text-2xl font-bold text-blue-600">
+                  {price.toLocaleString()}원
+                </span>
+                {discount && (
+                  <span className="text-red-500">{discount}% 할인</span>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-gray-600 mt-2">현재 달성률 {lesson.progress}%</p>
+            <button className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+              수업 신청하기
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default LessonDetail; 
+} 
