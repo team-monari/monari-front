@@ -41,24 +41,28 @@ const Home = () => {
 
   const studies = [
     {
+      id: 1,
       title: '수능 수학 스터디',
       time: '2/4명',
       location: '강남역 인근',
       price: '월 30만원'
     },
     {
+      id: 2,
       title: '수능 영어 독해 스터디',
       time: '3/6명',
       location: '신촌역 인근',
       price: '월 25만원'
     },
     {
+      id: 3,
       title: '수능 과학탐구 스터디',
       time: '1/4명',
       location: '잠실역 인근',
       price: '월 40만원'
     },
     {
+      id: 4,
       title: '수능 사회탐구 스터디',
       time: '2/5명',
       location: '홍대입구역 인근',
@@ -131,10 +135,25 @@ const Home = () => {
         </section>
 
         <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-8">스터디 모집</h2>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold">스터디 모집</h2>
+            <Link 
+              href="/studies" 
+              className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
+            >
+              <span>더보기</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {studies.map((study, index) => (
-              <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
+              <Link 
+                href={`/studies/${study.id}`} 
+                key={study.id} 
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-shadow"
+              >
                 <h3 className="font-medium mb-4">{study.title}</h3>
                 <div className="text-sm text-gray-600 space-y-2">
                   <div className="flex justify-between">
@@ -146,7 +165,7 @@ const Home = () => {
                     <span className="text-gray-900">{study.price}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
