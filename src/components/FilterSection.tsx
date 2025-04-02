@@ -1,17 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface FilterSectionProps {
-  onFilterChange?: (filters: {
+  onFilterChange: (filters: {
     search: string;
+    searchType: string;
     educationLevel: string;
     subject: string;
     region: string;
     sort: string;
   }) => void;
+  searchType: string;
+  onSearchTypeChange: (type: string) => void;
 }
 
-export default function FilterSection({ onFilterChange }: FilterSectionProps) {
-  const [filters, setFilters] = useState({
+const FilterSection: React.FC<FilterSectionProps> = ({
+  onFilterChange,
+  searchType,
+  onSearchTypeChange
+}) => {
+  const [filters, setFilters] = React.useState({
     search: '',
     educationLevel: '',
     subject: '',
@@ -19,13 +26,14 @@ export default function FilterSection({ onFilterChange }: FilterSectionProps) {
     sort: '최신순'
   });
 
-  const handleFilterChange = (key: string, value: string) => {
-    const newFilters = { ...filters, [key]: value };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const newFilters = { ...filters, [name]: value };
     setFilters(newFilters);
   };
 
-  const handleApplyFilters = () => {
-    onFilterChange?.(filters);
+  const handleSearch = () => {
+    onFilterChange({ ...filters, searchType });
   };
 
   const handleReset = () => {
@@ -37,7 +45,7 @@ export default function FilterSection({ onFilterChange }: FilterSectionProps) {
       sort: '최신순'
     };
     setFilters(resetFilters);
-    onFilterChange?.(resetFilters);
+    onFilterChange({ ...resetFilters, searchType });
   };
 
   return (
@@ -47,56 +55,58 @@ export default function FilterSection({ onFilterChange }: FilterSectionProps) {
           <div className="col-span-2">
             <div className="text-sm text-gray-600 mb-1">검색</div>
             <select
-              value={filters.educationLevel}
-              onChange={(e) => handleFilterChange('educationLevel', e.target.value)}
+              value={searchType}
+              onChange={(e) => onSearchTypeChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
             >
-              <option value="">제목</option>
+              <option value="title">제목</option>
+              <option value="content">내용</option>
             </select>
           </div>
           <div className="col-span-4">
             <div className="text-sm text-gray-600 mb-1">&nbsp;</div>
             <input
               type="text"
+              name="search"
               placeholder="검색어를 입력하세요"
               value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
             />
           </div>
           <div className="col-span-2">
             <div className="text-sm text-gray-600 mb-1">교육 대상</div>
             <select
+              name="educationLevel"
               value={filters.educationLevel}
-              onChange={(e) => handleFilterChange('educationLevel', e.target.value)}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
             >
               <option value="">전체</option>
-              <option value="초등">초등학생</option>
-              <option value="중등">중학생</option>
-              <option value="고등">고등학생</option>
+              <option value="중등">중등</option>
+              <option value="고등">고등</option>
             </select>
           </div>
           <div className="col-span-2">
             <div className="text-sm text-gray-600 mb-1">과목</div>
             <select
+              name="subject"
               value={filters.subject}
-              onChange={(e) => handleFilterChange('subject', e.target.value)}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
             >
               <option value="">전체</option>
-              <option value="국어">국어</option>
-              <option value="영어">영어</option>
               <option value="수학">수학</option>
-              <option value="과학">과학</option>
-              <option value="사회">사회</option>
+              <option value="영어">영어</option>
+              <option value="국어">국어</option>
             </select>
           </div>
           <div className="col-span-2">
             <div className="text-sm text-gray-600 mb-1">지역</div>
             <select
+              name="region"
               value={filters.region}
-              onChange={(e) => handleFilterChange('region', e.target.value)}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
             >
               <option value="">전체</option>
@@ -110,7 +120,7 @@ export default function FilterSection({ onFilterChange }: FilterSectionProps) {
         <div className="grid grid-cols-12 gap-4 mt-4">
           <div className="col-span-10 flex items-end gap-2">
             <button
-              onClick={handleApplyFilters}
+              onClick={handleSearch}
               className="px-4 py-2 bg-[#1B9AF5] text-white rounded-md text-sm hover:bg-[#1B9AF5]/90 transition-colors"
             >
               ▾ 필터 적용
@@ -125,8 +135,9 @@ export default function FilterSection({ onFilterChange }: FilterSectionProps) {
           <div className="col-span-2">
             <div className="text-sm text-gray-600 mb-1">정렬</div>
             <select
+              name="sort"
               value={filters.sort}
-              onChange={(e) => handleFilterChange('sort', e.target.value)}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
             >
               <option value="최신순">최신순</option>
@@ -139,4 +150,6 @@ export default function FilterSection({ onFilterChange }: FilterSectionProps) {
       </div>
     </div>
   );
-} 
+};
+
+export default FilterSection; 

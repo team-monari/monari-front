@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PublicServiceLocation } from '../types/lesson';
+import { PublicServiceLocation, Lesson } from '../types/lesson';
 import { publicServiceApi } from '../services/publicService';
 
 interface LessonRegistrationProps {
@@ -12,6 +12,9 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
   const [lessonData, setLessonData] = useState({
     educationLevel: '중등',
     subject: '수학',
@@ -128,10 +131,25 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const searchTerm = searchQuery.toLowerCase();
+    const filtered = lessons.filter(lesson => 
+      lesson.title.toLowerCase().includes(searchTerm) ||
+      lesson.description.toLowerCase().includes(searchTerm)
+    );
+    setFilteredLessons(filtered);
+  };
+
+  useEffect(() => {
+    // 초기 데이터 로드
+    setFilteredLessons(lessons);
+  }, [lessons]);
+
   return (
     <div className="max-w-3xl mx-auto py-8">
       <h1 className="text-3xl font-bold mb-2 text-[#1B9AF5]">수업 개설</h1>
-      <p className="text-gray-600 mb-8">현재 진행중인 인기 팀딩 프로젝트를 확인해보세요</p>
+      <p className="text-gray-600 mb-8">새로운 수업을 개설해보세요.</p>
       
       <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-lg">
         <form onSubmit={handleSubmit} className="space-y-6">

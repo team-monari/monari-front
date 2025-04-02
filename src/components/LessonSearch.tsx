@@ -163,6 +163,7 @@ export default function LessonSearch() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     search: '',
+    searchType: 'title', // 'title' or 'content'
     educationLevel: '',
     subject: '',
     region: '',
@@ -171,10 +172,14 @@ export default function LessonSearch() {
 
   const filteredLessons = useMemo(() => {
     let filtered = mockLessons.filter(lesson => {
-      const matchesSearch = !filters.search || 
-        lesson.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        lesson.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        lesson.teacher.name.toLowerCase().includes(filters.search.toLowerCase());
+      const searchTerm = filters.search.toLowerCase();
+      let matchesSearch = false;
+
+      if (filters.searchType === 'title') {
+        matchesSearch = !filters.search || lesson.title.toLowerCase().includes(searchTerm);
+      } else {
+        matchesSearch = !filters.search || lesson.description.toLowerCase().includes(searchTerm);
+      }
 
       const matchesEducationLevel = !filters.educationLevel || 
         lesson.description.includes(filters.educationLevel);
@@ -319,7 +324,11 @@ export default function LessonSearch() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-2xl font-bold mb-6 pl-6">수업 찾기</h2>
-        <FilterSection onFilterChange={handleFilterChange} />
+        <FilterSection 
+          onFilterChange={handleFilterChange}
+          searchType={filters.searchType}
+          onSearchTypeChange={(type) => setFilters(prev => ({ ...prev, searchType: type }))}
+        />
         <div className="mt-6">
           <div className="text-sm text-gray-600 mb-4">
             총 {filteredLessons.length}개의 수업
@@ -329,6 +338,7 @@ export default function LessonSearch() {
               <LessonCard
                 key={lesson.id}
                 {...lesson}
+                minStudents={3}
               />
             ))}
             {currentLessons.length === 0 && (
