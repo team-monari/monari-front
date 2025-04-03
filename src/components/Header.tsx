@@ -66,6 +66,16 @@ const Header = () => {
               수업 찾기
             </Link>
             <Link
+              href="/studies"
+              className={`text-base ${
+                router.pathname === "/studies"
+                  ? "text-[#1B9AF5]"
+                  : "text-gray-600"
+              } hover:text-[#1B9AF5]`}
+            >
+              스터디 찾기
+            </Link>
+            <Link
               href="/create-study"
               className={`text-base ${
                 router.pathname === "/create-study"
@@ -76,9 +86,9 @@ const Header = () => {
               스터디 만들기
             </Link>
             <Link
-              href="/create-lesson"
+              href="/lessons/create"
               className={`text-base ${
-                router.pathname === "/create-lesson"
+                router.pathname === "/lessons/create"
                   ? "text-[#1B9AF5]"
                   : "text-gray-600"
               } hover:text-[#1B9AF5]`}
