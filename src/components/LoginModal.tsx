@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import StudentSignupForm, { StudentFormData } from "./StudentSignupForm";
 import TeacherSignupForm, { TeacherFormData } from "./TeacherSignupForm";
+import { getKakaoAuthUrl } from "../utils/socialAuth";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -49,14 +50,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   // 소셜 로그인 버튼 클릭 처리
   const handleSocialLogin = (provider: "kakao" | "naver") => {
-    // 실제 소셜 로그인 로직은 여기에 구현됩니다
-    console.log(`${provider} 로그인 시도 - 역할: ${selectedRole}`);
+    // 역할이 선택되어 있지 않으면 처리하지 않음
+    if (!selectedRole) return;
 
-    // 역할에 따른 회원가입 폼으로 이동 (소셜 로그인 성공 이후에 실행되어야 함)
-    if (selectedRole === "student") {
-      setCurrentStep("student-signup");
-    } else if (selectedRole === "teacher") {
-      setCurrentStep("teacher-signup");
+    if (provider === "kakao") {
+      // 카카오 로그인 처리
+      const kakaoAuthUrl = getKakaoAuthUrl(selectedRole);
+      window.location.href = kakaoAuthUrl;
+    } else if (provider === "naver") {
+      // 네이버 로그인 처리 (추후 구현)
+      console.log(`네이버 로그인 시도 - 역할: ${selectedRole}`);
     }
   };
 
