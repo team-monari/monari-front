@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import { useRouter } from 'next/router';
+import { locationApi, Location } from '../../services/location';
 
 interface FormData {
   title: string;
@@ -9,6 +10,7 @@ interface FormData {
   minStudents: number;
   maxStudents: number;
   location: string;
+  locationId: number | null;
   period: string;
   educationLevel: string;
   subject: string;
@@ -23,16 +25,69 @@ const CreateLessonPage = () => {
     minStudents: 4,
     maxStudents: 7,
     location: '',
+    locationId: null,
     period: '',
     educationLevel: '',
     subject: ''
   });
 
-  const handleChange = (field: keyof FormData, value: string | number) => {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [showLocationList, setShowLocationList] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+
+  const fetchLocations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await locationApi.getLocations();
+      setLocations(data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 목록을 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch locations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (field: keyof FormData, value: string | number | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleSelectLocation = async (location: Location) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const detailedLocation = await locationApi.getLocation(location.id);
+      setSelectedLocation(detailedLocation);
+      setFormData(prev => ({
+        ...prev,
+        location: `${location.locationName}`,
+        locationId: location.id
+      }));
+      setShowLocationList(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 상세 정보를 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch location details:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -170,13 +225,94 @@ const CreateLessonPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 수업 장소
               </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => handleChange('location', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
-                placeholder="수업 장소를 입력하세요"
-              />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowLocationList(!showLocationList)}
+                  className="w-full px-3 py-2 text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#1B9AF5] bg-white"
+                >
+                  {formData.location || '장소를 선택하세요'}
+                </button>
+                {showLocationList && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {loading ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
+                        로딩 중...
+                      </div>
+                    ) : error ? (
+                      <div className="p-4 text-center">
+                        <div className="text-red-500 mb-2">{error}</div>
+                        <button
+                          onClick={fetchLocations}
+                          className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
+                        >
+                          다시 시도
+                        </button>
+                      </div>
+                    ) : locations.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                    ) : (
+                      <ul>
+                        {locations.map((location) => (
+                          <li
+                            key={location.id}
+                            className="p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
+                            onClick={() => handleSelectLocation(location)}
+                          >
+                            <div className="font-medium">{location.locationName}</div>
+                            <div className="text-sm text-gray-500">{location.serviceSubcategory}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+              {selectedLocation && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-md">
+                  <h3 className="text-lg font-medium mb-2">선택된 장소 정보</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="font-medium">장소명:</span> {selectedLocation.locationName}
+                    </div>
+                    <div>
+                      <span className="font-medium">서비스 소분류:</span> {selectedLocation.serviceSubcategory}
+                    </div>
+                    <div>
+                      <span className="font-medium">서비스 상태:</span> {selectedLocation.serviceStatus}
+                    </div>
+                    <div>
+                      <span className="font-medium">결제 방법:</span> {selectedLocation.paymentMethod}
+                    </div>
+                    <div>
+                      <span className="font-medium">등록 가능 기간:</span> {selectedLocation.registrationStartDateTime} ~ {selectedLocation.registrationEndDateTime}
+                    </div>
+                    <div>
+                      <span className="font-medium">취소 가능 기간:</span> {selectedLocation.cancellationStartDateTime} ~ {selectedLocation.cancellationEndDateTime}
+                    </div>
+                    <div>
+                      <span className="font-medium">취소 정책:</span> {selectedLocation.cancellationPolicyInfo}
+                    </div>
+                    <div>
+                      <span className="font-medium">취소 마감일:</span> {selectedLocation.cancellationDeadline}일 전
+                    </div>
+                    {selectedLocation.serviceUrl && (
+                      <div>
+                        <span className="font-medium">서비스 URL:</span>{' '}
+                        <a
+                          href={selectedLocation.serviceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#1B9AF5] hover:underline"
+                        >
+                          바로가기
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-4">
