@@ -44,7 +44,7 @@ const LessonSearch: React.FC = () => {
 
   const loadTotalPages = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/lesson/pages');
+      const response = await fetch('http://localhost:8080/api/v1/lessons/pages');
       if (!response.ok) {
         throw new Error('Failed to fetch total pages');
       }
