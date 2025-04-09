@@ -1,138 +1,173 @@
 import React from 'react';
 import { useRouter } from 'next/router';
+import { fetchLessonById } from '../services/lesson';
+import Card from './Card';
+import Link from 'next/link';
 
-interface LessonCardProps {
-  id: number;
-  title: string;
-  teacher: {
-    name: string;
-    image?: string;
-  };
-  period: string;
-  description: string;
-  price: number;
-  minStudents: number;
-  location: string;
-  currentStudents: number;
-  maxStudents: number;
+interface Teacher {
+  name: string;
 }
 
-export default function LessonCard({
-  id,
+interface LessonCardProps {
+  lessonId: number;
+  title: string;
+  description: string;
+  subject: string;
+  schoolLevel: string;
+  minStudent: number;
+  maxStudent: number;
+  currentStudent: number;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+const LessonCard: React.FC<LessonCardProps> = ({
+  lessonId,
   title,
-  teacher,
-  period,
   description,
-  price,
-  minStudents = 4,
-  location,
-  currentStudents,
-  maxStudents
-}: LessonCardProps) {
+  subject,
+  schoolLevel,
+  minStudent,
+  maxStudent,
+  currentStudent,
+  amount,
+  startDate,
+  endDate,
+  status,
+}) => {
   const router = useRouter();
-  const isFull = currentStudents >= maxStudents;
 
-  const showDiscount = currentStudents > minStudents;
-  const calculateDiscount = () => {
-    if (!showDiscount) return 0;
-    
-    const discountRate = Math.floor((1 - (minStudents / currentStudents)) * 100);
-    return discountRate;
+  const handleClick = async () => {
+    try {
+      const lesson = await fetchLessonById(lessonId);
+      router.push(`/lessons/${lessonId}`);
+    } catch (error) {
+      console.error('Error fetching lesson details:', error);
+    }
   };
 
-  const discountRate = calculateDiscount();
-  const discountedPrice = showDiscount ? Math.floor(price * minStudents / currentStudents) : price;
-
-  const handleClick = () => {
-    router.push(`/lessons/${id}`);
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return { text: '모집중', bgColor: 'bg-green-100', textColor: 'text-green-800' };
+      case 'CLOSED':
+        return { text: '종료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
+      case 'CANCELED':
+        return { text: '취소', bgColor: 'bg-red-100', textColor: 'text-red-800' };
+      default:
+        return { text: '알 수 없음', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
+    }
   };
 
-  const handleParticipate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isFull) return;
-    router.push(`/lessons/${id}`);
+  const statusInfo = getStatusInfo(status);
+  const progress = (currentStudent / maxStudent) * 100;
+  const isFull = currentStudent >= maxStudent;
+  const isDisabled = isFull || status === 'CANCELED' || status === 'CLOSED';
+  
+  // 할인된 금액 계산 - N빵 계산
+  const calculatedAmount = currentStudent >= minStudent
+    ? Math.round(amount / currentStudent)
+    : amount;
+  
+  // 할인율 계산
+  const discountRate = currentStudent >= minStudent
+    ? Math.round(((amount - calculatedAmount) / amount) * 100)
+    : 0;
+
+  const getButtonText = () => {
+    if (status === 'CANCELED') return '취소된 수업';
+    if (status === 'CLOSED') return '종료된 수업';
+    if (isFull) return '모집 완료';
+    return '참여하기';
   };
 
   return (
-    <div 
-      className="bg-white rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow shadow-md"
-      onClick={handleClick}
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden">
-          <img 
-            src={teacher.image || "/placeholder-teacher.jpg"} 
-            alt={teacher.name} 
-            className="w-full h-full object-cover" 
-          />
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-lg font-bold text-gray-900 hover:text-[#1B9AF5] transition-colors">
+            {title}
+          </h3>
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.textColor}`}>
+            {statusInfo.text}
+          </div>
         </div>
-        <div>
-          <h3 className="font-medium text-base">{title}</h3>
-          <p className="text-gray-600 text-sm">{teacher.name}</p>
+
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4">{description}</p>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full">{schoolLevel}</span>
+            <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full">{subject}</span>
+          </div>
+
+          <div className="text-sm text-gray-500">
+            {new Date(startDate).toLocaleDateString()} ~ {new Date(endDate).toLocaleDateString()}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">모집 현황</span>
+              <span className={`font-medium ${isFull ? 'text-red-500' : 'text-[#1B9AF5]'}`}>
+                {currentStudent}/{maxStudent}명
+              </span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div
+                className={`${isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'} h-1.5 rounded-full transition-all duration-300`}
+                style={{ width: `${(currentStudent / maxStudent) * 100}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mb-3">
-        <p className="text-gray-600 text-sm">기간: {period}</p>
-        <p className="text-sm text-gray-700 line-clamp-2 mt-1">{description}</p>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          {showDiscount ? (
-            <>
-              <span className="text-gray-400 line-through text-sm">
-                ₩{price.toLocaleString()}
-              </span>
-              <span className="font-bold text-lg text-[#1B9AF5]">
-                ₩{discountedPrice.toLocaleString()}
-              </span>
-              <span className="text-[#FF0000] text-sm font-medium">{discountRate}% 할인</span>
-            </>
+      <div className="border-t border-gray-100 p-5 flex items-center justify-between">
+        <div className="flex flex-col">
+          {currentStudent >= minStudent ? (
+            <div className="space-y-2">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-600">총 수강료</span>
+                <span className="text-lg font-bold text-gray-900">₩{amount.toLocaleString()}</span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="text-gray-600">현재 인원</span>
+                  <span className="text-gray-900">{currentStudent}명</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-[#1B9AF5]">1인당 수강료</span>
+                  <span className="text-base font-bold text-[#1B9AF5]">₩{calculatedAmount.toLocaleString()}</span>
+                  <span className="text-xs font-medium text-[#1B9AF5]">
+                    ({discountRate}% 할인)
+                  </span>
+                </div>
+              </div>
+            </div>
           ) : (
-            <span className="font-bold text-lg text-black">
-              ₩{price.toLocaleString()}
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm text-gray-600">수강료</span>
+              <span className="text-lg font-bold text-gray-900">₩{amount.toLocaleString()}</span>
+            </div>
           )}
         </div>
-
-        <div className="mb-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-bold text-gray-800">모집 현황</span>
-            <span className="text-sm text-gray-500">{currentStudents}/{maxStudents}명</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full ${
-                isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'
-              }`}
-              style={{ width: `${(currentStudents / maxStudents) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-gray-500 text-sm">{location}</span>
-          </div>
-
-          <button
-            onClick={handleParticipate}
-            disabled={isFull}
-            className={`px-4 py-2 rounded text-sm transition-colors ${
-              isFull
-                ? 'bg-red-500 text-white cursor-not-allowed'
-                : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
-            }`}
-          >
-            {isFull ? '모집 완료' : '참여하기'}
-          </button>
-        </div>
+        <Link
+          href={isDisabled ? '#' : `/lessons/${lessonId}`}
+          onClick={(e) => isDisabled && e.preventDefault()}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            isDisabled
+              ? 'bg-gray-500 text-white cursor-not-allowed hover:bg-gray-600'
+              : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
+          }`}
+          aria-disabled={isDisabled}
+        >
+          {getButtonText()}
+        </Link>
       </div>
     </div>
   );
-} 
+};
+
+export default LessonCard; 
