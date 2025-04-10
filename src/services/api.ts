@@ -95,19 +95,14 @@ export const authApi = {
   },
 
   // 소셜 로그인 인가코드를 백엔드로 전송
-  socialLogin: async (
-    code: string,
-    socialProvider: "KAKAO" | "NAVER",
-    userType: "STUDENT" | "TEACHER"
-  ) => {
-    console.log("소셜 로그인 요청 데이터:", { code, socialProvider, userType });
+  socialLogin: async (data: {
+    code: string;
+    socialProvider: "KAKAO" | "GOOGLE";
+    userType: "STUDENT" | "TEACHER";
+  }) => {
+    console.log("소셜 로그인 요청 데이터:", data);
     try {
-      // 백엔드 컨트롤러에 맞게 경로 수정 (/api/v1/auth/oauth)
-      const response = await api.post("/api/v1/auth/oauth", {
-        code,
-        socialProvider,
-        userType,
-      });
+      const response = await api.post("/api/v1/auth/oauth", data);
       // 응답에서 토큰을 받아 저장
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);

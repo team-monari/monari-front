@@ -44,11 +44,11 @@ export default function KakaoCallback() {
           userType,
         });
 
-        const response = await authApi.socialLogin(
-          code as string,
-          "KAKAO",
-          userType
-        );
+        const response = await authApi.socialLogin({
+          code: code as string,
+          socialProvider: "KAKAO",
+          userType,
+        });
 
         console.log("백엔드 응답:", response);
 

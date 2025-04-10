@@ -49,7 +49,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   };
 
   // 소셜 로그인 버튼 클릭 처리
-  const handleSocialLogin = (provider: "kakao" | "naver") => {
+  const handleSocialLogin = (provider: "kakao" | "google") => {
     // 역할이 선택되어 있지 않으면 처리하지 않음
     if (!selectedRole) return;
 
@@ -57,9 +57,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       // 카카오 로그인 처리
       const kakaoAuthUrl = getKakaoAuthUrl(selectedRole);
       window.location.href = kakaoAuthUrl;
-    } else if (provider === "naver") {
-      // 네이버 로그인 처리 (추후 구현)
-      console.log(`네이버 로그인 시도 - 역할: ${selectedRole}`);
+    } else if (provider === "google") {
+      // 구글 로그인 처리
+      const state = btoa(JSON.stringify({ role: selectedRole }));
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI}&response_type=code&scope=email profile&state=${state}`;
+      window.location.href = googleAuthUrl;
     }
   };
 
@@ -145,11 +147,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
       <div className="space-y-4">
         <button
-          onClick={() => handleSocialLogin("naver")}
-          className="w-full py-3 flex items-center justify-center bg-[#03C75A] text-white rounded-lg font-medium hover:bg-[#02b050] transition-colors"
+          onClick={() => handleSocialLogin("google")}
+          className="w-full py-3 flex items-center justify-center bg-white text-gray-800 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
         >
-          <span className="mr-2">N</span>
-          네이버 계정으로 로그인
+          <span className="mr-2">G</span>
+          구글 계정으로 로그인
         </button>
 
         <button
