@@ -1,18 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import { authApi } from "../../../services/api";
+import { authApi } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function KakaoCallback() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { login } = useAuth();
+  const processedRef = useRef<string | null>(null); // 이미 처리된 코드를 저장
 
   useEffect(() => {
+    // 쿼리 파라미터가 로드되지 않았으면 처리하지 않음
+    if (!router.isReady) return;
+
     // URL에서 인가코드와 state 파라미터 추출
     const { code, state } = router.query;
 
-    // 쿼리 파라미터가 아직 로드되지 않았으면 처리하지 않음
+    // 쿼리 파라미터가 없으면 처리하지 않음
     if (!code || !state) return;
+
+    // 현재 코드가 이미 처리된 코드와 동일하면 중복 처리 방지
+    if (processedRef.current === code) return;
+
+    // 현재 코드를 처리된 코드로 기록
+    processedRef.current = code as string;
 
     console.log("카카오 콜백 페이지 - 인가코드 수신:", { code, state });
 
@@ -54,21 +66,26 @@ export default function KakaoCallback() {
 
         // 회원가입이 필요한 경우 (백엔드에서 넘겨주는 필드에 따라 조정 필요)
         if (response.needsSignup) {
-          // 회원가입 페이지로 리다이렉트
-          router.push({
-            pathname:
-              userType === "STUDENT" ? "/student-signup" : "/teacher-signup",
-            query: {
-              socialId: response.socialId,
-              provider: "KAKAO",
-              // 기본 정보가 있다면 전달
-              name: response.name || "",
-              email: response.email || "",
-            },
-          });
+          // 회원가입 페이지로 리다이렉트 (router.events 방지를 위해 window.location 사용)
+          const signupUrl =
+            userType === "STUDENT"
+              ? `/student-signup?socialId=${
+                  response.socialId
+                }&provider=KAKAO&name=${response.name || ""}&email=${
+                  response.email || ""
+                }`
+              : `/teacher-signup?socialId=${
+                  response.socialId
+                }&provider=KAKAO&name=${response.name || ""}&email=${
+                  response.email || ""
+                }`;
+
+          window.location.href = signupUrl;
         } else {
-          // 로그인 성공, 메인 페이지로 리다이렉트
-          router.push("/");
+          // 로그인 성공
+          login(response.data);
+          // 메인 페이지로 리다이렉트 (router.events 방지를 위해 window.location 사용)
+          window.location.href = "/";
         }
       } catch (err: any) {
         console.error("카카오 로그인 처리 중 오류 발생:", err);
@@ -87,7 +104,7 @@ export default function KakaoCallback() {
     };
 
     handleKakaoCallback();
-  }, [router, router.query]);
+  }, [router.isReady, router.query, login]); // router 대신 router.isReady와 router.query 사용
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -103,7 +120,7 @@ export default function KakaoCallback() {
             <h1 className="text-2xl font-bold mb-4 text-red-500">오류 발생</h1>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => (window.location.href = "/")}
               className="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               홈으로 돌아가기

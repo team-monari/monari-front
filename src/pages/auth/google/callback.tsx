@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { authApi } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,18 +8,28 @@ const GoogleCallback = () => {
   const { code, state } = router.query;
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const processedRef = useRef<string | null>(null); // 이미 처리된 코드를 저장
 
   useEffect(() => {
     const handleGoogleCallback = async () => {
+      // 코드나 state가 없으면 아직 처리하지 않음
       if (!code || !state) return;
 
+      // 현재 코드가 이미 처리된 코드와 동일하면 중복 처리 방지
+      if (processedRef.current === code) return;
+
+      // 현재 코드를 처리된 코드로 기록
+      processedRef.current = code as string;
+
       try {
+        console.log("Processing Google callback with code:", code);
+
         // state 파라미터 디코딩
         const decodedState = JSON.parse(atob(state as string));
         const userType =
           decodedState.role === "student" ? "STUDENT" : "TEACHER";
 
-        console.log("Received authorization code:", code);
         console.log("Decoded state:", decodedState);
         console.log("User type:", userType);
 
@@ -34,9 +44,16 @@ const GoogleCallback = () => {
 
         // 로그인 성공 처리
         login(response.data);
-        router.push("/");
+
+        // 로딩 상태 해제
+        setIsLoading(false);
+
+        // 홈으로 리다이렉트 (router.events 방지를 위해 window.location 사용)
+        window.location.href = "/";
       } catch (err) {
         console.error("Google login error:", err);
+        setIsLoading(false);
+
         if (err instanceof Error) {
           if (err.message.includes("Network Error")) {
             setError(
@@ -51,8 +68,11 @@ const GoogleCallback = () => {
       }
     };
 
-    handleGoogleCallback();
-  }, [code, state, router, login]);
+    // 쿼리 파라미터가 로드된 경우에만 콜백 처리 실행
+    if (router.isReady) {
+      handleGoogleCallback();
+    }
+  }, [code, state, router.isReady, login]); // router.query 대신 code, state와 router.isReady 사용
 
   if (error) {
     return (
@@ -62,7 +82,7 @@ const GoogleCallback = () => {
             <h2 className="text-2xl font-bold text-red-600">오류 발생</h2>
             <p className="mt-2 text-gray-600">{error}</p>
             <button
-              onClick={() => router.push("/auth/login")}
+              onClick={() => (window.location.href = "/auth/login")}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               로그인 페이지로 돌아가기
