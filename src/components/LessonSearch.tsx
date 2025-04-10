@@ -39,7 +39,9 @@ const LessonSearch: React.FC = () => {
 
   useEffect(() => {
     loadLessons();
-    loadTotalPages();
+    if (!filters.keyword) {
+      loadTotalPages();
+    }
   }, [currentPage, filters]);
 
   const loadTotalPages = async () => {
@@ -61,6 +63,7 @@ const LessonSearch: React.FC = () => {
       let response;
       if (filters.keyword) {
         response = await searchLessons(filters.keyword, currentPage);
+        setTotalPages(response.page.totalPages);
       } else {
         response = await fetchLessons(currentPage);
       }

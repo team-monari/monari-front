@@ -18,13 +18,15 @@ export interface Lesson {
 
 export interface LessonResponse {
   content: Lesson[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }
 
-export const fetchLessons = async (page: number = 1, size: number = 6): Promise<LessonResponse> => {
+export const fetchLessons = async (page: number = 0, size: number = 6): Promise<LessonResponse> => {
   const response = await fetch(`http://localhost:8080/api/v1/lessons?pageNumber=${page}&pageSize=${size}`);
   if (!response.ok) {
     throw new Error('Failed to fetch lessons');
@@ -40,7 +42,7 @@ export const fetchLessonById = async (lessonId: number): Promise<Lesson> => {
   return response.json();
 };
 
-export const searchLessons = async (keyword: string, page: number = 1, size: number = 6): Promise<LessonResponse> => {
+export const searchLessons = async (keyword: string, page: number = 0, size: number = 6): Promise<LessonResponse> => {
   const response = await fetch(`http://localhost:8080/api/v1/lessons/search?keyword=${encodeURIComponent(keyword)}&pageNumber=${page}&pageSize=${size}`);
   if (!response.ok) {
     throw new Error('Failed to search lessons');
