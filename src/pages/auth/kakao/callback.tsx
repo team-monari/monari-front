@@ -82,8 +82,12 @@ export default function KakaoCallback() {
 
           window.location.href = signupUrl;
         } else {
-          // 로그인 성공
-          login(response.data);
+          // 로그인 성공 처리 (AuthContext를 통해 토큰과 유저 정보 저장)
+          login({
+            ...response.data,
+            userType, // 명시적으로 userType 전달
+          });
+
           // 메인 페이지로 리다이렉트 (router.events 방지를 위해 window.location 사용)
           window.location.href = "/";
         }
