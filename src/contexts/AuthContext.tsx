@@ -7,17 +7,19 @@ import React, {
 } from "react";
 
 interface User {
-  id: string;
+  id?: string;
   email?: string;
   name?: string;
   userType?: string;
   [key: string]: any; // 다른 프로퍼티를 위한 인덱스 시그니처
 }
 
+// OauthLoginResponse에 맞게 구조 정의
 interface AuthData {
-  token: string;
-  user?: User;
+  token?: string;
+  accessToken?: string;
   userType?: string;
+  user?: User;
   [key: string]: any; // 다른 프로퍼티를 위한 인덱스 시그니처
 }
 
@@ -25,8 +27,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   userType: string | null;
+  accessToken: string | null;
   login: (data: AuthData) => void;
   logout: () => void;
+  getAccessToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,15 +41,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   // 앱 초기화 시 로컬 스토리지에서 인증 정보 불러오기
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const storedAccessToken = localStorage.getItem("accessToken");
     const storedUserType = localStorage.getItem("userType");
     const storedUser = localStorage.getItem("user");
 
-    if (token) {
+    if (token || storedAccessToken) {
+      // token 또는 accessToken이 있으면 인증된 상태로 간주
       setIsAuthenticated(true);
+      if (storedAccessToken) setAccessToken(storedAccessToken);
       if (storedUserType) setUserType(storedUserType);
       if (storedUser) {
         try {
@@ -53,51 +61,86 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         } catch (e) {
           console.error("사용자 정보 파싱 오류:", e);
         }
+      } else {
+        // 기본 사용자 객체 생성 (최소한의 정보)
+        setUser({
+          userType: storedUserType || undefined,
+        });
       }
     }
   }, []);
 
   const login = (data: AuthData) => {
-    // 토큰 저장
+    console.log("로그인 요청 데이터:", data);
+
+    // 인증 상태 설정
+    setIsAuthenticated(true);
+
+    // 토큰 저장 (있는 경우에만)
     if (data.token) {
       localStorage.setItem("token", data.token);
-      setIsAuthenticated(true);
     }
 
-    // 사용자 유형 저장
+    // accessToken 저장 (OauthLoginResponse의 주요 필드)
+    if (data.accessToken) {
+      localStorage.setItem("accessToken", data.accessToken);
+      setAccessToken(data.accessToken);
+    }
+
+    // userType 저장 (OauthLoginResponse의 주요 필드)
     if (data.userType) {
       localStorage.setItem("userType", data.userType);
       setUserType(data.userType);
-    } else if (data.user?.userType) {
-      localStorage.setItem("userType", data.user.userType);
-      setUserType(data.user.userType);
+    }
+
+    // 사용자 정보 관리 (소셜 로그인에서는 명시적인 user 객체가 없을 수 있음)
+    let userData: User = {
+      userType: data.userType || undefined,
+    };
+
+    if (data.user) {
+      userData = { ...userData, ...data.user };
     }
 
     // 사용자 정보 저장
-    if (data.user) {
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setUser(data.user);
-    }
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
 
     console.log("로그인 정보가 저장되었습니다:", {
       isAuthenticated: true,
-      userType: data.userType || data.user?.userType,
-      user: data.user,
+      accessToken: data.accessToken,
+      userType: data.userType,
+      user: userData,
     });
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
     localStorage.removeItem("userType");
     localStorage.removeItem("user");
     setIsAuthenticated(false);
+    setAccessToken(null);
     setUser(null);
     setUserType(null);
   };
 
+  // accessToken을 가져오는 메서드
+  const getAccessToken = () => {
+    return accessToken;
+  };
+
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, userType, login, logout }}
+      value={{
+        isAuthenticated,
+        user,
+        userType,
+        accessToken,
+        login,
+        logout,
+        getAccessToken,
+      }}
     >
       {children}
     </AuthContext.Provider>

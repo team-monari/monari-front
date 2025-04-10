@@ -14,9 +14,16 @@ const api = axios.create({
 // 요청 인터셉터 - 토큰 추가
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  const accessToken = localStorage.getItem("accessToken");
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (accessToken) {
+    config.headers["X-Social-Access-Token"] = accessToken;
+  }
+
   return config;
 });
 
@@ -27,6 +34,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // 토큰 만료 등의 인증 에러 처리
       localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userType");
+      localStorage.removeItem("user");
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -92,6 +102,9 @@ export const authApi = {
   // 로그아웃
   logout: () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userType");
+    localStorage.removeItem("user");
   },
 
   // 소셜 로그인 인가코드를 백엔드로 전송
@@ -103,10 +116,21 @@ export const authApi = {
     console.log("소셜 로그인 요청 데이터:", data);
     try {
       const response = await api.post("/api/v1/auth/oauth", data);
-      // 응답에서 토큰을 받아 저장
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      console.log("소셜 로그인 응답 데이터:", response.data);
+
+      // OauthLoginResponse(String accessToken, UserType userType) 형태의 응답 처리
+      if (response.data) {
+        // accessToken 저장
+        if (response.data.accessToken) {
+          localStorage.setItem("accessToken", response.data.accessToken);
+        }
+
+        // userType 저장
+        if (response.data.userType) {
+          localStorage.setItem("userType", response.data.userType);
+        }
       }
+
       return response.data;
     } catch (error) {
       console.error("소셜 로그인 API 호출 오류:", error);

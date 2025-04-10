@@ -42,10 +42,11 @@ const GoogleCallback = () => {
 
         console.log("Backend response:", response);
 
-        // 로그인 성공 처리 (AuthContext를 통해 토큰과 유저 정보 저장)
+        // OauthLoginResponse(String accessToken, UserType userType) 구조 처리
         login({
-          ...response.data,
-          userType, // 명시적으로 userType 전달
+          token: "social_login_token", // JWT 토큰이 없으므로 임시 값 설정
+          accessToken: response.accessToken,
+          userType: response.userType || userType, // 백엔드에서 반환한 userType 사용, 없으면 요청 시 userType 사용
         });
 
         // 로딩 상태 해제
