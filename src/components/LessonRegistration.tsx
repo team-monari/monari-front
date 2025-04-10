@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PublicServiceLocation, Lesson } from '../types/lesson';
 import { publicServiceApi } from '../services/publicService';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 interface LessonRegistrationProps {
   onSubmit: (lessonData: any) => void;
@@ -23,11 +25,15 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
     minStudents: '3',
     maxStudents: '4',
     monthlyFee: '',
-    startDate: '',
-    endDate: '',
+    startDate: null as Date | null,
+    endDate: null as Date | null,
     location: '장소 선택하기',
-    fundingDeadline: ''
+    fundingDeadline: null as Date | null,
+    locationId: 1,
+    status: 'ACTIVE',
+    schoolLevel: 'HIGH'
   });
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
 
   const fetchAllLocations = async () => {
     try {
@@ -86,7 +92,7 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
     return `${year}-${month}-${day}`;
   };
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | { target: { name: string; value: string } }) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | { target: { name: string; value: string | Date | null } }) => {
     const { name, value } = e.target;
     
     if (name === 'location') {
@@ -120,10 +126,11 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
         };
         
         if ((name === 'startDate' || name === 'location') && selectedLocation) {
-          newData.fundingDeadline = calculateFundingDeadline(
-            name === 'startDate' ? value : prev.startDate,
-            selectedLocation.REVSTDDAY
-          );
+          if (name === 'startDate' && value instanceof Date) {
+            const deadline = new Date(value);
+            deadline.setDate(deadline.getDate() - parseInt(selectedLocation.REVSTDDAY));
+            newData.fundingDeadline = deadline;
+          }
         }
         
         return newData;
@@ -141,220 +148,186 @@ const LessonRegistration: React.FC<LessonRegistrationProps> = ({ onSubmit }) => 
     setFilteredLessons(filtered);
   };
 
+  const handleDateRangeChange = (dates: [Date | null, Date | null]) => {
+    setDateRange(dates);
+    setLessonData(prev => ({
+      ...prev,
+      startDate: dates[0],
+      endDate: dates[1]
+    }));
+  };
+
   useEffect(() => {
     // 초기 데이터 로드
     setFilteredLessons(lessons);
   }, [lessons]);
 
   return (
-    <div className="max-w-3xl mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-2 text-[#1B9AF5]">수업 개설</h1>
-      <p className="text-gray-600 mb-8">새로운 수업을 개설해보세요.</p>
-      
-      <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-lg">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 w-full max-w-2xl">
+        <h1 className="text-3xl font-bold mb-2 text-[#1B9AF5]">수업 개설</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-2">교육 대상</label>
+              <label className="block text-sm font-medium text-gray-700">수업 제목</label>
+              <input
+                type="text"
+                name="title"
+                value={lessonData.title}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">수업 설명</label>
+              <textarea
+                name="description"
+                value={lessonData.description}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">수업 기간</label>
+              <DatePicker
+                selectsRange={true}
+                startDate={dateRange[0]}
+                endDate={dateRange[1]}
+                onChange={handleDateRangeChange}
+                minDate={new Date()}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
+                dateFormat="yyyy-MM-dd"
+                placeholderText="수업 기간을 선택하세요"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">모집 마감일</label>
+              <DatePicker
+                selected={lessonData.fundingDeadline}
+                onChange={(date) => handleChange({ target: { name: 'fundingDeadline', value: date } })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#1B9AF5]"
+                dateFormat="yyyy-MM-dd"
+                minDate={new Date()}
+                maxDate={lessonData.startDate || undefined}
+                placeholderText="모집 마감일을 선택하세요"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">수강료</label>
+              <input
+                type="number"
+                name="monthlyFee"
+                value={lessonData.monthlyFee}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">최소 인원</label>
+              <input
+                type="number"
+                name="minStudents"
+                value={lessonData.minStudents}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+                min="1"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">최대 인원</label>
+              <input
+                type="number"
+                name="maxStudents"
+                value={lessonData.maxStudents}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+                min={lessonData.minStudents}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">학교급</label>
               <select
-                name="educationLevel"
+                name="schoolLevel"
                 value={lessonData.educationLevel}
                 onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
               >
                 <option value="중등">중등</option>
                 <option value="고등">고등</option>
               </select>
             </div>
-            
             <div>
-              <label className="block text-sm text-gray-600 mb-2">과목</label>
+              <label className="block text-sm font-medium text-gray-700">과목</label>
               <select
                 name="subject"
                 value={lessonData.subject}
                 onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
               >
                 <option value="수학">수학</option>
                 <option value="영어">영어</option>
                 <option value="국어">국어</option>
               </select>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">수업 제목</label>
-            <input
-              type="text"
-              name="title"
-              placeholder="예: 중2 내신 수학 1등급 만들기"
-              value={lessonData.title}
-              onChange={handleChange}
-              className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">수업 설명</label>
-            <textarea
-              name="description"
-              placeholder="수업 명식, 대상, 커리큘럼, 수업 시간 등을 자세히 설명해주세요 (예: 매주 수요일 오후 3시~5시 수업 진행)"
-              value={lessonData.description}
-              onChange={handleChange}
-              className="w-full h-32 px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-2">최소 정원</label>
-              <select
-                name="minStudents"
-                value={lessonData.minStudents}
-                onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-              >
-                {[...Array(10)].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}명</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">최대 정원</label>
-              <select
-                name="maxStudents"
-                value={lessonData.maxStudents}
-                onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-              >
-                {[...Array(10)].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}명</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">월 수업 총액</label>
-            <div className="relative flex items-center space-x-2">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  name="monthlyFee"
-                  placeholder="900,000"
-                  value={lessonData.monthlyFee}
-                  onChange={handleChange}
-                  className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">원</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">수업 시작일</label>
-              <input
-                type="date"
-                name="startDate"
-                value={lessonData.startDate}
-                onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">수업 종료일</label>
-              <input
-                type="date"
-                name="endDate"
-                value={lessonData.endDate}
-                onChange={handleChange}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">수업 장소</label>
-            <div className="relative">
-              <div
-                onClick={handleDropdownClick}
-                className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none cursor-pointer flex items-center justify-between"
-              >
-                <span className={selectedLocation ? 'text-gray-900' : 'text-gray-500'}>
-                  {selectedLocation ? `${selectedLocation.SVCNM} (${selectedLocation.AREANM})` : '장소 선택하기'}
-                </span>
-                <div className="flex items-center">
-                  {isLoading && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1B9AF5] mr-2"></div>
-                  )}
-                  <svg
-                    className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-              {isDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {locations.map(location => (
-                    <div
-                      key={location.SVCID}
-                      onClick={() => handleChange({ target: { name: 'location', value: location.SVCID } } as any)}
-                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
-                    >
-                      {location.SVCNM} ({location.AREANM})
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {error && (
-              <p className="mt-1 text-sm text-red-500">{error}</p>
-            )}
-          </div>
-
-          {selectedLocation && lessonData.startDate && (
-            <div className="bg-blue-50 p-4 rounded-md">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">예약 취소 정책</h3>
-              <p className="text-sm text-blue-700">
-                {selectedLocation.REVSTDDAYNM}: {selectedLocation.REVSTDDAY}일 전까지 취소 가능
-              </p>
-              {selectedLocation.TELNO && (
-                <p className="text-sm text-blue-700 mt-1">
-                  문의: {selectedLocation.TELNO}
-                </p>
-              )}
-              <p className="text-sm text-blue-700 mt-1">
-                예약 마감일: {calculateReservationDeadline(lessonData.startDate, selectedLocation.REVSTDDAY)}
-              </p>
-              <p className="text-sm text-blue-700 mt-1">
-                펀딩 마감일: {lessonData.fundingDeadline}
-              </p>
-              {selectedLocation.SVCURL && (
-                <a
-                  href={selectedLocation.SVCURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline mt-2 block"
+              <label className="block text-sm font-medium text-gray-700">수업 장소</label>
+              <div className="relative">
+                <div
+                  onClick={handleDropdownClick}
+                  className="w-full h-[42px] px-3 border border-gray-200 rounded text-sm focus:outline-none cursor-pointer flex items-center justify-between"
                 >
-                  예약 페이지 바로가기 →
-                </a>
+                  <span className={selectedLocation ? 'text-gray-900' : 'text-gray-500'}>
+                    {selectedLocation ? `${selectedLocation.SVCNM} (${selectedLocation.AREANM})` : '장소 선택하기'}
+                  </span>
+                  <div className="flex items-center">
+                    {isLoading && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1B9AF5] mr-2"></div>
+                    )}
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                {isDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {locations.map(location => (
+                      <div
+                        key={location.SVCID}
+                        onClick={() => handleChange({ target: { name: 'location', value: location.SVCID } })}
+                        className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                      >
+                        {location.SVCNM} ({location.AREANM})
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {error && (
+                <p className="mt-1 text-sm text-red-500">{error}</p>
               )}
             </div>
-          )}
-
-          <div className="flex justify-center pt-4">
+          </div>
+          <div className="flex justify-end space-x-4 mt-6">
             <button
               type="submit"
-              className="bg-[#1B9AF5] text-white px-8 py-3 rounded-md text-sm font-medium hover:bg-[#1B9AF5]/90 transition-colors"
+              className="px-4 py-2 text-sm bg-[#1B9AF5] text-white rounded-md hover:bg-[#1B9AF5]/90"
             >
-              수업 개설
+              수업 개설하기
             </button>
           </div>
         </form>

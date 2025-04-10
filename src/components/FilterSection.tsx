@@ -75,9 +75,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
           >
             <option value="">전체</option>
-            <option value="초등">초등</option>
-            <option value="중등">중등</option>
-            <option value="고등">고등</option>
+            <option value="MIDDLE">중학교</option>
+            <option value="HIGH">고등학교</option>
           </select>
         </div>
 
@@ -90,12 +89,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
           >
             <option value="">전체</option>
-            <option value="수학">수학</option>
-            <option value="영어">영어</option>
-            <option value="국어">국어</option>
-            <option value="과학">과학</option>
-            <option value="사회">사회</option>
-            <option value="역사">역사</option>
+            <option value="MATH">수학</option>
+            <option value="SCIENCE">과학</option>
           </select>
         </div>
 

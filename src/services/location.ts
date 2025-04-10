@@ -30,7 +30,7 @@ const api = axios.create({
 export const locationApi = {
   getLocations: async (): Promise<Location[]> => {
     try {
-      const response = await api.get('/location');
+      const response = await api.get('/locations');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -51,7 +51,7 @@ export const locationApi = {
 
   getLocation: async (id: number): Promise<Location> => {
     try {
-      const response = await api.get(`/location/${id}`);
+      const response = await api.get(`/locations/${id}`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
