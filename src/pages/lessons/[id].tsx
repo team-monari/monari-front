@@ -1,164 +1,149 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { Lesson, fetchLessonById } from '../../services/lesson';
 import Header from '../../components/Header';
 
-// 데모 데이터
-const lessonDetail = {
-  id: '1',
-  title: "중2 내신 수학 1등급 만들기",
-  subTitle: "수학 교과 내신 대비 특별 수업",
-  teacher: {
-    id: '1',
-    name: "김민수",
-    image: "/teachers/teacher1.jpg",
-    university: "서울대학교 수학교육과",
-    experience: "5년"
-  },
-  period: "2024.03.01 ~ 2024.05.31",
-  price: 720000,
-  originalPrice: 900000,
-  discount: 20,
-  location: "강남 스터디센터 (2호선 강남역 4번 출구 도보 3분)",
-  currentStudents: 3,
-  minStudents: 4,
-  maxStudents: 7,
-  targetGrade: "중등 2학년",
-  subject: "수학",
-  description: [
-    {
-      title: "수업 목표",
-      content: [
-        "중2 수학 내신 1등급 달성",
-        "기초 개념부터 심화 문제까지 체계적 학습",
-        "개인별 맞춤형 학습 관리"
-      ]
-    },
-    {
-      title: "수업 방식",
-      content: [
-        "매주 수요일 오후 3시~5시 수업 진행",
-        "실시간 문제 풀이 및 개별 설명",
-        "주간 테스트로 성적도 확인"
-      ]
-    },
-    {
-      title: "커리큘럼",
-      content: [
-        "1개월차: 기초 개념 정립",
-        "2개월차: 심화 문제 풀이",
-        "3개월차: 실전 문제 및 기출 분석"
-      ]
-    }
-  ]
-};
-
-export default function LessonDetailPage() {
+const LessonDetail: React.FC = () => {
   const router = useRouter();
   const { id } = router.query;
-  const lesson = lessonDetail;
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!lesson) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    if (id) {
+      loadLesson();
+    }
+  }, [id]);
 
-  const progressPercentage = Math.floor((lesson.currentStudents / lesson.maxStudents) * 100);
+  const loadLesson = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchLessonById(Number(id));
+      setLesson(data);
+    } catch (err) {
+      setError('수업 정보를 불러오는데 실패했습니다.');
+      console.error('Error loading lesson:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="text-center py-12">Loading...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
+  if (!lesson) return <div className="text-center py-12">수업을 찾을 수 없습니다.</div>;
+
+  const isFull = lesson.currentStudent >= lesson.maxStudent;
+  
+  // 할인된 금액 계산 - N빵 계산
+  const calculatedAmount = lesson.currentStudent >= lesson.minStudent
+    ? Math.round(lesson.amount / lesson.currentStudent)
+    : lesson.amount;
+  
+  // 할인율 계산
+  const discountRate = lesson.currentStudent >= lesson.minStudent
+    ? Math.round(((lesson.amount - calculatedAmount) / lesson.amount) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-[1280px]">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2 text-black">{lesson.title}</h1>
-          <p className="text-gray-800 text-lg">{lesson.subTitle}</p>
-        </div>
-
         <div className="bg-white rounded-lg p-8 shadow-sm">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-            <div>
-              <p className="font-medium text-lg text-black">{lesson.teacher.name} 선생님</p>
-              <p className="text-gray-800">{lesson.teacher.university} 졸업</p>
-              <p className="text-gray-800">수업 경력 {lesson.teacher.experience}</p>
+          <div className="flex justify-between items-start mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
+            <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+              isFull 
+                ? 'bg-red-100 text-red-800'
+                : 'bg-green-100 text-green-800'
+            }`}>
+              {isFull ? '모집 완료' : '모집중'}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2 text-base">교육 대상</h3>
-              <p className="text-lg text-black">{lesson.targetGrade}</p>
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm">
+                {lesson.schoolLevel}
+              </span>
+              <span className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm">
+                {lesson.subject}
+              </span>
             </div>
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2 text-base">과목</h3>
-              <p className="text-lg text-black">{lesson.subject}</p>
+
+            <div className="text-gray-600">
+              <h2 className="text-lg font-semibold mb-2">수업 설명</h2>
+              <p className="whitespace-pre-wrap">{lesson.description}</p>
             </div>
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2 text-base">수업 정원</h3>
-              <div className="flex items-center gap-2">
-                <p className="text-lg text-black">{lesson.minStudents}~{lesson.maxStudents}명</p>
-                <span className="text-lg">👤</span>
-                <span className="text-[#1B9AF5] text-base ml-1">
-                  현재 {lesson.currentStudents}/{lesson.maxStudents}명
+
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold">수업 기간</h2>
+              <p className="text-gray-600">
+                {new Date(lesson.startDate).toLocaleDateString()} ~ {new Date(lesson.endDate).toLocaleDateString()}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">모집 현황</h2>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">현재 인원</span>
+                <span className={`font-medium ${isFull ? 'text-red-500' : 'text-[#1B9AF5]'}`}>
+                  {lesson.currentStudent}/{lesson.maxStudent}명
                 </span>
               </div>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2 text-base">수업 기간</h3>
-              <p className="text-lg text-black">{lesson.period}</p>
-            </div>
-          </div>
-
-          {lesson.description.map((section, index) => (
-            <div key={index} className="mb-8">
-              <h2 className="text-xl font-medium mb-4 text-black">{section.title}</h2>
-              <ul className="space-y-3">
-                {section.content.map((item, itemIndex) => (
-                  <li key={itemIndex} className="text-gray-800 text-lg flex items-center gap-2">
-                    <span className="text-[#1B9AF5]">•</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-
-          <div className="mb-8">
-            <h2 className="text-xl font-medium mb-4 text-black">수업 장소</h2>
-            <p className="text-gray-800 text-lg">{lesson.location}</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base text-gray-700 mb-2">월 수업료</p>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-black">{lesson.price.toLocaleString()}원</span>
-                  {lesson.discount && (
-                    <>
-                      <span className="text-gray-500 line-through text-lg">{lesson.originalPrice.toLocaleString()}원</span>
-                      <span className="text-[#1B9AF5] font-medium">{lesson.discount}% 할인</span>
-                    </>
-                  )}
-                </div>
-                <div className="mt-3">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-[#1B9AF5] h-2 rounded-full" 
-                      style={{ width: `${progressPercentage}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-700 mt-1">현재 {progressPercentage}% 달성</p>
-                </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div
+                  className={`${isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'} h-2 rounded-full transition-all duration-300`}
+                  style={{ width: `${(lesson.currentStudent / lesson.maxStudent) * 100}%` }}
+                />
               </div>
-              <button 
-                className="bg-[#1B9AF5] text-white px-10 py-4 rounded-lg text-lg font-medium hover:bg-[#1B9AF5]/90 transition-colors"
-                onClick={() => alert('신청이 완료되었습니다!')}
-              >
-                수업 참여하기
-              </button>
+            </div>
+
+            <div className="border-t border-gray-100 pt-6 mt-6">
+              <div className="flex justify-between items-start">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">수업 금액</h2>
+                  <div className="space-y-2">
+                    <div className="flex flex-col">
+                      <span className="text-gray-600">총 수강료</span>
+                      <span className="text-2xl font-bold text-gray-900">₩{lesson.amount.toLocaleString()}</span>
+                    </div>
+                    
+                    {lesson.currentStudent >= lesson.minStudent && (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">현재 인원</span>
+                          <span className="text-gray-900">{lesson.currentStudent}명</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#1B9AF5] font-medium">1인당 수강료</span>
+                          <span className="text-xl font-bold text-[#1B9AF5]">₩{calculatedAmount.toLocaleString()}</span>
+                          <span className="text-sm font-medium text-[#1B9AF5]">
+                            ({discountRate}% 할인)
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  className={`px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    isFull 
+                      ? 'bg-gray-500 text-white cursor-not-allowed'
+                      : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
+                  }`}
+                  disabled={isFull}
+                  onClick={() => router.push(`/lessons/${id}/apply`)}
+                >
+                  {isFull ? '모집 완료' : '수업 신청하기'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
   );
-} 
+};
+
+export default LessonDetail; 
