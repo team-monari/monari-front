@@ -1,32 +1,172 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "../components/Header";
+import { useAuth } from "@/contexts/AuthContext";
+
+// 학교 타입 정의
+type SchoolType = "ELEMENTARY" | "MIDDLE" | "HIGH";
+
+interface StudentProfileData {
+  publicId?: string;
+  email?: string;
+  name?: string;
+  schoolLevel?: "MIDDLE" | "HIGH";
+  grade?: "FIRST" | "SECOND" | "THIRD";
+  profileImageUrl?: string | null;
+  phone?: string;
+  schoolName?: string;
+  city?: string;
+  district?: string;
+  // 폼 전용 필드
+  schoolType?: SchoolType;
+  selectedGrade?: string;
+}
 
 const EditStudentProfile = () => {
   const router = useRouter();
+  const { accessToken, userType, isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
+    null
+  );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // 기존 사용자 정보 (실제로는 API나 Context에서 가져와야 함)
-  const [formData, setFormData] = useState({
-    name: "김민수",
-    phone: "010-0000-0000",
-    school: "",
-    grade: "",
-    city: "",
-    district: "",
+  // 기본 폼 데이터
+  const [formData, setFormData] = useState<StudentProfileData>({
+    name: "",
+    phone: "",
+    schoolName: "",
+    email: "",
+    publicId: "",
+    schoolLevel: undefined,
+    grade: undefined,
+    profileImageUrl: null,
+    schoolType: undefined,
+    selectedGrade: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 페이지 로드 시 학생 프로필 정보 가져오기
+  useEffect(() => {
+    // 인증 상태 확인
+    if (!isAuthenticated) {
+      router.push("/");
+      return;
+    }
+
+    // 학생 사용자 확인
+    if (userType !== "STUDENT") {
+      router.push("/teacher-mypage");
+      return;
+    }
+
+    // 학생 프로필 정보 가져오기
+    const fetchStudentProfile = async () => {
+      try {
+        setLoading(true);
+
+        // API URL 설정
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const apiUrl = `${baseUrl}/api/v1/students/me`;
+
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`API 요청 실패: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // 학교 타입과 학년 정보 변환
+        const { schoolType, gradeText } = convertSchoolInfo(
+          data.schoolLevel,
+          data.grade
+        );
+
+        // 기존 폼 데이터와 API에서 받아온 데이터 병합
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || "",
+          email: data.email || "",
+          publicId: data.publicId || "",
+          schoolLevel: data.schoolLevel,
+          grade: data.grade,
+          profileImageUrl: data.profileImageUrl || null,
+          // 폼 표시용 필드
+          schoolType,
+          selectedGrade: gradeText,
+          schoolName: data.schoolName || "",
+        }));
+
+        // 프로필 이미지가 있으면 미리보기 설정
+        if (data.profileImageUrl) {
+          setProfileImagePreview(data.profileImageUrl);
+        }
+      } catch (error) {
+        console.error("학생 정보 가져오기 오류:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentProfile();
+  }, [isAuthenticated, userType, accessToken, router]);
+
+  // 학제와 학년 정보를 폼에 맞게 변환
+  const convertSchoolInfo = (
+    schoolLevel?: string,
+    grade?: string
+  ): { schoolType: SchoolType | undefined; gradeText: string } => {
+    let schoolType: SchoolType | undefined = undefined;
+    let gradeText = "";
+
+    if (!schoolLevel || !grade) {
+      return { schoolType, gradeText };
+    }
+
+    if (schoolLevel === "MIDDLE") {
+      schoolType = "MIDDLE";
+      if (grade === "FIRST") gradeText = "1";
+      else if (grade === "SECOND") gradeText = "2";
+      else if (grade === "THIRD") gradeText = "3";
+    } else if (schoolLevel === "HIGH") {
+      schoolType = "HIGH";
+      if (grade === "FIRST") gradeText = "1";
+      else if (grade === "SECOND") gradeText = "2";
+      else if (grade === "THIRD") gradeText = "3";
+    }
+
+    return { schoolType, gradeText };
+  };
 
   // 입력 변경 처리
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    if (name === "schoolType") {
+      // 학교 타입이 변경되면 학년 초기화
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value as SchoolType,
+        selectedGrade: "",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     // 입력 시 해당 필드의 에러 메시지 제거
     if (errors[name]) {
@@ -42,34 +182,16 @@ const EditStudentProfile = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "이름을 입력해주세요";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "연락처를 입력해주세요";
-    } else if (
-      !/^\d{3}-\d{4}-\d{4}$/.test(formData.phone) &&
-      !/^\d{3}-\d{3,4}-\d{4}$/.test(formData.phone)
+    // 학교 구분과 학년에 대한 유효성 검사
+    if (
+      !formData.schoolType ||
+      !(formData.schoolType === "MIDDLE" || formData.schoolType === "HIGH")
     ) {
-      newErrors.phone =
-        "올바른 연락처 형식으로 입력해주세요 (예: 010-0000-0000)";
+      newErrors.schoolType = "중학교 또는 고등학교를 선택해주세요";
     }
 
-    if (!formData.school.trim()) {
-      newErrors.school = "학교를 입력해주세요";
-    }
-
-    if (!formData.grade) {
-      newErrors.grade = "학년을 선택해주세요";
-    }
-
-    if (!formData.city) {
-      newErrors.city = "시/도를 선택해주세요";
-    }
-
-    if (!formData.district) {
-      newErrors.district = "구/군을 선택해주세요";
+    if (!formData.selectedGrade) {
+      newErrors.selectedGrade = "학년을 선택해주세요";
     }
 
     setErrors(newErrors);
@@ -77,15 +199,81 @@ const EditStudentProfile = () => {
   };
 
   // 폼 제출 처리
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateForm()) {
-      // 프로필 업데이트 API 호출 (실제로는 API 연동 필요)
-      console.log("프로필 업데이트:", formData);
+      // 학교 타입과 학년을 API 형식으로 변환
+      let apiSchoolLevel: "MIDDLE" | "HIGH" | undefined = undefined;
+      let apiGrade: "FIRST" | "SECOND" | "THIRD" | undefined = undefined;
 
-      // 성공 시 마이페이지로 이동
-      router.push("/mypage");
+      if (formData.schoolType === "MIDDLE" || formData.schoolType === "HIGH") {
+        apiSchoolLevel = formData.schoolType;
+
+        if (formData.selectedGrade) {
+          const gradeMap: Record<string, "FIRST" | "SECOND" | "THIRD"> = {
+            "1": "FIRST",
+            "2": "SECOND",
+            "3": "THIRD",
+          };
+          apiGrade = gradeMap[formData.selectedGrade];
+        }
+      }
+
+      // 필수 필드가 없는 경우 처리
+      if (!apiSchoolLevel || !apiGrade) {
+        setErrors({
+          ...errors,
+          schoolType: !apiSchoolLevel ? "학교 구분을 선택해주세요" : "",
+          selectedGrade: !apiGrade ? "학년을 선택해주세요" : "",
+        });
+        return;
+      }
+
+      // API 요청 데이터 준비 (API 스펙에 맞게 필수 필드만 포함)
+      const apiData = {
+        schoolLevel: apiSchoolLevel,
+        grade: apiGrade,
+        // 프로필 이미지 URL이 변경된 경우만 포함
+        ...(formData.profileImageUrl !== null && {
+          profileImageUrl: formData.profileImageUrl,
+        }),
+        // 학교 정보가 있는 경우만 포함
+        ...(formData.schoolName && { schoolName: formData.schoolName }),
+      };
+
+      try {
+        setLoading(true);
+
+        // API URL 설정
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const apiUrl = `${baseUrl}/api/v1/students/me`;
+
+        // PATCH 요청 보내기
+        const response = await fetch(apiUrl, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(apiData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`API 요청 실패: ${response.status} - ${errorData}`);
+        }
+
+        // 성공 시 마이페이지로 이동
+        router.push("/mypage");
+      } catch (error) {
+        console.error("프로필 업데이트 오류:", error);
+        // 사용자에게 오류 메시지 표시
+        alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -94,71 +282,65 @@ const EditStudentProfile = () => {
     router.push("/mypage");
   };
 
-  // 시/도 목록
-  const cities = [
-    "서울",
-    "부산",
-    "대구",
-    "인천",
-    "광주",
-    "대전",
-    "울산",
-    "세종",
-    "경기",
-    "강원",
-    "충북",
-    "충남",
-    "전북",
-    "전남",
-    "경북",
-    "경남",
-    "제주",
-  ];
+  // 이미지 파일 선택 처리
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // 학년 목록
-  const grades = [
-    "초등학교 1학년",
-    "초등학교 2학년",
-    "초등학교 3학년",
-    "초등학교 4학년",
-    "초등학교 5학년",
-    "초등학교 6학년",
-    "중학교 1학년",
-    "중학교 2학년",
-    "중학교 3학년",
-    "고등학교 1학년",
-    "고등학교 2학년",
-    "고등학교 3학년",
-  ];
+    // 이미지 파일 검증 (JPG, PNG, GIF 등)
+    if (!file.type.startsWith("image/")) {
+      alert("이미지 파일만 업로드 가능합니다.");
+      return;
+    }
 
-  // 서울특별시 구 목록 (다른 시/도 선택 시 해당하는 구/군 목록으로 변경해야 함)
-  const districts = [
-    "강남구",
-    "강동구",
-    "강북구",
-    "강서구",
-    "관악구",
-    "광진구",
-    "구로구",
-    "금천구",
-    "노원구",
-    "도봉구",
-    "동대문구",
-    "동작구",
-    "마포구",
-    "서대문구",
-    "서초구",
-    "성동구",
-    "성북구",
-    "송파구",
-    "양천구",
-    "영등포구",
-    "용산구",
-    "은평구",
-    "종로구",
-    "중구",
-    "중랑구",
-  ];
+    // 파일 사이즈 제한 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("5MB 이하의 파일만 업로드 가능합니다.");
+      return;
+    }
+
+    // 파일을 URL로 변환하여 미리보기 표시
+    const fileURL = URL.createObjectURL(file);
+    setProfileImagePreview(fileURL);
+
+    // 실제 프로젝트에서는 여기서 이미지를 서버에 업로드하고 URL을 받아와야 함
+    // 현재는 이미지 업로드 API가 따로 있다고 가정하고 구현
+    // 임시로 미리보기 URL을 사용
+    setFormData((prev) => ({
+      ...prev,
+      profileImageUrl: fileURL, // 실제로는 서버에서 받은 URL을 사용해야 함
+    }));
+  };
+
+  // 이미지 업로드 버튼 클릭 처리
+  const handleImageUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 로딩 중 표시
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B9AF5] mx-auto"></div>
+          <p className="mt-3 text-gray-600">프로필 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 선택된 학교 타입에 따른 학년 옵션
+  const getGradeOptions = () => {
+    if (!formData.schoolType) return [];
+
+    switch (formData.schoolType) {
+      case "MIDDLE":
+      case "HIGH":
+        return ["1", "2", "3"];
+      default:
+        return [];
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -174,166 +356,170 @@ const EditStudentProfile = () => {
 
         <div className="bg-white rounded-lg shadow-sm p-8">
           <form onSubmit={handleSubmit}>
+            {/* 프로필 이미지 미리보기 및 업로드 */}
+            <div className="mb-6 flex flex-col items-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-lg flex items-center justify-center mb-3">
+                {profileImagePreview ? (
+                  <img
+                    src={profileImagePreview}
+                    alt="프로필 이미지"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-500 text-3xl font-bold">
+                    {formData.name ? formData.name.charAt(0) : "?"}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleImageUploadClick}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                프로필 이미지 변경
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              {profileImagePreview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileImagePreview(null);
+                    setFormData((prev) => ({
+                      ...prev,
+                      profileImageUrl: null,
+                    }));
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  className="text-sm text-red-500 mt-1 hover:text-red-700"
+                >
+                  이미지 삭제
+                </button>
+              )}
+            </div>
+
+            {/* 학생 ID와 이메일 정보, 이름 부분 제거 */}
+            {formData.phone && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-500 mb-2">연락처</div>
+                <div>{formData.phone}</div>
+              </div>
+            )}
+
             <div className="mb-6">
               <label
-                htmlFor="name"
+                htmlFor="schoolName"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                이름
+                학교명
               </label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={formData.name}
+                id="schoolName"
+                name="schoolName"
+                value={formData.schoolName || ""}
                 onChange={handleChange}
-                placeholder="이름을 입력하세요"
+                placeholder="학교명을 입력하세요 (예: 서울고등학교)"
                 className={`w-full px-3 py-2 border rounded-lg ${
-                  errors.name ? "border-red-500" : "border-gray-300"
+                  errors.schoolName ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              {errors.schoolName && (
+                <p className="mt-1 text-sm text-red-500">{errors.schoolName}</p>
+              )}
+              {!formData.schoolName && (
+                <p className="mt-1 text-sm text-gray-500">
+                  학교 정보를 입력하면 맞춤형 학습 추천을 받을 수 있습니다.
+                </p>
               )}
             </div>
 
-            <div className="mb-6">
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                연락처
-              </label>
-              <input
-                type="text"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="010-0000-0000"
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  errors.phone ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
-              )}
-            </div>
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="schoolType"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  학교 구분
+                </label>
+                <select
+                  id="schoolType"
+                  name="schoolType"
+                  value={formData.schoolType || ""}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg ${
+                    errors.schoolType ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">학교 구분 선택</option>
+                  <option value="MIDDLE">중학교</option>
+                  <option value="HIGH">고등학교</option>
+                </select>
+                {errors.schoolType && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.schoolType}
+                  </p>
+                )}
+              </div>
 
-            <div className="mb-6">
-              <label
-                htmlFor="school"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                학교
-              </label>
-              <input
-                type="text"
-                id="school"
-                name="school"
-                value={formData.school}
-                onChange={handleChange}
-                placeholder="학교명을 입력하세요"
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  errors.school ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.school && (
-                <p className="mt-1 text-sm text-red-500">{errors.school}</p>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <label
-                htmlFor="grade"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                학년
-              </label>
-              <select
-                id="grade"
-                name="grade"
-                value={formData.grade}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  errors.grade ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">학년을 선택하세요</option>
-                {grades.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
-                  </option>
-                ))}
-              </select>
-              {errors.grade && (
-                <p className="mt-1 text-sm text-red-500">{errors.grade}</p>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                지역
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <select
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg ${
-                      errors.city ? "border-red-500" : "border-gray-300"
-                    }`}
-                  >
-                    <option value="">시/도 선택</option>
-                    {cities.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.city && (
-                    <p className="mt-1 text-sm text-red-500">{errors.city}</p>
-                  )}
-                </div>
-                <div>
-                  <select
-                    id="district"
-                    name="district"
-                    value={formData.district}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg ${
-                      errors.district ? "border-red-500" : "border-gray-300"
-                    }`}
-                  >
-                    <option value="">구/군 선택</option>
-                    {districts.map((district) => (
-                      <option key={district} value={district}>
-                        {district}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.district && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.district}
-                    </p>
-                  )}
-                </div>
+              <div>
+                <label
+                  htmlFor="selectedGrade"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  학년
+                </label>
+                <select
+                  id="selectedGrade"
+                  name="selectedGrade"
+                  value={formData.selectedGrade || ""}
+                  onChange={handleChange}
+                  disabled={!formData.schoolType}
+                  className={`w-full px-3 py-2 border rounded-lg ${
+                    errors.selectedGrade ? "border-red-500" : "border-gray-300"
+                  } ${
+                    !formData.schoolType ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <option value="">학년 선택</option>
+                  {getGradeOptions().map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade}학년
+                    </option>
+                  ))}
+                </select>
+                {errors.selectedGrade && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.selectedGrade}
+                  </p>
+                )}
               </div>
             </div>
+            {!formData.schoolType && (
+              <p className="mt-1 text-sm text-gray-500 mb-6">
+                학교 구분과 학년 정보를 선택하면 맞춤형 학습 콘텐츠를 추천받을
+                수 있습니다.
+              </p>
+            )}
 
-            <div className="flex justify-end space-x-4 mt-8">
+            <div className="flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 취소
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90"
               >
                 저장
               </button>

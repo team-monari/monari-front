@@ -12,6 +12,7 @@ interface StudentProfile {
   publicId: string;
   email: string;
   name: string;
+  schoolName: string;
   schoolLevel: "MIDDLE" | "HIGH";
   grade: "FIRST" | "SECOND" | "THIRD";
   profileImageUrl: string | null;
@@ -211,6 +212,7 @@ const MyPage = () => {
                 email={studentProfile.email}
                 profileImage={studentProfile.profileImageUrl || undefined}
                 publicId={studentProfile.publicId}
+                schoolName={studentProfile.schoolName}
                 schoolLevel={studentProfile.schoolLevel}
                 grade={studentProfile.grade}
               />
@@ -241,12 +243,8 @@ const MyPage = () => {
                 <h3 className="text-sm font-semibold text-gray-500 mb-1">
                   학교
                 </h3>
-                {studentProfile.schoolLevel ? (
-                  <p>
-                    {studentProfile.schoolLevel === "MIDDLE"
-                      ? "중학교"
-                      : "고등학교"}
-                  </p>
+                {studentProfile.schoolName ? (
+                  <p>{studentProfile.schoolName}</p>
                 ) : (
                   <p className="text-gray-400 italic text-sm">미입력</p>
                 )}

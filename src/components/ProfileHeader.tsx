@@ -10,6 +10,7 @@ interface ProfileHeaderProps {
   email: string;
   profileImage?: string;
   publicId?: string;
+  schoolName?: string;
   schoolLevel?: SchoolLevel;
   grade?: Grade;
 }
@@ -19,6 +20,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   email,
   profileImage,
   publicId,
+  schoolName,
   schoolLevel,
   grade,
 }) => {
@@ -43,9 +45,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   };
 
   // 학교 정보 문자열 생성
-  const schoolInfo = `${getSchoolLevelText(schoolLevel)} ${getGradeText(
-    grade
-  )}`.trim();
+  const schoolInfo = schoolName
+    ? `${schoolName} ${getGradeText(grade)}`
+    : `${getSchoolLevelText(schoolLevel)} ${getGradeText(grade)}`.trim();
 
   return (
     <div className="p-6 border-b border-gray-200">
