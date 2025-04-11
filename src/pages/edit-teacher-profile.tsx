@@ -1,56 +1,111 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "../components/Header";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface EducationItem {
-  school: string;
+// 선생님 프로필 인터페이스
+interface TeacherProfile {
+  publicID: string;
+  email: string;
+  name: string;
+  university: string;
   major: string;
-  startYear: string;
-  endYear: string;
-}
-
-interface ExperienceItem {
-  company: string;
-  position: string;
-  startYear: string;
-  endYear: string;
+  career: string;
+  profileImageUrl: string | null;
 }
 
 const EditTeacherProfile = () => {
   const router = useRouter();
+  const { accessToken, userType, isAuthenticated } = useAuth();
 
-  // 기존 사용자 정보 (실제로는 API나 Context에서 가져와야 함)
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  // 프로필 데이터 상태
   const [formData, setFormData] = useState({
-    name: "김민수",
-    job: "웹 개발 전문 강사",
-    email: "minsu.kim@email.com",
-    phone: "010-1234-5678",
+    university: "",
+    major: "",
+    career: "",
+    profileImageUrl: "",
   });
 
-  // 학력 정보
-  const [educations, setEducations] = useState<EducationItem[]>([
-    {
-      school: "서울대학교",
-      major: "컴퓨터공학과",
-      startYear: "2018",
-      endYear: "2020",
-    },
-  ]);
-
-  // 경력 정보
-  const [experiences, setExperiences] = useState<ExperienceItem[]>([
-    {
-      company: "네이버",
-      position: "웹 개발팀 시니어 개발자",
-      startYear: "2020",
-      endYear: "현재",
-    },
-  ]);
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // 프로필 이미지 미리보기용 상태
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
+    null
+  );
+
+  // 선생님 프로필 정보 가져오기
+  useEffect(() => {
+    // 로그인 상태가 아니면 메인 페이지로 리다이렉트
+    if (!isAuthenticated) {
+      router.push("/");
+      return;
+    }
+
+    // 액세스 토큰이 없는 경우
+    if (!accessToken) {
+      setErrors({ auth: "인증 토큰이 없습니다. 다시 로그인해주세요." });
+      setIsLoading(false);
+      return;
+    }
+
+    // 선생님이 아니면 학생 마이페이지로 리다이렉트
+    if (userType !== "TEACHER") {
+      router.push("/mypage");
+      return;
+    }
+
+    const fetchTeacherProfile = async () => {
+      try {
+        setIsLoading(true);
+
+        // 환경 변수에서 API URL 가져오기
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const apiUrl = `${baseUrl}/api/v1/teachers/me`;
+
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API 요청 실패: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        // 폼 데이터 설정
+        setFormData({
+          university: data.university || "",
+          major: data.major || "",
+          career: data.career || "",
+          profileImageUrl: data.profileImageUrl || "",
+        });
+
+        // 프로필 이미지가 있으면 미리보기 설정
+        if (data.profileImageUrl) {
+          setProfileImagePreview(data.profileImageUrl);
+        }
+      } catch (err) {
+        console.error("선생님 프로필 정보 가져오기 실패:", err);
+        setErrors({ fetch: "프로필 정보를 불러오는 중 오류가 발생했습니다." });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTeacherProfile();
+  }, [isAuthenticated, userType, accessToken, router]);
 
   // 입력 변경 처리
   const handleChange = (
@@ -72,106 +127,101 @@ const EditTeacherProfile = () => {
     }
   };
 
-  // 학력 정보 변경 처리
-  const handleEducationChange = (
-    index: number,
-    field: keyof EducationItem,
-    value: string
-  ) => {
-    const newEducations = [...educations];
-    newEducations[index] = {
-      ...newEducations[index],
-      [field]: value,
-    };
-    setEducations(newEducations);
-  };
-
-  // 경력 정보 변경 처리
-  const handleExperienceChange = (
-    index: number,
-    field: keyof ExperienceItem,
-    value: string
-  ) => {
-    const newExperiences = [...experiences];
-    newExperiences[index] = {
-      ...newExperiences[index],
-      [field]: value,
-    };
-    setExperiences(newExperiences);
-  };
-
-  // 학력 추가
-  const addEducation = () => {
-    setEducations([
-      ...educations,
-      { school: "", major: "", startYear: "", endYear: "" },
-    ]);
-  };
-
-  // 경력 추가
-  const addExperience = () => {
-    setExperiences([
-      ...experiences,
-      { company: "", position: "", startYear: "", endYear: "" },
-    ]);
-  };
-
-  // 폼 유효성 검사
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "이름을 입력해주세요";
-    }
-
-    if (!formData.job.trim()) {
-      newErrors.job = "직책을 입력해주세요";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "이메일을 입력해주세요";
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = "올바른 이메일 형식으로 입력해주세요";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "연락처를 입력해주세요";
-    } else if (!/^\d{3}-\d{3,4}-\d{4}$/.test(formData.phone)) {
-      newErrors.phone =
-        "올바른 연락처 형식으로 입력해주세요 (예: 010-1234-5678)";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   // 프로필 이미지 변경 처리
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result as string);
+        const result = reader.result as string;
+        setProfileImagePreview(result);
+        setFormData((prev) => ({
+          ...prev,
+          profileImageUrl: result,
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
+  // 폼 유효성 검사
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // 대학교 유효성 검사 (선택사항이므로 값이 있는 경우만 검사)
+    if (formData.university && formData.university.length > 100) {
+      newErrors.university = "대학교 이름은 100자 이내로 입력해주세요";
+    }
+
+    // 전공 유효성 검사 (선택사항이므로 값이 있는 경우만 검사)
+    if (formData.major && formData.major.length > 100) {
+      newErrors.major = "전공은 100자 이내로 입력해주세요";
+    }
+
+    // 경력 유효성 검사 (선택사항이므로 값이 있는 경우만 검사)
+    if (formData.career && formData.career.length > 500) {
+      newErrors.career = "경력은 500자 이내로 입력해주세요";
+    }
+
+    // 프로필 이미지 URL 유효성 검사 (선택사항이므로 값이 있는 경우만 검사)
+    if (formData.profileImageUrl && formData.profileImageUrl.length > 500) {
+      newErrors.profileImageUrl = "이미지 URL은 500자 이내로 입력해주세요";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // 폼 제출 처리
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateForm()) {
-      // 프로필 업데이트 API 호출 (실제로는 API 연동 필요)
-      console.log("프로필 업데이트:", {
-        ...formData,
-        educations,
-        experiences,
-        profileImage,
-      });
+      try {
+        setIsSaving(true);
+        setSaveError(null);
+        setSaveSuccess(false);
 
-      // 성공 시 마이페이지로 이동
-      router.push("/teacher-mypage");
+        // 환경 변수에서 API URL 가져오기
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const apiUrl = `${baseUrl}/api/v1/teachers/me`;
+
+        // 프로필 업데이트 API 호출
+        const response = await fetch(apiUrl, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            university: formData.university || null,
+            major: formData.major || null,
+            career: formData.career || null,
+            profileImageUrl: formData.profileImageUrl || null,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API 요청 실패: ${response.status} - ${errorText}`);
+        }
+
+        // 성공 메시지 표시
+        setSaveSuccess(true);
+
+        // 3초 후 마이페이지로 이동
+        setTimeout(() => {
+          router.push("/teacher-mypage");
+        }, 3000);
+      } catch (err) {
+        console.error("프로필 업데이트 실패:", err);
+        setSaveError(
+          "프로필 정보 업데이트 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+        );
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -179,6 +229,18 @@ const EditTeacherProfile = () => {
   const handleCancel = () => {
     router.push("/teacher-mypage");
   };
+
+  // 로딩 중 표시
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B9AF5] mx-auto"></div>
+          <p className="mt-3 text-gray-600">프로필 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,7 +252,21 @@ const EditTeacherProfile = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 className="text-2xl font-bold mb-8 text-center">프로필 수정</h1>
+        <h1 className="text-2xl font-bold mb-8 text-center">
+          선생님 프로필 수정
+        </h1>
+
+        {saveSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
+            프로필이 성공적으로 업데이트되었습니다. 마이페이지로 이동합니다...
+          </div>
+        )}
+
+        {saveError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+            {saveError}
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
           <form onSubmit={handleSubmit}>
@@ -198,15 +274,17 @@ const EditTeacherProfile = () => {
             <div className="flex flex-col items-center mb-8">
               <div className="relative mb-4">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                  {profileImage ? (
-                    <img
-                      src={profileImage}
+                  {profileImagePreview ? (
+                    <Image
+                      src={profileImagePreview}
                       alt="프로필 이미지"
                       className="w-full h-full object-cover"
+                      width={128}
+                      height={128}
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500">
-                      Image
+                    <div className="w-full h-full bg-purple-100 flex items-center justify-center text-purple-500 text-4xl font-bold">
+                      <span>?</span>
                     </div>
                   )}
                   <div className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer">
@@ -234,305 +312,128 @@ const EditTeacherProfile = () => {
                   </div>
                 </div>
               </div>
+              <p className="text-sm text-gray-500 mb-2">
+                프로필 이미지 (선택사항)
+              </p>
+              {errors.profileImageUrl && (
+                <p className="text-sm text-red-500">{errors.profileImageUrl}</p>
+              )}
             </div>
 
-            {/* 기본 정보 섹션 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* 프로필 정보 섹션 */}
+            <div className="space-y-6">
+              {/* 대학교 */}
               <div>
                 <label
-                  htmlFor="name"
+                  htmlFor="university"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  이름
+                  출신 대학교
                 </label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
+                  id="university"
+                  name="university"
+                  value={formData.university}
                   onChange={handleChange}
-                  placeholder="이름을 입력하세요"
-                  className={`w-full px-3 py-2 border rounded-lg ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="예: 서울대학교"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                {errors.university && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.university}
+                  </p>
                 )}
               </div>
 
+              {/* 전공 */}
               <div>
                 <label
-                  htmlFor="job"
+                  htmlFor="major"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  직책
+                  전공
                 </label>
                 <input
                   type="text"
-                  id="job"
-                  name="job"
-                  value={formData.job}
+                  id="major"
+                  name="major"
+                  value={formData.major}
                   onChange={handleChange}
-                  placeholder="직책을 입력하세요"
-                  className={`w-full px-3 py-2 border rounded-lg ${
-                    errors.job ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="예: 컴퓨터공학과"
                 />
-                {errors.job && (
-                  <p className="mt-1 text-sm text-red-500">{errors.job}</p>
+                {errors.major && (
+                  <p className="mt-1 text-sm text-red-500">{errors.major}</p>
                 )}
               </div>
 
+              {/* 경력 */}
               <div>
                 <label
-                  htmlFor="email"
+                  htmlFor="career"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  이메일
+                  경력
                 </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
+                <textarea
+                  id="career"
+                  name="career"
+                  value={formData.career}
                   onChange={handleChange}
-                  placeholder="이메일을 입력하세요"
-                  className={`w-full px-3 py-2 border rounded-lg ${
-                    errors.email ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="예: 5년 경력, 대치동 학원 출신"
+                ></textarea>
+                {errors.career && (
+                  <p className="mt-1 text-sm text-red-500">{errors.career}</p>
                 )}
               </div>
-
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  연락처
-                </label>
-                <input
-                  type="text"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="010-0000-0000"
-                  className={`w-full px-3 py-2 border rounded-lg ${
-                    errors.phone ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 학력 섹션 */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">학력</h2>
-                <button
-                  type="button"
-                  onClick={addEducation}
-                  className="flex items-center text-blue-500 hover:text-blue-700"
-                >
-                  <span className="mr-1">+</span> 학력 추가
-                </button>
-              </div>
-
-              {educations.map((education, index) => (
-                <div
-                  key={index}
-                  className="p-4 border border-gray-200 rounded-lg mb-4"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        학교명
-                      </label>
-                      <input
-                        type="text"
-                        value={education.school}
-                        onChange={(e) =>
-                          handleEducationChange(index, "school", e.target.value)
-                        }
-                        placeholder="학교명을 입력하세요"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        전공
-                      </label>
-                      <input
-                        type="text"
-                        value={education.major}
-                        onChange={(e) =>
-                          handleEducationChange(index, "major", e.target.value)
-                        }
-                        placeholder="전공을 입력하세요"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        입학년도
-                      </label>
-                      <input
-                        type="text"
-                        value={education.startYear}
-                        onChange={(e) =>
-                          handleEducationChange(
-                            index,
-                            "startYear",
-                            e.target.value
-                          )
-                        }
-                        placeholder="YYYY"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        졸업년도
-                      </label>
-                      <input
-                        type="text"
-                        value={education.endYear}
-                        onChange={(e) =>
-                          handleEducationChange(
-                            index,
-                            "endYear",
-                            e.target.value
-                          )
-                        }
-                        placeholder="YYYY"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 경력 섹션 */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">경력</h2>
-                <button
-                  type="button"
-                  onClick={addExperience}
-                  className="flex items-center text-blue-500 hover:text-blue-700"
-                >
-                  <span className="mr-1">+</span> 경력 추가
-                </button>
-              </div>
-
-              {experiences.map((experience, index) => (
-                <div
-                  key={index}
-                  className="p-4 border border-gray-200 rounded-lg mb-4"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        회사명
-                      </label>
-                      <input
-                        type="text"
-                        value={experience.company}
-                        onChange={(e) =>
-                          handleExperienceChange(
-                            index,
-                            "company",
-                            e.target.value
-                          )
-                        }
-                        placeholder="회사명을 입력하세요"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        직책
-                      </label>
-                      <input
-                        type="text"
-                        value={experience.position}
-                        onChange={(e) =>
-                          handleExperienceChange(
-                            index,
-                            "position",
-                            e.target.value
-                          )
-                        }
-                        placeholder="직책을 입력하세요"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        입사년월
-                      </label>
-                      <input
-                        type="text"
-                        value={experience.startYear}
-                        onChange={(e) =>
-                          handleExperienceChange(
-                            index,
-                            "startYear",
-                            e.target.value
-                          )
-                        }
-                        placeholder="YYYY"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        퇴사년월
-                      </label>
-                      <input
-                        type="text"
-                        value={experience.endYear}
-                        onChange={(e) =>
-                          handleExperienceChange(
-                            index,
-                            "endYear",
-                            e.target.value
-                          )
-                        }
-                        placeholder="YYYY (또는 현재)"
-                        className="w-full px-3 py-2 border rounded-lg border-gray-300"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
 
             {/* 버튼 섹션 */}
-            <div className="flex justify-end space-x-4 mt-8">
+            <div className="flex justify-end gap-3 mt-8">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 취소
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                disabled={isSaving}
+                className={`px-6 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors ${
+                  isSaving ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                저장
+                {isSaving ? (
+                  <span className="flex items-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    저장 중...
+                  </span>
+                ) : (
+                  "저장"
+                )}
               </button>
             </div>
           </form>

@@ -1,55 +1,24 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import Header from "../components/Header";
 import TeacherProfileHeader from "../components/TeacherProfileHeader";
-import TeacherEducationSection, {
-  EducationItem,
-  ExperienceItem,
-} from "../components/TeacherEducationSection";
+import TeacherEducationSection from "../components/TeacherEducationSection";
 import ClassCard, { ClassData } from "../components/ClassCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 
-// 샘플 데이터
-const sampleTeacherData = {
-  name: "김민수",
-  job: "웹 개발 전문 강사",
-  email: "minsu.kim@email.com",
-  phone: "010-1234-5678",
-  profileImage: undefined,
-};
+// 선생님 프로필 인터페이스 정의
+interface TeacherProfile {
+  publicID: string;
+  email: string;
+  name: string;
+  university: string;
+  major: string;
+  career: string;
+  profileImageUrl: string | null;
+}
 
-const sampleEducations: EducationItem[] = [
-  {
-    school: "서울대학교 컴퓨터공학과 석사",
-    degree: "컴퓨터공학과",
-    period: "(2018-2020)",
-  },
-  {
-    school: "한국대학교 소프트웨어학과 학사",
-    degree: "소프트웨어학과",
-    period: "(2014-2018)",
-  },
-];
-
-const sampleExperiences: ExperienceItem[] = [
-  {
-    company: "네이버 웹 개발팀 시니어 개발자",
-    position: "(2020-현재)",
-    period: "(2020-현재)",
-  },
-  {
-    company: "카카오 프론트엔드 개발자",
-    position: "프론트엔드 개발자",
-    period: "(2018-2020)",
-  },
-  {
-    company: "삼성전자 인턴 개발자",
-    position: "인턴 개발자",
-    period: "(2017)",
-  },
-];
-
+// 샘플 수업 데이터
 const sampleClasses: ClassData[] = [
   {
     id: 1,
@@ -76,12 +45,102 @@ const sampleClasses: ClassData[] = [
 
 const TeacherMyPage = () => {
   const router = useRouter();
-  const { userType } = useAuth();
+  const { userType, accessToken, isAuthenticated } = useAuth();
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 프로필 편집 페이지로 이동
-  const handleEditProfile = () => {
-    router.push("/edit-teacher-profile");
-  };
+  // 선생님 프로필 정보 가져오기
+  useEffect(() => {
+    // 로그인 상태가 아니면 메인 페이지로 리다이렉트
+    if (!isAuthenticated) {
+      router.push("/");
+      return;
+    }
+
+    // 액세스 토큰이 없는 경우
+    if (!accessToken) {
+      setError("인증 토큰이 없습니다. 다시 로그인해주세요.");
+      setIsLoading(false);
+      return;
+    }
+
+    // 선생님이 아니면 학생 마이페이지로 리다이렉트
+    if (userType !== "TEACHER") {
+      router.push("/mypage");
+      return;
+    }
+
+    const fetchTeacherProfile = async () => {
+      try {
+        setIsLoading(true);
+
+        // 환경 변수에서 API URL 가져오기
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const apiUrl = `${baseUrl}/api/v1/teachers/me`;
+
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API 요청 실패: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        setTeacherProfile(data);
+      } catch (err) {
+        console.error("선생님 프로필 정보 가져오기 실패:", err);
+        setError(
+          "프로필 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTeacherProfile();
+  }, [isAuthenticated, userType, accessToken, router]);
+
+  // 로딩 중 표시
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B9AF5] mx-auto"></div>
+          <p className="mt-3 text-gray-600">프로필 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 표시
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <p className="text-red-500">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-[#1B9AF5] text-white px-4 py-2 rounded-lg"
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -94,27 +153,23 @@ const TeacherMyPage = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-10">
-          <TeacherProfileHeader
-            name={sampleTeacherData.name}
-            job={sampleTeacherData.job}
-            email={sampleTeacherData.email}
-            phone={sampleTeacherData.phone}
-            profileImage={sampleTeacherData.profileImage}
-          />
-          <div className="p-4 flex justify-end">
-            <button
-              onClick={handleEditProfile}
-              className="bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
-            >
-              프로필 편집
-            </button>
-          </div>
+          {teacherProfile && (
+            <TeacherProfileHeader
+              name={teacherProfile.name || "이름 미입력"}
+              email={teacherProfile.email || "이메일 미입력"}
+              profileImageUrl={teacherProfile.profileImageUrl}
+              publicID={teacherProfile.publicID}
+            />
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow-sm overflow-hidden p-6 mb-10">
           <TeacherEducationSection
-            educations={sampleEducations}
-            experiences={sampleExperiences}
+            educations={[]}
+            experiences={[]}
+            university={teacherProfile?.university}
+            major={teacherProfile?.major}
+            career={teacherProfile?.career}
           />
         </div>
 
@@ -127,8 +182,8 @@ const TeacherMyPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {sampleClasses.map((classItem) => (
-              <ClassCard key={classItem.id} classData={classItem} />
+            {sampleClasses.map((classData) => (
+              <ClassCard key={classData.id} classData={classData} />
             ))}
           </div>
         </section>
