@@ -29,8 +29,18 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
   const handleSearch = () => {
     onFilterChange({
       ...filters,
-      keyword: searchKeyword
+      keyword: searchKeyword,
+      pageNumber: 1,
+      pageSize: 6,
+      schoolLevel: filters.schoolLevel,
+      subject: filters.subject
     });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -52,6 +62,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
           name="keyword"
           value={searchKeyword}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder="검색어를 입력하세요"
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
         />

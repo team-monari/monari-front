@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Lesson, fetchLessonById } from '../../services/lesson';
+import { createEnrollment } from '../../services/enrollment';
 import Header from '../../components/Header';
 
 const LessonDetail: React.FC = () => {
@@ -26,6 +27,19 @@ const LessonDetail: React.FC = () => {
       console.error('Error loading lesson:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEnroll = async () => {
+    if (!lesson) return;
+    
+    try {
+      await createEnrollment(lesson.lessonId);
+      alert('수업 신청이 완료되었습니다.');
+      router.push('/lessons');
+    } catch (error) {
+      alert('수업 신청에 실패했습니다.');
+      console.error(error);
     }
   };
 
@@ -133,7 +147,7 @@ const LessonDetail: React.FC = () => {
                       : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
                   }`}
                   disabled={isFull}
-                  onClick={() => router.push(`/lessons/${id}/apply`)}
+                  onClick={handleEnroll}
                 >
                   {isFull ? '모집 완료' : '수업 신청하기'}
                 </button>

@@ -38,11 +38,15 @@ const LessonSearch: React.FC = () => {
   }, [router.query]);
 
   useEffect(() => {
-    loadLessons();
-    if (!filters.keyword) {
-      loadTotalPages();
-    }
-  }, [currentPage, filters]);
+    const loadData = async () => {
+      await loadLessons();
+      if (!filters.keyword) {
+        await loadTotalPages();
+      }
+    };
+    
+    loadData();
+  }, [currentPage, filters.keyword, filters.schoolLevel, filters.subject]);
 
   const loadTotalPages = async () => {
     try {
@@ -62,7 +66,13 @@ const LessonSearch: React.FC = () => {
       setLoading(true);
       let response;
       if (filters.keyword) {
-        response = await searchLessons(filters.keyword, currentPage);
+        response = await searchLessons(
+          filters.keyword,
+          currentPage,
+          6,
+          filters.schoolLevel,
+          filters.subject
+        );
         setTotalPages(response.page.totalPages);
       } else {
         response = await fetchLessons(currentPage);

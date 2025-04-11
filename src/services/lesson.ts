@@ -42,8 +42,22 @@ export const fetchLessonById = async (lessonId: number): Promise<Lesson> => {
   return response.json();
 };
 
-export const searchLessons = async (keyword: string, page: number = 0, size: number = 6): Promise<LessonResponse> => {
-  const response = await fetch(`http://localhost:8080/api/v1/lessons/search?keyword=${encodeURIComponent(keyword)}&pageNumber=${page}&pageSize=${size}`);
+export const searchLessons = async (
+  keyword: string,
+  page: number = 0,
+  size: number = 6,
+  schoolLevel?: string,
+  subject?: string
+): Promise<LessonResponse> => {
+  const params = new URLSearchParams();
+  params.append('keyword', keyword);
+  params.append('pageNumber', page.toString());
+  params.append('pageSize', size.toString());
+  
+  if (schoolLevel) params.append('schoolLevel', schoolLevel);
+  if (subject) params.append('subject', subject);
+
+  const response = await fetch(`http://localhost:8080/api/v1/lessons/search?${params.toString()}`);
   if (!response.ok) {
     throw new Error('Failed to search lessons');
   }

@@ -484,13 +484,13 @@ const CreateLessonPage = () => {
                         <div className="bg-white p-4 rounded-lg">
                           <div className="text-sm text-gray-500 mb-1">등록 가능 기간</div>
                           <div className="font-medium text-gray-800">
-                            {selectedLocation.registrationStartDateTime.split('T')[0]} ~ {selectedLocation.registrationEndDateTime.split('T')[0]}
+                            {selectedLocation.registrationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.registrationEndDateTime?.split('T')[0] ?? '미정'}
                           </div>
                         </div>
                         <div className="bg-white p-4 rounded-lg">
                           <div className="text-sm text-gray-500 mb-1">취소 가능 기간</div>
                           <div className="font-medium text-gray-800">
-                            {selectedLocation.cancellationStartDateTime.split('T')[0]} ~ {selectedLocation.cancellationEndDateTime.split('T')[0]}
+                            {selectedLocation.cancellationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.cancellationEndDateTime?.split('T')[0] ?? '미정'}
                           </div>
                         </div>
                       </div>

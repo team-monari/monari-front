@@ -61,13 +61,8 @@ const LessonCard: React.FC<LessonCardProps> = ({
     }
   };
 
-  const handleClick = async () => {
-    try {
-      const lesson = await fetchLessonById(lessonId);
-      router.push(`/lessons/${lessonId}`);
-    } catch (error) {
-      console.error('Error fetching lesson details:', error);
-    }
+  const handleCardClick = () => {
+    router.push(`/lessons/${lessonId}`);
   };
 
   const getStatusInfo = (status: string) => {
@@ -110,7 +105,10 @@ const LessonCard: React.FC<LessonCardProps> = ({
   };
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100">
+    <div 
+      className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300"
+      onClick={handleCardClick}
+    >
       <div className="p-6">
         <div className="flex justify-between items-start mb-4 gap-4">
           <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors truncate max-w-[75%]">
