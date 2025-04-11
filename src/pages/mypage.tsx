@@ -4,6 +4,8 @@ import Head from "next/head";
 import Header from "../components/Header";
 import ProfileHeader from "../components/ProfileHeader";
 import StudyCard, { StudyData } from "../components/StudyCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 
 // 샘플 데이터 - 실제로는 API에서 가져올 예정
 const sampleUserData = {
@@ -69,6 +71,14 @@ const sampleCourses = [
 ];
 
 const MyPage = () => {
+  const router = useRouter();
+  const { userType } = useAuth();
+
+  // 프로필 편집 페이지로 이동
+  const handleEditProfile = () => {
+    router.push("/edit-student-profile");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
@@ -87,6 +97,14 @@ const MyPage = () => {
             phone={sampleUserData.phone}
             profileImage={sampleUserData.profileImage}
           />
+          <div className="p-4 flex justify-end">
+            <button
+              onClick={handleEditProfile}
+              className="bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+            >
+              프로필 편집
+            </button>
+          </div>
         </div>
 
         <section className="mb-10">

@@ -7,6 +7,8 @@ import TeacherEducationSection, {
   ExperienceItem,
 } from "../components/TeacherEducationSection";
 import ClassCard, { ClassData } from "../components/ClassCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 
 // 샘플 데이터
 const sampleTeacherData = {
@@ -73,6 +75,14 @@ const sampleClasses: ClassData[] = [
 ];
 
 const TeacherMyPage = () => {
+  const router = useRouter();
+  const { userType } = useAuth();
+
+  // 프로필 편집 페이지로 이동
+  const handleEditProfile = () => {
+    router.push("/edit-teacher-profile");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
@@ -91,6 +101,14 @@ const TeacherMyPage = () => {
             phone={sampleTeacherData.phone}
             profileImage={sampleTeacherData.profileImage}
           />
+          <div className="p-4 flex justify-end">
+            <button
+              onClick={handleEditProfile}
+              className="bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+            >
+              프로필 편집
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm overflow-hidden p-6 mb-10">

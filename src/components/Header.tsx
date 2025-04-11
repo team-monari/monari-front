@@ -31,6 +31,15 @@ const Header = () => {
     router.push(editProfilePath);
   };
 
+  // 현재 페이지가 마이페이지인지 확인
+  const isMyPage = () => {
+    const myPagePath = getMyPagePath();
+    return (
+      router.pathname === myPagePath ||
+      router.pathname.startsWith(`${myPagePath}/`)
+    );
+  };
+
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-[1280px] mx-auto px-6 h-16 flex items-center justify-between">
@@ -87,21 +96,24 @@ const Header = () => {
             <Link
               href={getMyPagePath()}
               className={`text-base ${
-                router.pathname === getMyPagePath()
-                  ? "text-[#1B9AF5]"
-                  : "text-gray-600"
+                isMyPage() ? "text-[#1B9AF5]" : "text-gray-600"
               } hover:text-[#1B9AF5]`}
             >
               마이페이지
             </Link>
+            {isMyPage() && (
+              <button
+                onClick={handleEditProfile}
+                className="text-base bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+              >
+                프로필 편집
+              </button>
+            )}
             <button
-              onClick={handleEditProfile}
-              className="text-base bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
-            >
-              프로필 편집
-            </button>
-            <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                window.location.href = "/";
+              }}
               className="text-base text-gray-600 hover:text-[#1B9AF5]"
             >
               로그아웃
