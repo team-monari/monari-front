@@ -94,10 +94,13 @@ const Home = () => {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies`);
       url.searchParams.append('size', '3'); // 메인 페이지에는 3개만 표시
       
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -122,10 +125,13 @@ const Home = () => {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons`);
       url.searchParams.append('size', '3');
       
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -145,11 +151,9 @@ const Home = () => {
   };
 
   useEffect(() => {
-    if (accessToken) {
-      fetchStudies();
-      fetchLessons();
-    }
-  }, [accessToken]);
+    fetchStudies();
+    fetchLessons();
+  }, []);
 
   const handleCreateLesson = () => {
     router.push('/create-lesson');
