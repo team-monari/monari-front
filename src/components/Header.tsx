@@ -76,7 +76,7 @@ const Header = () => {
                   : "text-gray-600"
               } hover:text-[#1B9AF5]`}
             >
-              스터디 만들기
+              스터디 개설
             </Link>
             <Link
               href="/lessons/create"

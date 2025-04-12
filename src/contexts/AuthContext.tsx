@@ -41,7 +41,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(() => {
+    // 초기 상태 설정 시 localStorage에서 accessToken 가져오기
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("accessToken");
+    }
+    return null;
+  });
 
   // 앱 초기화 시 로컬 스토리지에서 인증 정보 불러오기
   useEffect(() => {
@@ -69,6 +75,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
     }
   }, []);
+
+  // accessToken이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    if (accessToken) {
+      localStorage.setItem("accessToken", accessToken);
+    } else {
+      localStorage.removeItem("accessToken");
+    }
+  }, [accessToken]);
 
   const login = (data: AuthData) => {
     console.log("로그인 요청 데이터:", data);
