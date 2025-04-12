@@ -1,90 +1,155 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Header from '../components/Header';
 import { useRouter } from 'next/router';
 import FilterSection from '../components/FilterSection';
 import LessonCard from '../components/LessonCard';
+import { useAuth } from '../contexts/AuthContext';
+
+interface Study {
+  id: number;
+  title: string;
+  description: string;
+  subject: 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIAL';
+  schoolLevel: 'MIDDLE' | 'HIGH';
+  status: 'ACTIVE' | 'CLOSED';
+  createdAt: string;
+  locationName: string;
+  locationServiceUrl: string;
+  studentPublicId: string;
+  studentName: string;
+}
+
+interface Lesson {
+  lessonId: number;
+  locationId: number;
+  teacherId: number;
+  title: string;
+  currentStudent: number;
+  description: string;
+  amount: number;
+  minStudent: number;
+  maxStudent: number;
+  startDate: string;
+  endDate: string;
+  deadline: string;
+  status: string;
+  schoolLevel: string;
+  subject: string;
+}
+
+interface PageResponse<T> {
+  content: T[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
+const getSubjectLabel = (subject: Study['subject']) => {
+  switch (subject) {
+    case 'MATH': return '수학';
+    case 'ENGLISH': return '영어';
+    case 'KOREAN': return '국어';
+    case 'SCIENCE': return '과학';
+    case 'SOCIAL': return '사회';
+    default: return subject;
+  }
+};
+
+const getStatusLabel = (status: Study['status']) => {
+  switch (status) {
+    case 'ACTIVE': return '모집중';
+    case 'CLOSED': return '모집완료';
+    default: return status;
+  }
+};
+
+const getStatusColor = (status: Study['status']) => {
+  switch (status) {
+    case 'ACTIVE': return 'bg-yellow-100 text-yellow-600';
+    case 'CLOSED': return 'bg-gray-100 text-gray-600';
+    default: return 'bg-gray-100 text-gray-600';
+  }
+};
 
 const Home = () => {
   const router = useRouter();
-  const [filters, setFilters] = React.useState({
-    subject: '',
-    educationLevel: '',
-    course: '',
-    region: ''
-  });
+  const { accessToken } = useAuth();
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLessonsLoading, setIsLessonsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lessonsError, setLessonsError] = useState<string | null>(null);
 
-  const projects = [
-    {
-      title: '메타버스 교육 플랫폼',
-      status: '학생 모집',
-      progress: '78%',
-      target: '5천만원',
-      type: '학생 모집'
-    },
-    {
-      title: 'AI 학습 분석 시스템',
-      status: '팀당 진행중',
-      progress: '65%',
-      target: '3천만원',
-      type: '팀당 진행중'
-    },
-    {
-      title: '실시간 학습 플랫폼',
-      status: '팀당 진행중',
-      progress: '45%',
-      target: '4천만원',
-      type: '팀당 진행중'
+  // API 호출 함수
+  const fetchStudies = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies`);
+      url.searchParams.append('size', '3'); // 메인 페이지에는 3개만 표시
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('스터디 목록을 불러오는데 실패했습니다.');
+      }
+
+      const data = await response.json();
+      setStudies(data.content);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '스터디 목록을 불러오는데 실패했습니다.');
+      setStudies([]);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const studies = [
-    {
-      id: 1,
-      title: '수능 수학 스터디',
-      time: '2/4명',
-      location: '강남역 인근',
-      price: '월 30만원'
-    },
-    {
-      id: 2,
-      title: '수능 영어 독해 스터디',
-      time: '3/6명',
-      location: '신촌역 인근',
-      price: '월 25만원'
-    },
-    {
-      id: 3,
-      title: '수능 과학탐구 스터디',
-      time: '1/4명',
-      location: '잠실역 인근',
-      price: '월 40만원'
-    },
-    {
-      id: 4,
-      title: '수능 사회탐구 스터디',
-      time: '2/5명',
-      location: '홍대입구역 인근',
-      price: '월 35만원'
+  // 수업 목록 가져오기
+  const fetchLessons = async () => {
+    setIsLessonsLoading(true);
+    setLessonsError(null);
+    try {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons`);
+      url.searchParams.append('size', '3');
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('수업 목록을 불러오는데 실패했습니다.');
+      }
+
+      const data = await response.json();
+      // CANCELED 상태의 수업은 제외
+      const filteredLessons = data.content.filter((lesson: Lesson) => lesson.status !== 'CANCELED');
+      setLessons(filteredLessons);
+    } catch (err) {
+      setLessonsError(err instanceof Error ? err.message : '수업 목록을 불러오는데 실패했습니다.');
+      setLessons([]);
+    } finally {
+      setIsLessonsLoading(false);
     }
-  ];
+  };
 
-  const lessons = [
-    {
-      id: 1,
-      title: "중2 내신 수학 1등급 만들기",
-      teacher: "김민수 선생님",
-      period: "2024.03.01 ~ 2024.05.31",
-      description: "중2 수학 내신 1등급 달성을 위한 체계적인 커리큘럼",
-      price: 720000,
-      originalPrice: 900000,
-      discount: 20,
-      location: "강남구",
-      progress: 80
-    },
-    // ... 기존 수업 데이터 ...
-  ];
+  useEffect(() => {
+    if (accessToken) {
+      fetchStudies();
+      fetchLessons();
+    }
+  }, [accessToken]);
 
   const handleCreateLesson = () => {
     router.push('/create-lesson');
@@ -114,24 +179,82 @@ const Home = () => {
         </section>
 
         <section className="mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {projects.map((project, index) => (
-              <div key={index} className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="text-sm text-[#1B9AF5] font-medium mb-2">{project.type}</div>
-                <h3 className="text-xl font-bold mb-4">{project.title}</h3>
-                <div className="flex items-center mb-2">
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full">
-                    <div 
-                      className="h-2 bg-[#1B9AF5] rounded-full" 
-                      style={{ width: project.progress }}
-                    ></div>
-                  </div>
-                  <span className="ml-2 text-sm text-gray-600">{project.progress}</span>
-                </div>
-                <div className="text-right text-gray-900 font-medium">{project.target}</div>
-              </div>
-            ))}
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold">학생 모집</h2>
+            <Link 
+              href="/lessons" 
+              className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
+            >
+              <span>더보기</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
+          {isLessonsLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AF5]"></div>
+            </div>
+          ) : lessonsError ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+              {lessonsError}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {lessons.slice(0, 3).map((lesson) => (
+                <Link
+                  key={lesson.lessonId}
+                  href={`/lessons/${lesson.lessonId}`}
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">{lesson.title}</h3>
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      lesson.status === 'ACTIVE' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {lesson.status === 'ACTIVE' ? '모집중' : '모집마감'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 mb-3">
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      lesson.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
+                      'bg-green-100 text-green-600'
+                    }`}>
+                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {lesson.subject === 'MATH' ? '수학' :
+                       lesson.subject === 'ENGLISH' ? '영어' :
+                       lesson.subject === 'KOREAN' ? '국어' :
+                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                    </span>
+                  </div>
+
+                  <p className="text-gray-600 text-sm mb-4 truncate">{lesson.description}</p>
+                  
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm text-gray-600">
+                        {new Date(lesson.startDate).toLocaleDateString()} ~ {new Date(lesson.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span className="text-sm text-gray-600">
+                        {lesson.currentStudent}/{lesson.maxStudent}명
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mb-16">
@@ -147,27 +270,67 @@ const Home = () => {
               </svg>
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {studies.map((study, index) => (
-              <Link 
-                href={`/studies/${study.id}`} 
-                key={study.id} 
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-shadow"
-              >
-                <h3 className="font-medium mb-4">{study.title}</h3>
-                <div className="text-sm text-gray-600 space-y-2">
-                  <div className="flex justify-between">
-                    <span>시간</span>
-                    <span className="text-gray-900">{study.time}</span>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AF5]"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {studies.slice(0, 3).map((study) => (
+                <Link
+                  key={study.id}
+                  href={`/studies/${study.id}`}
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">{study.title}</h3>
+                    <span className={`px-2 py-1 text-sm rounded-full ${getStatusColor(study.status)}`}>
+                      {getStatusLabel(study.status)}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>예상 비용</span>
-                    <span className="text-gray-900">{study.price}</span>
+                  
+                  <div className="flex items-center gap-1 mb-3">
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      study.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
+                      study.schoolLevel === 'HIGH' ? 'bg-green-100 text-green-600' :
+                      'bg-purple-100 text-purple-600'
+                    }`}>
+                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {getSubjectLabel(study.subject)}
+                    </span>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+
+                  <p className="text-gray-600 text-sm mb-4 truncate">{study.description}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                      <svg 
+                        className="w-4 h-4 text-gray-500" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth="2" 
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth="2" 
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <span className="text-sm text-gray-600">{study.locationName}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="text-center">

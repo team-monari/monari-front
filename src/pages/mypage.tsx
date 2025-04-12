@@ -6,6 +6,7 @@ import ProfileHeader from "../components/ProfileHeader";
 import StudyCard, { StudyData } from "../components/StudyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 // 학생 프로필 인터페이스 정의
 interface StudentProfile {
@@ -18,77 +19,93 @@ interface StudentProfile {
   profileImageUrl: string | null;
 }
 
-// 샘플 데이터 - 실제로는 API에서 가져올 예정
-const sampleUserData = {
-  name: "김민수",
-  school: "서울 과학고등학교 2학년",
-  email: "minsu.kim@email.com",
-  phone: "010-1234-5678",
-  profileImage: undefined, // 기본 이미지를 사용하도록 undefined로 설정
-};
+interface Study {
+  id: number;
+  title: string;
+  description: string;
+  subject: 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIAL';
+  schoolLevel: 'MIDDLE' | 'HIGH';
+  status: 'ACTIVE' | 'CLOSED';
+  createdAt: string;
+  locationName: string;
+  locationServiceUrl: string;
+  studentPublicId: string;
+  studentName: string;
+}
 
-const sampleStudies: StudyData[] = [
-  {
-    id: 1,
-    title: "수학 문제풀이 스터디",
-    type: "모집중",
-    participants: "학습 대상: 고등학생",
-    subject: "수학",
-    status: "모집중",
-  },
-  {
-    id: 2,
-    title: "과학 실험 스터디",
-    type: "진행중",
-    participants: "학습 대상: 중등학생",
-    subject: "영어",
-    status: "진행중",
-  },
-  {
-    id: 3,
-    title: "영어 회화 스터디",
-    type: "완료",
-    participants: "학습 대상: 고등학생",
-    subject: "국어",
-    status: "완료",
-  },
-];
+interface Lesson {
+  lessonId: number;
+  locationId: number;
+  teacherId: number;
+  title: string;
+  currentStudent: number;
+  description: string;
+  amount: number;
+  minStudent: number;
+  maxStudent: number;
+  startDate: string;
+  endDate: string;
+  deadline: string;
+  status: string;
+  schoolLevel: string;
+  subject: string;
+}
 
-const sampleCourses = [
-  {
-    id: 1,
-    title: "물리 실전 문제풀이",
-    type: "모집중",
-    participants: "담당 선생님: 박교사",
-    time: "월, 수 17:00-19:00",
-    status: "진행중",
-  },
-  {
-    id: 2,
-    title: "수능 영어 독해",
-    type: "진행중",
-    participants: "담당 선생님: 김교사",
-    time: "화, 목 19:00-21:00",
-    status: "진행중",
-  },
-  {
-    id: 3,
-    title: "생명과학 심화",
-    type: "완료",
-    participants: "담당 선생님: 이교사",
-    time: "토 10:00-12:00",
-    status: "완료",
-  },
-];
+interface PageResponse<T> {
+  content: T[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
 
 const MyPage = () => {
   const router = useRouter();
   const { userType, accessToken, isAuthenticated } = useAuth();
-  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(
-    null
-  );
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [myStudies, setMyStudies] = useState<Study[]>([]);
+  const [myLessons, setMyLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStudiesLoading, setIsStudiesLoading] = useState(false);
+  const [isLessonsLoading, setIsLessonsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [studiesError, setStudiesError] = useState<string | null>(null);
+  const [lessonsError, setLessonsError] = useState<string | null>(null);
+
+  // 내가 개설한 스터디 목록 가져오기
+  const fetchMyStudies = async () => {
+    setIsStudiesLoading(true);
+    setStudiesError(null);
+    try {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/me`);
+      url.searchParams.append('size', '3');
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('스터디 목록을 불러오는데 실패했습니다.');
+      }
+
+      const data = await response.json();
+      setMyStudies(data.content);
+    } catch (err) {
+      setStudiesError(err instanceof Error ? err.message : '스터디 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsStudiesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (accessToken) {
+      fetchMyStudies();
+    }
+  }, [accessToken]);
 
   // 학생 프로필 정보 가져오기
   useEffect(() => {
@@ -162,6 +179,39 @@ const MyPage = () => {
     fetchStudentProfile();
   }, [isAuthenticated, userType, accessToken, router]);
 
+  // 내가 참여한 수업 목록 가져오기
+  const fetchMyLessons = async () => {
+    setIsLessonsLoading(true);
+    setLessonsError(null);
+    try {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/student/me`);
+      url.searchParams.append('size', '3');
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('수업 목록을 불러오는데 실패했습니다.');
+      }
+
+      const data = await response.json();
+      setMyLessons(data.content);
+    } catch (err) {
+      setLessonsError(err instanceof Error ? err.message : '수업 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsLessonsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (accessToken) {
+      fetchMyLessons();
+    }
+  }, [accessToken]);
+
   // 로딩 중 표시
   if (isLoading) {
     return (
@@ -211,10 +261,6 @@ const MyPage = () => {
                 name={studentProfile.name}
                 email={studentProfile.email}
                 profileImage={studentProfile.profileImageUrl || undefined}
-                publicId={studentProfile.publicId}
-                schoolName={studentProfile.schoolName}
-                schoolLevel={studentProfile.schoolLevel}
-                grade={studentProfile.grade}
               />
             </>
           )}
@@ -225,20 +271,6 @@ const MyPage = () => {
             <h2 className="text-xl font-bold mb-4">학생 정보</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-500 mb-1">
-                  학생 ID
-                </h3>
-                <p className="font-mono text-sm">{studentProfile.publicId}</p>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-500 mb-1">
-                  이메일
-                </h3>
-                <p>{studentProfile.email}</p>
-              </div>
-
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-gray-500 mb-1">
                   학교
@@ -296,28 +328,162 @@ const MyPage = () => {
         )}
 
         <section className="mb-10">
-          <h2 className="text-xl font-bold mb-4">내가 개설한 스터디</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {sampleStudies.map((study) => (
-              <StudyCard key={study.id} study={study} />
-            ))}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">내가 개설한 스터디</h2>
+            <Link 
+              href="/mystudies" 
+              className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
+            >
+              <span>더보기</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
+          
+          {isStudiesLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B9AF5]"></div>
+            </div>
+          ) : studiesError ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+              {studiesError}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {myStudies.map((study) => (
+                <Link
+                  key={study.id}
+                  href={`/studies/${study.id}`}
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">{study.title}</h3>
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      study.status === 'ACTIVE' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {study.status === 'ACTIVE' ? '모집중' : '모집완료'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 mb-3">
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      study.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
+                      'bg-green-100 text-green-600'
+                    }`}>
+                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {study.subject === 'MATH' ? '수학' :
+                       study.subject === 'ENGLISH' ? '영어' :
+                       study.subject === 'KOREAN' ? '국어' :
+                       study.subject === 'SCIENCE' ? '과학' : '사회'}
+                    </span>
+                  </div>
+
+                  <p className="text-gray-600 text-sm mb-4 truncate">{study.description}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                      <svg 
+                        className="w-4 h-4 text-gray-500" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth="2" 
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth="2" 
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <span className="text-sm text-gray-600">{study.locationName}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mb-10">
           <h2 className="text-xl font-bold mb-4">내가 참여한 수업</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {sampleCourses.map((course) => (
-              <StudyCard key={course.id} study={course as StudyData} />
-            ))}
-          </div>
-        </section>
-      </main>
+          {isLessonsLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B9AF5]"></div>
+            </div>
+          ) : lessonsError ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+              {lessonsError}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {myLessons.map((lesson) => (
+                <div
+                  key={lesson.lessonId}
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">{lesson.title}</h3>
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      lesson.status === 'ACTIVE' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {lesson.status}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 mb-3">
+                    <span className={`px-2 py-1 text-sm rounded-full ${
+                      lesson.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
+                      'bg-green-100 text-green-600'
+                    }`}>
+                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {lesson.subject === 'MATH' ? '수학' :
+                       lesson.subject === 'ENGLISH' ? '영어' :
+                       lesson.subject === 'KOREAN' ? '국어' :
+                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                    </span>
+                  </div>
 
-      <footer className="mt-12 text-center text-sm text-gray-500 py-8">
-        <p>© 2025 모나리. All rights reserved.</p>
-        <p className="mt-2">이용약관 | 개인정보처리방침</p>
-      </footer>
+                  <p className="text-gray-600 text-sm mb-4 truncate">{lesson.description}</p>
+                  
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm text-gray-600">
+                        {new Date(lesson.startDate).toLocaleDateString()} ~ {new Date(lesson.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span className="text-sm text-gray-600">
+                        {lesson.currentStudent}/{lesson.maxStudent}명
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <footer className="mt-12 text-center text-sm text-gray-500 py-8">
+          <p>© 2025 모나리. All rights reserved.</p>
+          <p className="mt-2">이용약관 | 개인정보처리방침</p>
+        </footer>
+      </main>
     </div>
   );
 };
