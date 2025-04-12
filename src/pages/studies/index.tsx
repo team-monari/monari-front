@@ -318,7 +318,7 @@ export default function Studies() {
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4">{study.description}</p>
+                  <p className="text-gray-600 text-sm mb-4 truncate">{study.description}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
                       <svg 
