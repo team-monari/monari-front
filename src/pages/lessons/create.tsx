@@ -407,7 +407,7 @@ const CreateLessonPage = () => {
                   endDate={dateRange[1]}
                   onChange={handleDateRangeChange}
                   minDate={new Date()}
-                  maxDate={dateRange[0] ? new Date(dateRange[0].getTime() + 30 * 24 * 60 * 60 * 1000) : null}
+                  maxDate={dateRange[0] ? new Date(dateRange[0].getTime() + 30 * 24 * 60 * 60 * 1000) : undefined}
                   dateFormat="yyyy-MM-dd"
                   placeholderText="수업 기간을 선택하세요"
                   className="w-full"
