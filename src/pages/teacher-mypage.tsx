@@ -15,6 +15,9 @@ interface TeacherProfile {
   major: string;
   career: string;
   profileImageUrl: string | null;
+  bankName: string | null;
+  accountNumber: string | null;
+  accountHolder: string | null;
 }
 
 interface Lesson {
@@ -48,7 +51,9 @@ interface PageResponse<T> {
 const TeacherMyPage = () => {
   const router = useRouter();
   const { userType, accessToken, isAuthenticated } = useAuth();
-  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(
+    null
+  );
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLessonsLoading, setIsLessonsLoading] = useState(false);
@@ -60,25 +65,31 @@ const TeacherMyPage = () => {
     setIsLessonsLoading(true);
     setLessonsError(null);
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/teacher/me`);
-      url.searchParams.append('size', '3');
-      
+      const url = new URL(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/teacher/me`
+      );
+      url.searchParams.append("size", "3");
+
       const response = await fetch(url.toString(), {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('수업 목록을 불러오는데 실패했습니다.');
+        throw new Error("수업 목록을 불러오는데 실패했습니다.");
       }
 
       const data: PageResponse<Lesson> = await response.json();
-      console.log('API Response:', data);
+      console.log("API Response:", data);
       setLessons(data.content || []);
     } catch (err) {
-      console.error('Error fetching lessons:', err);
-      setLessonsError(err instanceof Error ? err.message : '수업 목록을 불러오는데 실패했습니다.');
+      console.error("Error fetching lessons:", err);
+      setLessonsError(
+        err instanceof Error
+          ? err.message
+          : "수업 목록을 불러오는데 실패했습니다."
+      );
       setLessons([]);
     } finally {
       setIsLessonsLoading(false);
@@ -113,7 +124,8 @@ const TeacherMyPage = () => {
       try {
         setIsLoading(true);
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
         const apiUrl = `${baseUrl}/api/v1/teachers/me`;
 
         const response = await fetch(apiUrl, {
@@ -237,6 +249,46 @@ const TeacherMyPage = () => {
               </div>
             </div>
 
+            {/* 계좌 정보 섹션 */}
+            <div className="mt-6">
+              <h2 className="text-xl font-bold mb-4">계좌 정보</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-500 mb-1">
+                    은행명
+                  </h3>
+                  {teacherProfile.bankName ? (
+                    <p>{teacherProfile.bankName}</p>
+                  ) : (
+                    <p className="text-gray-400 italic text-sm">미입력</p>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-500 mb-1">
+                    계좌번호
+                  </h3>
+                  {teacherProfile.accountNumber ? (
+                    <p>{teacherProfile.accountNumber}</p>
+                  ) : (
+                    <p className="text-gray-400 italic text-sm">미입력</p>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-500 mb-1">
+                    예금주
+                  </h3>
+                  {teacherProfile.accountHolder ? (
+                    <p>{teacherProfile.accountHolder}</p>
+                  ) : (
+                    <p className="text-gray-400 italic text-sm">미입력</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 프로필 정보 안내 메시지 */}
             <div className="mt-6 text-sm">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <div className="flex items-start">
@@ -253,10 +305,17 @@ const TeacherMyPage = () => {
                     />
                   </svg>
                   <div>
-                    <p className="text-blue-700 font-medium">프로필 정보</p>
-                    <p className="mt-1 text-blue-600">
-                      정확한 프로필 정보는 학생들의 신뢰를 높이는데 중요합니다.
+                    <p className="text-blue-800 font-medium">
+                      프로필 정보가 불완전합니다
                     </p>
+                    <p className="text-blue-600 mt-1">
+                      프로필 정보를 완성하면 학생들이 더 신뢰할 수 있습니다.
+                    </p>
+                    <Link href="/teacher-profile-edit">
+                      <button className="mt-2 text-blue-600 hover:text-blue-800 font-medium">
+                        프로필 수정하기 →
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -267,13 +326,23 @@ const TeacherMyPage = () => {
         <section className="mb-10">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">개설 수업</h2>
-            <Link 
-              href="/myclasses" 
+            <Link
+              href="/myclasses"
               className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
             >
               <span>더보기</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -295,46 +364,86 @@ const TeacherMyPage = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">{lesson.title}</h3>
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      lesson.status === 'RECRUITING' ? 'bg-yellow-100 text-yellow-600' : 
-                      lesson.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-600' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                      {lesson.status === 'RECRUITING' ? '모집중' : 
-                       lesson.status === 'IN_PROGRESS' ? '진행중' : '완료'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      lesson.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                      'bg-green-100 text-green-600'
-                    }`}>
-                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
-                    </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {lesson.subject === 'MATH' ? '수학' :
-                       lesson.subject === 'ENGLISH' ? '영어' :
-                       lesson.subject === 'KOREAN' ? '국어' :
-                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {lesson.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        lesson.status === "RECRUITING"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : lesson.status === "IN_PROGRESS"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {lesson.status === "RECRUITING"
+                        ? "모집중"
+                        : lesson.status === "IN_PROGRESS"
+                        ? "진행중"
+                        : "완료"}
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 truncate">{lesson.description}</p>
-                  
+                  <div className="flex items-center gap-1 mb-3">
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        lesson.schoolLevel === "MIDDLE"
+                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {lesson.subject === "MATH"
+                        ? "수학"
+                        : lesson.subject === "ENGLISH"
+                        ? "영어"
+                        : lesson.subject === "KOREAN"
+                        ? "국어"
+                        : lesson.subject === "SCIENCE"
+                        ? "과학"
+                        : "사회"}
+                    </span>
+                  </div>
+
+                  <p className="text-gray-600 text-sm mb-4 truncate">
+                    {lesson.description}
+                  </p>
+
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
-                        {new Date(lesson.startDate).toLocaleDateString()} - {new Date(lesson.endDate).toLocaleDateString()}
+                        {new Date(lesson.startDate).toLocaleDateString()} -{" "}
+                        {new Date(lesson.endDate).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
                         {lesson.currentStudent}/{lesson.maxStudent}명

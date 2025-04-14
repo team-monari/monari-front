@@ -14,6 +14,9 @@ interface TeacherProfile {
   major: string;
   career: string;
   profileImageUrl: string | null;
+  bankName: string | null;
+  accountNumber: string | null;
+  accountHolder: string | null;
 }
 
 const EditTeacherProfile = () => {
@@ -26,6 +29,9 @@ const EditTeacherProfile = () => {
     major: "",
     career: "",
     profileImageUrl: "",
+    bankName: "",
+    accountNumber: "",
+    accountHolder: "",
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +96,9 @@ const EditTeacherProfile = () => {
           major: data.major || "",
           career: data.career || "",
           profileImageUrl: data.profileImageUrl || "",
+          bankName: data.bankName || "",
+          accountNumber: data.accountNumber || "",
+          accountHolder: data.accountHolder || "",
         });
 
         // 프로필 이미지가 있으면 미리보기 설정
@@ -388,6 +397,80 @@ const EditTeacherProfile = () => {
                 {errors.career && (
                   <p className="mt-1 text-sm text-red-500">{errors.career}</p>
                 )}
+              </div>
+            </div>
+
+            {/* 계좌 정보 섹션 */}
+            <div className="mt-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label
+                    htmlFor="bankName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    은행명
+                  </label>
+                  <input
+                    type="text"
+                    id="bankName"
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 국민은행"
+                  />
+                  {errors.bankName && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.bankName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="accountNumber"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    계좌번호
+                  </label>
+                  <input
+                    type="text"
+                    id="accountNumber"
+                    name="accountNumber"
+                    value={formData.accountNumber}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 1234567890"
+                  />
+                  {errors.accountNumber && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.accountNumber}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="accountHolder"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    예금주
+                  </label>
+                  <input
+                    type="text"
+                    id="accountHolder"
+                    name="accountHolder"
+                    value={formData.accountHolder}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 홍길동"
+                  />
+                  {errors.accountHolder && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.accountHolder}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
