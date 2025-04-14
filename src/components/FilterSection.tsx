@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { regions, getRegionText } from '../utils/region';
 
 interface FilterSectionProps {
   filters: {
@@ -26,15 +27,51 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
     }
   };
 
-  const handleSearch = () => {
-    onFilterChange({
-      ...filters,
-      keyword: searchKeyword,
-      pageNumber: 1,
-      pageSize: 6,
-      schoolLevel: filters.schoolLevel,
-      subject: filters.subject
-    });
+  const handleSearch = async () => {
+    try {
+      const searchParams = new URLSearchParams();
+      if (filters.keyword) searchParams.append('keyword', filters.keyword);
+      if (filters.subject) searchParams.append('subject', filters.subject);
+      if (filters.schoolLevel) searchParams.append('schoolLevel', filters.schoolLevel);
+      if (filters.region) searchParams.append('region', filters.region);
+      searchParams.append('pageNumber', '1');
+      searchParams.append('pageSize', '6');
+
+      const response = await fetch(`http://localhost:8080/api/v1/lessons/search?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('검색 요청에 실패했습니다.');
+      }
+      const data = await response.json();
+      
+      onFilterChange({
+        ...filters,
+        keyword: searchKeyword,
+        pageNumber: data.page?.number || 0,
+        pageSize: data.page?.size || 6,
+        totalElements: data.page?.totalElements || 0,
+        totalPages: data.page?.totalPages || 0,
+        content: data.content || [],
+        schoolLevel: filters.schoolLevel,
+        subject: filters.subject,
+        region: filters.region,
+        results: data
+      });
+    } catch (error) {
+      console.error('검색 중 오류 발생:', error);
+      onFilterChange({
+        ...filters,
+        keyword: searchKeyword,
+        pageNumber: 0,
+        pageSize: 6,
+        totalElements: 0,
+        totalPages: 0,
+        content: [],
+        schoolLevel: filters.schoolLevel,
+        subject: filters.subject,
+        region: filters.region,
+        results: { content: [], page: { size: 6, number: 0, totalElements: 0, totalPages: 0 } }
+      });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -114,23 +151,11 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
           >
             <option value="">전체</option>
-            <option value="서울">서울</option>
-            <option value="경기">경기</option>
-            <option value="인천">인천</option>
-            <option value="부산">부산</option>
-            <option value="대구">대구</option>
-            <option value="광주">광주</option>
-            <option value="대전">대전</option>
-            <option value="울산">울산</option>
-            <option value="세종">세종</option>
-            <option value="강원">강원</option>
-            <option value="충북">충북</option>
-            <option value="충남">충남</option>
-            <option value="전북">전북</option>
-            <option value="전남">전남</option>
-            <option value="경북">경북</option>
-            <option value="경남">경남</option>
-            <option value="제주">제주</option>
+            {Object.values(regions).map((region) => (
+              <option key={region} value={region}>
+                {getRegionText(region)}
+              </option>
+            ))}
           </select>
         </div>
       </div>

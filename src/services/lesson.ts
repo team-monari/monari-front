@@ -14,6 +14,9 @@ export interface Lesson {
   schoolLevel: string;
   subject: string;
   currentStudent: number;
+  grade: number;
+  region: string;
+  discountRate: number;
 }
 
 export interface LessonResponse {

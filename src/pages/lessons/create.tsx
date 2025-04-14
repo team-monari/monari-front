@@ -4,13 +4,16 @@ import { useRouter } from 'next/router';
 import { locationApi, Location } from '../../services/location';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import Swal from 'sweetalert2';
+import { regions, getRegionText } from '../../utils/region';
+import { inputStyles } from '../../utils/styles';
 
 interface FormData {
   title: string;
   description: string;
-  price: number;
-  minStudents: number;
-  maxStudents: number;
+  price: string;
+  minStudents: string;
+  maxStudents: string;
   location: string;
   locationId: number | null;
   startDate: Date | null;
@@ -18,24 +21,42 @@ interface FormData {
   educationLevel: 'MIDDLE' | 'HIGH';
   subject: 'MATH' | 'SCIENCE';
   grade: 'FIRST' | 'SECOND' | 'THIRD';
+  region: string;
 }
+
+interface FormErrors {
+  title?: string;
+  description?: string;
+  minStudent?: string;
+  maxStudent?: string;
+  locationId?: string;
+  amount?: string;
+}
+
+const SEOUL_DISTRICTS = [
+  '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구',
+  '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구',
+  '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
+];
 
 const CreateLessonPage = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
-    price: 0,
-    minStudents: 4,
-    maxStudents: 7,
+    price: '',
+    minStudents: '',
+    maxStudents: '',
     location: '',
     locationId: null,
     startDate: null,
     endDate: null,
     educationLevel: 'MIDDLE',
     subject: 'MATH',
-    grade: 'FIRST'
+    grade: 'FIRST',
+    region: ''
   });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   const [locations, setLocations] = useState<Location[]>([]);
   const [showLocationList, setShowLocationList] = useState(false);
@@ -44,6 +65,7 @@ const CreateLessonPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [formattedPrice, setFormattedPrice] = useState<string>('');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
 
   useEffect(() => {
     fetchLocations();
@@ -111,7 +133,7 @@ const CreateLessonPage = () => {
     const value = e.target.value.replace(/,/g, '');
     if (value === '' || /^\d+$/.test(value)) {
       const numericValue = value === '' ? 0 : parseInt(value);
-      setFormData(prev => ({ ...prev, price: numericValue }));
+      setFormData(prev => ({ ...prev, price: numericValue.toString() }));
       setFormattedPrice(value === '' ? '' : numericValue.toLocaleString());
     }
   };
@@ -120,50 +142,100 @@ const CreateLessonPage = () => {
     e.preventDefault();
     
     try {
-      // Calculate deadline (startDate - 7 days if no date range is selected)
-      const deadline = formData.startDate 
-        ? new Date(formData.startDate)
-        : new Date();
-      deadline.setDate(deadline.getDate() - 7);
-
-      const lessonData = {
-        title: formData.title,
-        description: formData.description,
-        subject: formData.subject,
-        schoolLevel: formData.educationLevel,
-        minStudent: formData.minStudents,
-        maxStudent: formData.maxStudents,
-        amount: formData.price,
-        startDate: formData.startDate?.toISOString().split('T')[0],
-        endDate: formData.endDate?.toISOString().split('T')[0],
-        locationId: formData.locationId,
-        grade: formData.grade,
-        status: 'ACTIVE',
-        deadline: deadline.toISOString().split('T')[0]
-      };
-
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        throw new Error('로그인이 필요합니다.');
-      }
-
-      const response = await fetch('http://localhost:8080/api/v1/lessons', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify(lessonData),
+      const result = await Swal.fire({
+        title: '수업 개설',
+        html: `
+          <div class="text-left">
+            <p class="mb-4">수업을 개설하시겠습니까?</p>
+            <div class="bg-yellow-50 p-4 rounded-lg mb-4">
+              <p class="text-yellow-800 font-semibold mb-2">⚠️ 환불 정책 안내</p>
+              <ul class="text-yellow-700 text-sm list-disc pl-4">
+                <li>수업 시작 7일 전까지는 전액 환불이 가능합니다.</li>
+                <li>수업 시작 이후에는 환불이 불가능합니다.</li>
+              </ul>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <p class="text-blue-800 font-semibold mb-2">📅 수업 기간 안내</p>
+              <ul class="text-blue-700 text-sm list-disc pl-4">
+                <li>수업 시작일: ${formData.startDate ? formData.startDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) : '미정'}</li>
+                <li>수업 종료일: ${formData.endDate ? formData.endDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) : '미정'}</li>
+                <li>모집 마감일: ${formData.startDate ? new Date(formData.startDate.getTime() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) : '미정'}</li>
+              </ul>
+            </div>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '개설하기',
+        cancelButtonText: '취소',
+        confirmButtonColor: '#1B9AF5',
+        cancelButtonColor: '#6B7280',
       });
 
-      if (!response.ok) {
-        throw new Error('수업 개설에 실패했습니다.');
-      }
+      if (result.isConfirmed) {
+        // Calculate deadline (startDate - 7 days if no date range is selected)
+        const deadline = formData.startDate 
+          ? new Date(formData.startDate)
+          : new Date();
+        deadline.setDate(deadline.getDate() - 7);
 
-      router.push('/lessons');
+        const lessonData = {
+          title: formData.title,
+          description: formData.description,
+          subject: formData.subject,
+          schoolLevel: formData.educationLevel,
+          minStudent: formData.minStudents,
+          maxStudent: formData.maxStudents,
+          amount: formData.price,
+          startDate: formData.startDate?.toISOString().split('T')[0],
+          endDate: formData.endDate?.toISOString().split('T')[0],
+          locationId: formData.locationId,
+          grade: formData.grade,
+          status: 'ACTIVE',
+          deadline: deadline.toISOString().split('T')[0],
+          region: formData.region
+        };
+
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
+          throw new Error('로그인이 필요합니다.');
+        }
+
+        const response = await fetch('http://localhost:8080/api/v1/lessons', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify(lessonData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          if (errorData.data) {
+            setFormErrors(errorData.data);
+            return;
+          }
+          throw new Error('수업 개설에 실패했습니다.');
+        }
+
+        await Swal.fire({
+          title: '수업 개설 완료',
+          text: '수업이 성공적으로 개설되었습니다.',
+          icon: 'success',
+          confirmButtonColor: '#1B9AF5',
+        });
+
+        router.push('/lessons');
+      }
     } catch (error) {
-      console.error('Failed to create lesson:', error);
-      setError(error instanceof Error ? error.message : '수업 개설에 실패했습니다.');
+      console.error('수업 개설 중 오류 발생:', error);
+      await Swal.fire({
+        title: '오류 발생',
+        text: '수업 개설 중 오류가 발생했습니다. 다시 시도해주세요.',
+        icon: 'error',
+        confirmButtonColor: '#1B9AF5',
+      });
     }
   };
 
@@ -211,14 +283,11 @@ const CreateLessonPage = () => {
         }
       `}</style>
       <Header />
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">새로운 수업 개설하기</h1>
-          <p className="mt-2 text-gray-600">수업 정보를 입력하고 개설하세요</p>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-sm p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
+      <main className="container mx-auto px-6 py-8 max-w-[1280px]">
+        <div className="bg-white rounded-lg p-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-gray-900 mb-8">수업 생성</h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-6">
               <div>
                 <label className="block text-base font-semibold text-gray-800 mb-2">
@@ -228,9 +297,12 @@ const CreateLessonPage = () => {
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border ${formErrors.title ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all`}
                   placeholder="수업 제목을 입력하세요"
                 />
+                {formErrors.title && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.title}</p>
+                )}
               </div>
 
               <div>
@@ -241,7 +313,7 @@ const CreateLessonPage = () => {
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px]"
+                    className={`w-full px-4 py-3 border ${formErrors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px] break-words whitespace-pre-wrap`}
                     placeholder={`1. 수업 목표
 - 중2 수학 내신 1등급 달성
 - 기초 개념부터 심화 문제까지 체계적 학습
@@ -257,6 +329,9 @@ const CreateLessonPage = () => {
 - 2개월차: 심화 문제 풀이
 - 3개월차: 실전 문제 및 기출 분석`}
                   />
+                  {formErrors.description && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
+                  )}
                   <div className="p-4 bg-blue-50 rounded-xl">
                     <p className="text-sm font-medium text-blue-800 mb-2">수업 설명 작성 가이드</p>
                     <ul className="text-sm text-blue-700 space-y-1">
@@ -279,10 +354,13 @@ const CreateLessonPage = () => {
                       type="text"
                       value={formattedPrice}
                       onChange={handlePriceChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all"
+                      className={`w-full px-4 py-3 border ${formErrors.amount ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all`}
                       placeholder="수업 가격을 입력하세요"
                     />
                     <span className="absolute right-4 top-3 text-gray-500">원</span>
+                    {formErrors.amount && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.amount}</p>
+                    )}
                   </div>
                 </div>
 
@@ -296,18 +374,24 @@ const CreateLessonPage = () => {
                         type="number"
                         value={formData.minStudents}
                         onChange={(e) => handleChange('minStudents', Number(e.target.value))}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 border ${formErrors.minStudent ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all`}
                         placeholder="최소 인원"
                       />
+                      {formErrors.minStudent && (
+                        <p className="mt-1 text-sm text-red-500">{formErrors.minStudent}</p>
+                      )}
                     </div>
                     <div>
                       <input
                         type="number"
                         value={formData.maxStudents}
                         onChange={(e) => handleChange('maxStudents', Number(e.target.value))}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 border ${formErrors.maxStudent ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all`}
                         placeholder="최대 인원"
                       />
+                      {formErrors.maxStudent && (
+                        <p className="mt-1 text-sm text-red-500">{formErrors.maxStudent}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -323,6 +407,7 @@ const CreateLessonPage = () => {
                   endDate={dateRange[1]}
                   onChange={handleDateRangeChange}
                   minDate={new Date()}
+                  maxDate={dateRange[0] ? new Date(dateRange[0].getTime() + 30 * 24 * 60 * 60 * 1000) : null}
                   dateFormat="yyyy-MM-dd"
                   placeholderText="수업 기간을 선택하세요"
                   className="w-full"
@@ -331,7 +416,7 @@ const CreateLessonPage = () => {
                 {formData.startDate && (
                   <div className="mt-2 p-4 bg-blue-50 rounded-xl">
                     <p className="text-sm text-blue-700">
-                      모집 마감일: {new Date(formData.startDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      모집 마감일: {new Date(formData.startDate.getTime() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                     <div className="mt-2 space-y-1">
                       <p className="text-xs text-blue-600">
@@ -342,6 +427,9 @@ const CreateLessonPage = () => {
                       </p>
                       <p className="text-xs text-blue-600">
                         ※ 모집 마감일 전까지는 수업 취소가 가능합니다.
+                      </p>
+                      <p className="text-xs text-blue-600">
+                        ※ 수업 기간은 최대 30일까지만 설정 가능합니다.
                       </p>
                     </div>
                   </div>
@@ -405,16 +493,39 @@ const CreateLessonPage = () => {
 
               <div className="space-y-2">
                 <label className="block text-base font-semibold text-gray-800">
+                  지역
+                </label>
+                <select
+                  name="region"
+                  value={formData.region}
+                  onChange={(e) => handleChange('region', e.target.value)}
+                  className={inputStyles.base}
+                  required
+                >
+                  <option value="">지역을 선택해주세요</option>
+                  {Object.values(regions).map((region) => (
+                    <option key={region} value={region}>
+                      {getRegionText(region)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-base font-semibold text-gray-800">
                   수업 장소
                 </label>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowLocationList(!showLocationList)}
-                    className="w-full px-4 py-3 text-left border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white"
+                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white`}
                   >
                     {formData.location || '장소를 선택하세요'}
                   </button>
+                  {formErrors.locationId && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.locationId}</p>
+                  )}
                   {showLocationList && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
                       {loading ? (
@@ -544,7 +655,7 @@ const CreateLessonPage = () => {
             </div>
           </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

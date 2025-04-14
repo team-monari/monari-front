@@ -106,27 +106,27 @@ const LessonCard: React.FC<LessonCardProps> = ({
 
   return (
     <div 
-      className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300"
+      className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100"
       onClick={handleCardClick}
     >
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4 gap-4">
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-3 gap-3">
           <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors truncate max-w-[75%]">
             {title}
           </h3>
-          <div className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor}`}>
+          <div className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor}`}>
             {statusInfo.text}
           </div>
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-2 mb-5">{description}</p>
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4">{description}</p>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+            <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
               {getSchoolLevelText(schoolLevel)}
             </span>
-            <span className="px-3 py-1.5 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+            <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
               {getSubjectText(subject)}
             </span>
           </div>
@@ -138,22 +138,30 @@ const LessonCard: React.FC<LessonCardProps> = ({
             {new Date(startDate).toLocaleDateString()} ~ {new Date(endDate).toLocaleDateString()}
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-700">모집 인원</span>
-              <div className="flex items-center gap-1">
-                <span className={`text-sm font-bold ${isFull ? 'text-red-500' : 'text-[#1B9AF5]'}`}>
-                  {currentStudent}
-                </span>
-                <span className="text-sm text-gray-400">/</span>
-                <span className="text-sm text-gray-600">
-                  {maxStudent}
-                </span>
+              <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">모집</span>
+                  <span className="font-medium text-gray-700">{currentStudent}/{maxStudent}명</span>
+                </div>
+                {currentStudent >= minStudent ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[#1B9AF5]">1인당</span>
+                    <span className="font-bold text-[#1B9AF5]">₩{(calculatedAmount || 0).toLocaleString()}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-500">최소</span>
+                    <span className="font-medium text-gray-700">{minStudent}명</span>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
               <div
-                className={`${isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'} h-2 rounded-full transition-all duration-300`}
+                className={`${isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'} h-1.5 rounded-full transition-all duration-300`}
                 style={{ width: `${(currentStudent / maxStudent) * 100}%` }}
               />
             </div>
@@ -161,41 +169,34 @@ const LessonCard: React.FC<LessonCardProps> = ({
         </div>
       </div>
 
-      <div className="border-t border-gray-100 p-6 flex items-center justify-between bg-gray-50">
-        <div className="flex flex-col">
+      <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50/50">
+        <div className="flex flex-col min-h-[60px] justify-center">
           {currentStudent >= minStudent ? (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-600">총 수강료</span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-gray-900">₩{amount.toLocaleString()}</span>
-                  <span className="text-sm font-medium text-[#1B9AF5]">
-                    ({discountRate}% 할인)
+                  <span className="text-lg font-bold text-gray-900">₩{(calculatedAmount || 0).toLocaleString()}</span>
+                  <span className="px-2 py-0.5 bg-[#1B9AF5]/10 text-[#1B9AF5] rounded-full text-xs font-medium">
+                    {discountRate}% 할인
                   </span>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-gray-500">현재</span>
-                  <span className="font-medium text-gray-700">{currentStudent}명</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[#1B9AF5]">1인당</span>
-                  <span className="font-bold text-[#1B9AF5]">₩{calculatedAmount.toLocaleString()}</span>
-                </div>
+                <span className="text-sm text-gray-400 line-through -mt-1">₩{(amount || 0).toLocaleString()}</span>
               </div>
             </div>
           ) : (
-            <div className="flex items-baseline gap-2">
+            <div className="flex flex-col">
               <span className="text-sm font-medium text-gray-600">수강료</span>
-              <span className="text-lg font-bold text-gray-900">₩{amount.toLocaleString()}</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-bold text-gray-900">₩{(amount || 0).toLocaleString()}</span>
+              </div>
             </div>
           )}
         </div>
         <Link
           href={isDisabled ? '#' : `/lessons/${lessonId}`}
           onClick={(e) => isDisabled && e.preventDefault()}
-          className={`px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
+          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
             isDisabled
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90 hover:shadow-md'

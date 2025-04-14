@@ -2,17 +2,20 @@ import axios from 'axios';
 
 export interface Location {
   id: number;
-  serviceSubcategory: string;  // 서비스 소분류
-  serviceStatus: string;       // 서비스 상태
-  paymentMethod: string;       // 결제 방법
-  locationName: string;        // 장소명
-  serviceUrl: string;          // 서비스 URL
-  registrationStartDateTime: string;  // 등록 시작 일시
-  registrationEndDateTime: string;    // 등록 종료 일시
-  cancellationStartDateTime: string;  // 취소 시작 일시
-  cancellationEndDateTime: string;    // 취소 종료 일시
-  cancellationPolicyInfo: string;     // 취소 정책 정보
-  cancellationDeadline: number;       // 취소 마감일
+  locationName: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  cancellationDeadline: number;
+  serviceUrl: string;
+  serviceSubcategory: string;
+  serviceStatus: string;
+  paymentMethod: string;
+  registrationStartDateTime?: string;
+  registrationEndDateTime?: string;
+  cancellationStartDateTime?: string;
+  cancellationEndDateTime?: string;
+  cancellationPolicyInfo?: string;
 }
 
 // API URL 설정
@@ -67,4 +70,16 @@ export const locationApi = {
       throw new Error('장소 정보를 불러오는데 실패했습니다.');
     }
   }
+};
+
+export const fetchLocationById = async (locationId: number): Promise<Location> => {
+  const response = await fetch(`http://localhost:8080/api/v1/locations/${locationId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch location');
+  }
+  return response.json();
+};
+
+export const getLocationUrl = (location: Location): string => {
+  return location.serviceUrl || `https://map.naver.com/v5/search/${encodeURIComponent(location.locationName)}`;
 }; 
