@@ -119,7 +119,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
           </div>
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4">{description}</p>
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4 break-words whitespace-pre-wrap">{description}</p>
 
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
