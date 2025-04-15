@@ -88,12 +88,12 @@ const LessonCard: React.FC<LessonCardProps> = ({
   const isDisabled = isFull || status === 'CANCELED' || status === 'CLOSED';
   
   // 할인된 금액 계산 - N빵 계산
-  const calculatedAmount = currentStudent >= minStudent
+  const calculatedAmount = currentStudent > minStudent
     ? Math.round(amount / currentStudent)
     : amount;
   
   // 할인율 계산
-  const discountRate = currentStudent >= minStudent
+  const discountRate = currentStudent > minStudent
     ? Math.round(((amount - calculatedAmount) / amount) * 100)
     : 0;
 
@@ -105,11 +105,12 @@ const LessonCard: React.FC<LessonCardProps> = ({
   };
 
   return (
-    <div 
-      className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100"
-      onClick={handleCardClick}
+    <Link
+      href={isDisabled ? '#' : `/lessons/${lessonId}`}
+      onClick={(e) => isDisabled && e.preventDefault()}
+      className="block bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100 h-full flex flex-col"
     >
-      <div className="p-5">
+      <div className="p-5 flex-1">
         <div className="flex justify-between items-start mb-3 gap-3">
           <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors truncate max-w-[75%]">
             {title}
@@ -119,7 +120,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
           </div>
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4 break-words whitespace-pre-wrap">{description}</p>
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4 break-words whitespace-pre-wrap min-h-[40px]">{description}</p>
 
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -146,7 +147,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
                   <span className="text-gray-500">모집</span>
                   <span className="font-medium text-gray-700">{currentStudent}/{maxStudent}명</span>
                 </div>
-                {currentStudent >= minStudent ? (
+                {currentStudent > minStudent ? (
                   <div className="flex items-center gap-1">
                     <span className="text-[#1B9AF5]">1인당</span>
                     <span className="font-bold text-[#1B9AF5]">₩{(calculatedAmount || 0).toLocaleString()}</span>
@@ -169,10 +170,10 @@ const LessonCard: React.FC<LessonCardProps> = ({
         </div>
       </div>
 
-      <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50/50">
-        <div className="flex flex-col min-h-[60px] justify-center">
-          {currentStudent >= minStudent ? (
-            <div className="space-y-1">
+      <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50/50 mt-auto">
+        <div className="flex flex-col justify-center">
+          {currentStudent > minStudent ? (
+            <div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-600">총 수강료</span>
                 <div className="flex items-baseline gap-2">
@@ -181,21 +182,32 @@ const LessonCard: React.FC<LessonCardProps> = ({
                     {discountRate}% 할인
                   </span>
                 </div>
-                <span className="text-sm text-gray-400 line-through -mt-1">₩{(amount || 0).toLocaleString()}</span>
+                <span className="text-sm text-gray-400 line-through">₩{(amount || 0).toLocaleString()}</span>
+                <div className="flex items-center gap-1 text-xs text-[#1B9AF5] mt-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>최소 {minStudent}명 초과 시 할인 적용</span>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col">
+            <div>
               <span className="text-sm font-medium text-gray-600">수강료</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-gray-900">₩{(amount || 0).toLocaleString()}</span>
               </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>최소 {minStudent}명 초과 시 할인 적용</span>
+              </div>
             </div>
           )}
         </div>
-        <Link
-          href={isDisabled ? '#' : `/lessons/${lessonId}`}
-          onClick={(e) => isDisabled && e.preventDefault()}
+        <button
+          disabled={isDisabled}
           className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
             isDisabled
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -204,9 +216,9 @@ const LessonCard: React.FC<LessonCardProps> = ({
           aria-disabled={isDisabled}
         >
           {getButtonText()}
-        </Link>
+        </button>
       </div>
-    </div>
+    </Link>
   );
 };
 

@@ -258,12 +258,12 @@ const LessonDetail: React.FC = () => {
   const isFull = lesson.currentStudent >= lesson.maxStudent;
   
   // 할인된 금액 계산 - N빵 계산
-  const calculatedAmount = lesson.currentStudent >= lesson.minStudent
+  const calculatedAmount = lesson.currentStudent > lesson.minStudent
     ? Math.round(lesson.amount / lesson.currentStudent)
     : lesson.amount;
   
   // 할인율 계산
-  const discountRate = lesson.currentStudent >= lesson.minStudent
+  const discountRate = lesson.currentStudent > lesson.minStudent
     ? Math.round(((lesson.amount - calculatedAmount) / lesson.amount) * 100)
     : 0;
 
@@ -402,7 +402,7 @@ const LessonDetail: React.FC = () => {
                 </div>
                 <div className="flex justify-between py-3">
                   <span className="text-gray-600">수강료</span>
-                  {lesson.currentStudent >= lesson.minStudent ? (
+                  {lesson.currentStudent > lesson.minStudent ? (
                     <div className="text-right">
                       <span className="text-gray-900 font-medium">
                         <span className="line-through text-gray-400 mr-2">₩{lesson.amount.toLocaleString()}</span>
@@ -484,18 +484,34 @@ const LessonDetail: React.FC = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-gray-600 mb-1">총 수강료</p>
-                  {lesson.currentStudent >= lesson.minStudent ? (
+                  {lesson.currentStudent > lesson.minStudent ? (
                     <div>
                       <p className="text-2xl font-bold text-gray-900">
                         <span className="line-through text-gray-400 mr-2">₩{lesson.amount.toLocaleString()}</span>
                         ₩{calculatedAmount.toLocaleString()}
                       </p>
-                      <p className="text-[#1B9AF5] font-medium mt-1">
-                        {discountRate}% 할인
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-1 bg-[#1B9AF5]/10 text-[#1B9AF5] rounded-full text-sm font-medium">
+                          {discountRate}% 할인
+                        </span>
+                        <div className="flex items-center gap-1 text-sm text-[#1B9AF5]">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>최소 {lesson.minStudent}명 이상 모집 시 할인 적용</span>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-2xl font-bold text-gray-900">₩{lesson.amount.toLocaleString()}</p>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">₩{lesson.amount.toLocaleString()}</p>
+                      <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>최소 {lesson.minStudent}명 모집 시 할인 적용</span>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <button

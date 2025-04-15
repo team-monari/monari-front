@@ -208,6 +208,9 @@ const EditTeacherProfile = () => {
             major: formData.major || null,
             career: formData.career || null,
             profileImageUrl: formData.profileImageUrl || null,
+            bankName: formData.bankName || null,
+            accountNumber: formData.accountNumber || null,
+            accountHolder: formData.accountHolder || null,
           }),
         });
 
