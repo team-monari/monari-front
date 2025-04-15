@@ -37,7 +37,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
       searchParams.append('pageNumber', '1');
       searchParams.append('pageSize', '6');
 
-      const response = await fetch(`http://localhost:8080/api/v1/lessons/search?${searchParams.toString()}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/search?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('검색 요청에 실패했습니다.');
       }

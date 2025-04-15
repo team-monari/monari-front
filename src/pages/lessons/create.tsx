@@ -201,7 +201,7 @@ const CreateLessonPage = () => {
           throw new Error('로그인이 필요합니다.');
         }
 
-        const response = await fetch('http://localhost:8080/api/v1/lessons', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

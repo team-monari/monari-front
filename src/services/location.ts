@@ -19,11 +19,11 @@ export interface Location {
 }
 
 // API URL 설정
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // axios 인스턴스 생성
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api/v1`,
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export const locationApi = {
 };
 
 export const fetchLocationById = async (locationId: number): Promise<Location> => {
-  const response = await fetch(`http://localhost:8080/api/v1/locations/${locationId}`);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/locations/${locationId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch location');
   }

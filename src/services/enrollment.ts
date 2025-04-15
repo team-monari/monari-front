@@ -12,7 +12,7 @@ export const createEnrollment = async (lessonId: number): Promise<string> => {
 
   try {
     const response = await axios.post(
-      'http://localhost:8080/api/v1/enrollments',
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/enrollments`,
       { lessonId },
       {
         headers: {
