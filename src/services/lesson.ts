@@ -17,6 +17,11 @@ export interface Lesson {
   grade: number;
   region: string;
   discountRate: number;
+  teacherName: string;
+  teacherUniversity: string;
+  teacherMajor: string;
+  teacherCareer: string;
+  teacherProfileImageUrl: string;
 }
 
 export interface LessonResponse {

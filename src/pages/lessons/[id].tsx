@@ -72,11 +72,11 @@ const LessonDetail: React.FC = () => {
 
       // 선생님 프로필 정보 설정
       setTeacherProfile({
-        name: data.name || '이름 미입력',
-        university: data.university || '미입력',
-        major: data.major || '미입력',
-        career: data.career || '미입력',
-        profileImageUrl: data.profileImageUrl,
+        name: data.teacherName || '이름 미입력',
+        university: data.teacherUniversity || '미입력',
+        major: data.teacherMajor || '미입력',
+        career: data.teacherCareer || '미입력',
+        profileImageUrl: data.teacherProfileImageUrl || '/default-profile.png'
       });
     } catch (err) {
       setError('수업 정보를 불러오는데 실패했습니다.');
