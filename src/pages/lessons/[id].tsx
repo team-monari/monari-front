@@ -70,35 +70,14 @@ const LessonDetail: React.FC = () => {
         setLocation(locationData);
       }
 
-      // 선생님 프로필 정보 가져오기
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const teacherResponse = await fetch(`${baseUrl}/api/v1/teachers/${data.teacherId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // 선생님 프로필 정보 설정
+      setTeacherProfile({
+        name: data.name || '이름 미입력',
+        university: data.university || '미입력',
+        major: data.major || '미입력',
+        career: data.career || '미입력',
+        profileImageUrl: data.profileImageUrl,
       });
-
-      if (teacherResponse.ok) {
-        const teacherData = await teacherResponse.json();
-        console.log('Teacher Profile Data:', teacherData); // 디버깅용 로그
-        setTeacherProfile({
-          name: teacherData.name || '이름 미입력',
-          university: teacherData.university || '미입력',
-          major: teacherData.major || '미입력',
-          career: teacherData.career || '미입력',
-          profileImageUrl: teacherData.profileImageUrl,
-        });
-      } else {
-        console.error('Failed to fetch teacher profile:', await teacherResponse.text());
-        // API 호출 실패 시에도 기본 정보를 설정
-        setTeacherProfile({
-          name: '이름 미입력',
-          university: '미입력',
-          major: '미입력',
-          career: '미입력',
-          profileImageUrl: null,
-        });
-      }
     } catch (err) {
       setError('수업 정보를 불러오는데 실패했습니다.');
       console.error('Error loading lesson:', err);

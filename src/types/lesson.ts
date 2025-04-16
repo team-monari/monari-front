@@ -8,27 +8,26 @@ export interface Teacher {
 }
 
 export interface Lesson {
-  id: number;
+  lessonId: number;
+  locationId: number;
   title: string;
-  teacher: {
-    name: string;
-    image: string;
-  };
-  period: string;
+  currentStudent: number;
   description: string;
-  price: number;
-  minStudents: number;
-  maxStudents: number;
-  location: string;
-  currentStudents: number;
-  educationLevel: string;
-  subject: string;
+  amount: number;
+  minStudent: number;
+  maxStudent: number;
   startDate: string;
   endDate: string;
-  cancelPolicy?: {
-    period: number;
-    fee: number;
-  };
+  deadline: string;
+  status: string;
+  region: string;
+  schoolLevel: string;
+  subject: string;
+  name: string;
+  university: string;
+  major: string;
+  career: string;
+  profileImageUrl: string | null;
 }
 
 export interface LessonFilters {

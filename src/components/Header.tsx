@@ -7,7 +7,13 @@ import { useAuth } from "@/contexts/AuthContext";
 const Header = () => {
   const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
   const { isAuthenticated, userType, logout } = useAuth();
+
+  const showNotification = (message: string, type: 'error' | 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   const openLoginModal = () => {
     setIsLoginModalOpen(true);
@@ -38,6 +44,21 @@ const Header = () => {
       router.pathname === myPagePath ||
       router.pathname.startsWith(`${myPagePath}/`)
     );
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  const handleCreateLesson = () => {
+    if (!isAuthenticated) {
+      openLoginModal();
+    } else if (userType === 'STUDENT') {
+      showNotification('학생은 수업을 개설할 수 없습니다.', 'error');
+    } else {
+      router.push('/lessons/create');
+    }
   };
 
   return (
@@ -78,8 +99,8 @@ const Header = () => {
             >
               스터디 개설
             </Link>
-            <Link
-              href="/lessons/create"
+            <button
+              onClick={handleCreateLesson}
               className={`text-base ${
                 router.pathname === "/lessons/create"
                   ? "text-[#1B9AF5]"
@@ -87,7 +108,7 @@ const Header = () => {
               } hover:text-[#1B9AF5]`}
             >
               수업 개설
-            </Link>
+            </button>
           </nav>
         </div>
 
@@ -110,10 +131,7 @@ const Header = () => {
               </button>
             )}
             <button
-              onClick={() => {
-                logout();
-                window.location.href = "/";
-              }}
+              onClick={handleLogout}
               className="text-base text-gray-600 hover:text-[#1B9AF5]"
             >
               로그아웃
@@ -129,7 +147,29 @@ const Header = () => {
         )}
       </div>
 
-      {/* 로그인 모달 */}
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 px-6 py-4 rounded-xl shadow-xl transition-all duration-300 transform ${
+          notification.type === 'error' 
+            ? 'bg-red-50 text-red-700 border border-red-200' 
+            : 'bg-green-50 text-green-700 border border-green-200'
+        }`}>
+          <div className="flex items-center space-x-3">
+            {notification.type === 'error' ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+            <span className="font-medium text-lg">{notification.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal */}
       <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
     </header>
   );

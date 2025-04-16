@@ -5,7 +5,11 @@ import LessonCard from './LessonCard';
 import FilterSection from './FilterSection';
 import Card from './Card';
 
-const LessonSearch: React.FC = () => {
+interface LessonSearchProps {
+  onSearch: (query: string) => void;
+}
+
+const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
   const router = useRouter();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
