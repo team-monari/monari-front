@@ -80,6 +80,19 @@ const LessonDetail: React.FC = () => {
           career: data.career || '미입력',
           profileImageUrl: data.profileImageUrl
         });
+
+        // 장소 정보 가져오기
+        if (data.locationId) {
+          try {
+            const locationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/locations/${data.locationId}`);
+            if (locationResponse.ok) {
+              const locationData = await locationResponse.json();
+              setLocation(locationData);
+            }
+          } catch (err) {
+            console.error('Error fetching location:', err);
+          }
+        }
       } catch (err) {
         setError('수업 정보를 불러오는데 실패했습니다.');
         console.error('Error fetching lesson:', err);
@@ -189,13 +202,6 @@ const LessonDetail: React.FC = () => {
         confirmButtonColor: '#1B9AF5',
       });
     }
-  };
-
-  const handleBackClick = () => {
-    router.push({
-      pathname: '/lessons',
-      query: { page: currentPage }
-    });
   };
 
   if (loading) {
