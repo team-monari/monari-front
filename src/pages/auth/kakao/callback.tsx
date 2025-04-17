@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { authApi } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import Swal from "sweetalert2";
 
 export default function KakaoCallback() {
   const router = useRouter();
@@ -89,20 +90,40 @@ export default function KakaoCallback() {
             userType: response.userType || userType, // 백엔드에서 반환한 userType 사용, 없으면 요청 시 userType 사용
           });
 
+          // 로그인 성공 플래그 및 타입 저장
+          localStorage.setItem("login_success", "true");
+          localStorage.setItem(
+            "login_user_type",
+            response.userType || userType
+          );
+
           // 메인 페이지로 리다이렉트 (router.events 방지를 위해 window.location 사용)
           window.location.href = "/";
         }
       } catch (err: any) {
         console.error("카카오 로그인 처리 중 오류 발생:", err);
 
+        // 에러 메시지 설정
+        let errorMessage = "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.";
+
         // 네트워크 연결 오류인 경우 더 명확한 메시지 표시
         if (err.message === "Network Error") {
-          setError(
-            "백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요."
-          );
+          errorMessage =
+            "백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.";
         } else {
-          setError(`로그인 처리 중 오류가 발생했습니다: ${err.message}`);
+          errorMessage = `로그인 처리 중 오류가 발생했습니다: ${err.message}`;
         }
+
+        setError(errorMessage);
+
+        // SweetAlert2를 사용하여 에러 메시지 표시
+        Swal.fire({
+          icon: "error",
+          title: "로그인 실패",
+          text: errorMessage,
+          confirmButtonText: "확인",
+          confirmButtonColor: "#1B9AF5",
+        });
       } finally {
         setLoading(false);
       }

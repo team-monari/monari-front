@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import Header from '../components/Header';
-import { useRouter } from 'next/router';
-import FilterSection from '../components/FilterSection';
-import LessonCard from '../components/LessonCard';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
+import Link from "next/link";
+import Header from "../components/Header";
+import { useRouter } from "next/router";
+import FilterSection from "../components/FilterSection";
+import LessonCard from "../components/LessonCard";
+import { useAuth } from "../contexts/AuthContext";
+import Swal from "sweetalert2";
 
 interface Study {
   id: number;
   title: string;
   description: string;
-  subject: 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIAL';
-  schoolLevel: 'MIDDLE' | 'HIGH';
-  status: 'ACTIVE' | 'CLOSED';
+  subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIAL";
+  schoolLevel: "MIDDLE" | "HIGH";
+  status: "ACTIVE" | "CLOSED";
   createdAt: string;
   locationName: string;
   locationServiceUrl: string;
@@ -49,30 +50,42 @@ interface PageResponse<T> {
   };
 }
 
-const getSubjectLabel = (subject: Study['subject']) => {
+const getSubjectLabel = (subject: Study["subject"]) => {
   switch (subject) {
-    case 'MATH': return '수학';
-    case 'ENGLISH': return '영어';
-    case 'KOREAN': return '국어';
-    case 'SCIENCE': return '과학';
-    case 'SOCIAL': return '사회';
-    default: return subject;
+    case "MATH":
+      return "수학";
+    case "ENGLISH":
+      return "영어";
+    case "KOREAN":
+      return "국어";
+    case "SCIENCE":
+      return "과학";
+    case "SOCIAL":
+      return "사회";
+    default:
+      return subject;
   }
 };
 
-const getStatusLabel = (status: Study['status']) => {
+const getStatusLabel = (status: Study["status"]) => {
   switch (status) {
-    case 'ACTIVE': return '모집중';
-    case 'CLOSED': return '모집완료';
-    default: return status;
+    case "ACTIVE":
+      return "모집중";
+    case "CLOSED":
+      return "모집완료";
+    default:
+      return status;
   }
 };
 
-const getStatusColor = (status: Study['status']) => {
+const getStatusColor = (status: Study["status"]) => {
   switch (status) {
-    case 'ACTIVE': return 'bg-yellow-100 text-yellow-600';
-    case 'CLOSED': return 'bg-gray-100 text-gray-600';
-    default: return 'bg-gray-100 text-gray-600';
+    case "ACTIVE":
+      return "bg-yellow-100 text-yellow-600";
+    case "CLOSED":
+      return "bg-gray-100 text-gray-600";
+    default:
+      return "bg-gray-100 text-gray-600";
   }
 };
 
@@ -92,25 +105,29 @@ const Home = () => {
     setError(null);
     try {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies`);
-      url.searchParams.append('size', '3'); // 메인 페이지에는 3개만 표시
-      
+      url.searchParams.append("size", "3"); // 메인 페이지에는 3개만 표시
+
       const headers: HeadersInit = {};
       if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers["Authorization"] = `Bearer ${accessToken}`;
       }
-      
+
       const response = await fetch(url.toString(), {
         headers,
       });
 
       if (!response.ok) {
-        throw new Error('스터디 목록을 불러오는데 실패했습니다.');
+        throw new Error("스터디 목록을 불러오는데 실패했습니다.");
       }
 
       const data = await response.json();
       setStudies(data.content);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '스터디 목록을 불러오는데 실패했습니다.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "스터디 목록을 불러오는데 실패했습니다."
+      );
       setStudies([]);
     } finally {
       setIsLoading(false);
@@ -123,27 +140,33 @@ const Home = () => {
     setLessonsError(null);
     try {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons`);
-      url.searchParams.append('size', '3');
-      
+      url.searchParams.append("size", "3");
+
       const headers: HeadersInit = {};
       if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers["Authorization"] = `Bearer ${accessToken}`;
       }
-      
+
       const response = await fetch(url.toString(), {
         headers,
       });
 
       if (!response.ok) {
-        throw new Error('수업 목록을 불러오는데 실패했습니다.');
+        throw new Error("수업 목록을 불러오는데 실패했습니다.");
       }
 
       const data = await response.json();
       // CANCELED 상태의 수업은 제외
-      const filteredLessons = data.content.filter((lesson: Lesson) => lesson.status !== 'CANCELED');
+      const filteredLessons = data.content.filter(
+        (lesson: Lesson) => lesson.status !== "CANCELED"
+      );
       setLessons(filteredLessons);
     } catch (err) {
-      setLessonsError(err instanceof Error ? err.message : '수업 목록을 불러오는데 실패했습니다.');
+      setLessonsError(
+        err instanceof Error
+          ? err.message
+          : "수업 목록을 불러오는데 실패했습니다."
+      );
       setLessons([]);
     } finally {
       setIsLessonsLoading(false);
@@ -155,25 +178,70 @@ const Home = () => {
     fetchLessons();
   }, []);
 
+  // 로그인 성공 확인 및 알림 표시
+  useEffect(() => {
+    // 로컬 스토리지에서 로그인 성공 플래그 확인
+    const loginSuccess = localStorage.getItem("login_success");
+    const userType = localStorage.getItem("login_user_type");
+
+    if (loginSuccess === "true" && userType) {
+      // 로그인 성공 알림 표시 - 작게, 중앙 상단에 표시
+      Swal.fire({
+        icon: "success",
+        title: "로그인 성공",
+        text: `${
+          userType === "STUDENT" ? "학생" : "선생님"
+        }으로 로그인되었습니다`,
+        toast: true,
+        position: "top",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        width: "auto",
+        padding: "0.5em",
+        customClass: {
+          container: "z-50",
+          popup: "p-2",
+          title: "text-sm font-medium",
+          htmlContainer: "text-xs",
+        },
+      });
+
+      // 플래그 제거 (중복 알림 방지)
+      localStorage.removeItem("login_success");
+      localStorage.removeItem("login_user_type");
+    }
+  }, []);
+
   const handleCreateLesson = () => {
-    router.push('/create-lesson');
+    router.push("/create-lesson");
   };
 
   return (
     <div className="min-h-screen bg-white">
       <Head>
         <title>모나리 - 선생님과 학생을 연결하는 플랫폼</title>
-        <meta name="description" content="모나리 - 선생님과 학생을 연결하는 플랫폼" />
+        <meta
+          name="description"
+          content="모나리 - 선생님과 학생을 연결하는 플랫폼"
+        />
       </Head>
 
       <Header />
 
       <main className="container mx-auto px-6 py-12 max-w-[1280px]">
         <section className="text-center mb-16">
-          <h1 className="text-3xl font-bold mb-4">선생님과 학생을 연결하는 플랫폼</h1>
-          <p className="text-gray-600 mb-8">현재 진행중인 인기 팀당 프로젝트를 확인해보세요</p>
+          <h1 className="text-3xl font-bold mb-4">
+            선생님과 학생을 연결하는 플랫폼
+          </h1>
+          <p className="text-gray-600 mb-8">
+            현재 진행중인 인기 팀당 프로젝트를 확인해보세요
+          </p>
           <div className="flex gap-4 justify-center">
-            <Link href="/lessons" className="bg-[#1B9AF5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#1B9AF5]/90">
+            <Link
+              href="/lessons"
+              className="bg-[#1B9AF5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#1B9AF5]/90"
+            >
               수업 찾기
             </Link>
             <button className="text-gray-700 px-6 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50">
@@ -185,13 +253,23 @@ const Home = () => {
         <section className="mb-16">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold">학생 모집</h2>
-            <Link 
-              href="/lessons" 
+            <Link
+              href="/lessons"
               className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
             >
               <span>더보기</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -212,43 +290,80 @@ const Home = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">{lesson.title}</h3>
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      lesson.status === 'ACTIVE' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {lesson.status === 'ACTIVE' ? '모집중' : '모집마감'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      lesson.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                      'bg-green-100 text-green-600'
-                    }`}>
-                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
-                    </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {lesson.subject === 'MATH' ? '수학' :
-                       lesson.subject === 'ENGLISH' ? '영어' :
-                       lesson.subject === 'KOREAN' ? '국어' :
-                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {lesson.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        lesson.status === "ACTIVE"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {lesson.status === "ACTIVE" ? "모집중" : "모집마감"}
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 truncate">{lesson.description}</p>
-                  
+                  <div className="flex items-center gap-1 mb-3">
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        lesson.schoolLevel === "MIDDLE"
+                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {lesson.subject === "MATH"
+                        ? "수학"
+                        : lesson.subject === "ENGLISH"
+                        ? "영어"
+                        : lesson.subject === "KOREAN"
+                        ? "국어"
+                        : lesson.subject === "SCIENCE"
+                        ? "과학"
+                        : "사회"}
+                    </span>
+                  </div>
+
+                  <p className="text-gray-600 text-sm mb-4 truncate">
+                    {lesson.description}
+                  </p>
+
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
-                        {new Date(lesson.startDate).toLocaleDateString()} ~ {new Date(lesson.endDate).toLocaleDateString()}
+                        {new Date(lesson.startDate).toLocaleDateString()} ~{" "}
+                        {new Date(lesson.endDate).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
                         {lesson.currentStudent}/{lesson.maxStudent}명
@@ -264,13 +379,23 @@ const Home = () => {
         <section className="mb-16">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold">스터디 모집</h2>
-            <Link 
-              href="/studies" 
+            <Link
+              href="/studies"
               className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
             >
               <span>더보기</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -287,48 +412,62 @@ const Home = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">{study.title}</h3>
-                    <span className={`px-2 py-1 text-sm rounded-full ${getStatusColor(study.status)}`}>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {study.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${getStatusColor(
+                        study.status
+                      )}`}
+                    >
                       {getStatusLabel(study.status)}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-1 mb-3">
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      study.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                      study.schoolLevel === 'HIGH' ? 'bg-green-100 text-green-600' :
-                      'bg-purple-100 text-purple-600'
-                    }`}>
-                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        study.schoolLevel === "MIDDLE"
+                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
+                          : study.schoolLevel === "HIGH"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-purple-100 text-purple-600"
+                      }`}
+                    >
+                      {study.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
                     </span>
                     <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
                       {getSubjectLabel(study.subject)}
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 truncate">{study.description}</p>
+                  <p className="text-gray-600 text-sm mb-4 truncate">
+                    {study.description}
+                  </p>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg 
-                        className="w-4 h-4 text-gray-500" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
                           d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
                         />
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span className="text-sm text-gray-600">{study.locationName}</span>
+                      <span className="text-sm text-gray-600">
+                        {study.locationName}
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -342,17 +481,39 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="w-16 h-16 bg-[#1B9AF5]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-[#1B9AF5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <svg
+                  className="w-8 h-8 text-[#1B9AF5]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2">팀 매칭</h3>
-              <p className="text-gray-600">같은 목표를 가진 학습 동료를 쉽게 찾아보세요</p>
+              <p className="text-gray-600">
+                같은 목표를 가진 학습 동료를 쉽게 찾아보세요
+              </p>
             </div>
             <div>
               <div className="w-16 h-16 bg-[#1B9AF5]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-[#1B9AF5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <svg
+                  className="w-8 h-8 text-[#1B9AF5]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2">성장의 매칭</h3>
@@ -360,13 +521,30 @@ const Home = () => {
             </div>
             <div>
               <div className="w-16 h-16 bg-[#1B9AF5]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-[#1B9AF5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                <svg
+                  className="w-8 h-8 text-[#1B9AF5]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 14l9-5-9-5-9 5 9 5z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2">공간 대관</h3>
-              <p className="text-gray-600">편리한 학습 공간을 합리적인 가격에 이용하세요</p>
+              <p className="text-gray-600">
+                편리한 학습 공간을 합리적인 가격에 이용하세요
+              </p>
             </div>
           </div>
         </section>
@@ -380,4 +558,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;

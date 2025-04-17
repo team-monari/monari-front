@@ -5,6 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
+import Swal from "sweetalert2";
 
 interface User {
   id?: string;
@@ -43,7 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [userType, setUserType] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(() => {
     // 초기 상태 설정 시 localStorage에서 accessToken 가져오기
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       return localStorage.getItem("accessToken");
     }
     return null;
@@ -127,9 +128,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       userType: data.userType,
       user: userData,
     });
+
+    // 로그인 성공 알림은 메인 페이지에서 처리하도록 제거
   };
 
   const logout = () => {
+    // 로그아웃 전에 현재 userType 정보 저장
+    const currentUserType = userType;
+
     localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userType");
@@ -138,6 +144,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setAccessToken(null);
     setUser(null);
     setUserType(null);
+
+    // 로그아웃 알림 표시 - 중앙 상단에 작은 토스트 형태로 표시
+    Swal.fire({
+      icon: "info",
+      title: "로그아웃 완료",
+      text: `${
+        currentUserType === "STUDENT" ? "학생" : "선생님"
+      } 계정에서 로그아웃 되었습니다`,
+      toast: true,
+      position: "top",
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      width: "auto",
+      padding: "0.5em",
+      customClass: {
+        container: "z-50",
+        popup: "p-2",
+        title: "text-sm font-medium",
+        htmlContainer: "text-xs",
+      },
+    });
   };
 
   // accessToken을 가져오는 메서드

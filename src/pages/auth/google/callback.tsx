@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { authApi } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import Swal from "sweetalert2";
 
 const GoogleCallback = () => {
   const router = useRouter();
@@ -49,6 +50,10 @@ const GoogleCallback = () => {
           userType: response.userType || userType, // 백엔드에서 반환한 userType 사용, 없으면 요청 시 userType 사용
         });
 
+        // 로그인 성공 플래그 및 타입 저장
+        localStorage.setItem("login_success", "true");
+        localStorage.setItem("login_user_type", response.userType || userType);
+
         // 로딩 상태 해제
         setIsLoading(false);
 
@@ -58,17 +63,28 @@ const GoogleCallback = () => {
         console.error("Google login error:", err);
         setIsLoading(false);
 
+        // SweetAlert2를 사용하여 에러 메시지 표시
+        let errorMessage = "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.";
+
         if (err instanceof Error) {
           if (err.message.includes("Network Error")) {
-            setError(
-              "서버와의 연결에 실패했습니다. 잠시 후 다시 시도해주세요."
-            );
+            errorMessage =
+              "서버와의 연결에 실패했습니다. 잠시 후 다시 시도해주세요.";
           } else {
-            setError("로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+            errorMessage =
+              "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
           }
-        } else {
-          setError("알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
         }
+
+        setError(errorMessage);
+
+        Swal.fire({
+          icon: "error",
+          title: "로그인 실패",
+          text: errorMessage,
+          confirmButtonText: "확인",
+          confirmButtonColor: "#1B9AF5",
+        });
       }
     };
 
