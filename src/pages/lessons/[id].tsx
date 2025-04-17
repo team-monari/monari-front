@@ -8,19 +8,26 @@ import Swal from 'sweetalert2';
 import { getRegionText, Region } from '../../utils/region';
 import Image from 'next/image';
 
+interface TeacherProfile {
+  name: string;
+  university: string;
+  major: string;
+  career: string;
+  profileImageUrl?: string;
+}
+
 const LessonDetail: React.FC = () => {
   const router = useRouter();
   const { id } = router.query;
   const currentPage = router.query.page ? Number(router.query.page) : 1;
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
-  const [teacherProfile, setTeacherProfile] = useState<{
-    name: string;
-    university: string;
-    major: string;
-    career: string;
-    profileImageUrl: string | null;
-  } | null>(null);
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>({
+    name: '이름 미입력',
+    university: '미입력',
+    major: '미입력',
+    career: '미입력'
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,46 +60,36 @@ const LessonDetail: React.FC = () => {
   };
 
   useEffect(() => {
-    if (id) {
-      loadLesson();
-    }
-  }, [id]);
-
-  const loadLesson = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchLessonById(Number(id));
-      console.log('Lesson Data:', data); // 디버깅용 로그
-      setLesson(data);
+    const fetchLesson = async () => {
+      if (!id) return;
       
-      if (data.locationId) {
-        const locationData = await fetchLocationById(data.locationId);
-        setLocation(locationData);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/${id}`);
+        if (!response.ok) {
+          throw new Error('수업 정보를 불러오는데 실패했습니다.');
+        }
+        
+        const data = await response.json();
+        setLesson(data);
+        
+        // 선생님 프로필 정보 설정
+        setTeacherProfile({
+          name: data.name || '이름 미입력',
+          university: data.university || '미입력',
+          major: data.major || '미입력',
+          career: data.career || '미입력',
+          profileImageUrl: data.profileImageUrl
+        });
+      } catch (err) {
+        setError('수업 정보를 불러오는데 실패했습니다.');
+        console.error('Error fetching lesson:', err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // 선생님 프로필 정보 설정
-      setTeacherProfile({
-        name: data.name || '이름 미입력',
-        university: data.university || '미입력',
-        major: data.major || '미입력',
-        career: data.career || '미입력',
-        profileImageUrl: data.profileImageUrl,
-      });
-    } catch (err) {
-      setError('수업 정보를 불러오는데 실패했습니다.');
-      console.error('Error loading lesson:', err);
-      // 에러 발생 시에도 기본 정보를 설정
-      setTeacherProfile({
-        name: '이름 미입력',
-        university: '미입력',
-        major: '미입력',
-        career: '미입력',
-        profileImageUrl: null,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchLesson();
+  }, [id]);
 
   const handleEnroll = async () => {
     try {

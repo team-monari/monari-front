@@ -27,7 +27,7 @@ export interface Lesson {
   university: string;
   major: string;
   career: string;
-  profileImageUrl: string | null;
+  profileImageUrl?: string;
 }
 
 export interface LessonFilters {
