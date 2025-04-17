@@ -15,7 +15,10 @@ const GoogleCallback = () => {
   useEffect(() => {
     const handleGoogleCallback = async () => {
       // 코드나 state가 없으면 아직 처리하지 않음
-      if (!code || !state) return;
+      if (!code || !state) {
+        console.log("코드 또는 state가 없습니다:", { code, state });
+        return;
+      }
 
       // 현재 코드가 이미 처리된 코드와 동일하면 중복 처리 방지
       if (processedRef.current === code) return;
@@ -24,43 +27,61 @@ const GoogleCallback = () => {
       processedRef.current = code as string;
 
       try {
-        console.log("Processing Google callback with code:", code);
+        console.log("구글 콜백 처리 시작. 코드:", code);
+        console.log("State 파라미터:", state);
 
         // state 파라미터 디코딩
-        const decodedState = JSON.parse(atob(state as string));
-        const userType =
-          decodedState.role === "student" ? "STUDENT" : "TEACHER";
+        try {
+          // Base64 디코딩 및 URI 디코딩 적용
+          const decodedStateText = decodeURIComponent(atob(state as string));
+          const decodedState = JSON.parse(decodedStateText);
+          console.log("디코딩된 state:", decodedState);
 
-        console.log("Decoded state:", decodedState);
-        console.log("User type:", userType);
+          const userType =
+            decodedState.role === "student" ? "STUDENT" : "TEACHER";
+          console.log("변환된 사용자 유형:", userType);
 
-        // 백엔드에 소셜 로그인 요청
-        const response = await authApi.socialLogin({
-          code: code as string,
-          socialProvider: "GOOGLE",
-          userType,
-        });
+          // 백엔드 API 요청 정보 로깅
+          console.log("백엔드로 소셜 로그인 요청 전송:", {
+            code,
+            socialProvider: "GOOGLE",
+            userType,
+          });
 
-        console.log("Backend response:", response);
+          // 백엔드에 소셜 로그인 요청
+          const response = await authApi.socialLogin({
+            code: code as string,
+            socialProvider: "GOOGLE",
+            userType,
+          });
 
-        // OauthLoginResponse(String accessToken, UserType userType) 구조 처리
-        login({
-          token: "social_login_token", // JWT 토큰이 없으므로 임시 값 설정
-          accessToken: response.accessToken,
-          userType: response.userType || userType, // 백엔드에서 반환한 userType 사용, 없으면 요청 시 userType 사용
-        });
+          console.log("백엔드 응답:", response);
 
-        // 로그인 성공 플래그 및 타입 저장
-        localStorage.setItem("login_success", "true");
-        localStorage.setItem("login_user_type", response.userType || userType);
+          // OauthLoginResponse(String accessToken, UserType userType) 구조 처리
+          login({
+            token: "social_login_token", // JWT 토큰이 없으므로 임시 값 설정
+            accessToken: response.accessToken,
+            userType: response.userType || userType, // 백엔드에서 반환한 userType 사용, 없으면 요청 시 userType 사용
+          });
 
-        // 로딩 상태 해제
-        setIsLoading(false);
+          // 로그인 성공 플래그 및 타입 저장
+          localStorage.setItem("login_success", "true");
+          localStorage.setItem(
+            "login_user_type",
+            response.userType || userType
+          );
 
-        // 홈으로 리다이렉트 (router.events 방지를 위해 window.location 사용)
-        window.location.href = "/";
+          // 로딩 상태 해제
+          setIsLoading(false);
+
+          // 홈으로 리다이렉트 (router.events 방지를 위해 window.location 사용)
+          window.location.href = "/";
+        } catch (stateError) {
+          console.error("State 파라미터 디코딩 오류:", stateError);
+          throw new Error("유효하지 않은 state 파라미터입니다.");
+        }
       } catch (err) {
-        console.error("Google login error:", err);
+        console.error("구글 로그인 처리 중 오류 발생:", err);
         setIsLoading(false);
 
         // SweetAlert2를 사용하여 에러 메시지 표시
@@ -70,9 +91,11 @@ const GoogleCallback = () => {
           if (err.message.includes("Network Error")) {
             errorMessage =
               "서버와의 연결에 실패했습니다. 잠시 후 다시 시도해주세요.";
-          } else {
+          } else if (err.message.includes("state")) {
             errorMessage =
-              "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
+              "인증 상태 정보가 올바르지 않습니다. 다시 로그인을 시도해주세요.";
+          } else {
+            errorMessage = `로그인 처리 중 오류: ${err.message}`;
           }
         }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import StudentSignupForm, { StudentFormData } from "./StudentSignupForm";
 import TeacherSignupForm, { TeacherFormData } from "./TeacherSignupForm";
-import { getKakaoAuthUrl } from "../utils/socialAuth";
+import { getKakaoAuthUrl, getGoogleAuthUrl } from "../utils/socialAuth";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -80,8 +80,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
       window.location.href = kakaoAuthUrl;
     } else if (provider === "google") {
       // 구글 로그인 처리
-      const state = btoa(JSON.stringify({ role: selectedRole }));
-      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI}&response_type=code&scope=email profile&state=${state}`;
+      const googleAuthUrl = getGoogleAuthUrl(selectedRole);
       window.location.href = googleAuthUrl;
     }
   };
