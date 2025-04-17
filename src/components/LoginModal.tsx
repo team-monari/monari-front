@@ -6,6 +6,7 @@ import { getKakaoAuthUrl } from "../utils/socialAuth";
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialRole?: "student" | "teacher";
 }
 
 type ModalStep =
@@ -14,11 +15,31 @@ type ModalStep =
   | "student-signup"
   | "teacher-signup";
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  initialRole,
+}) => {
   const [selectedRole, setSelectedRole] = useState<
     "student" | "teacher" | null
   >(null);
   const [currentStep, setCurrentStep] = useState<ModalStep>("role-selection");
+
+  // 초기 역할이 전달되면 해당 역할로 설정하고 소셜 로그인 화면으로 바로 이동
+  useEffect(() => {
+    if (initialRole && isOpen) {
+      setSelectedRole(initialRole);
+      setCurrentStep("social-login");
+    }
+  }, [initialRole, isOpen]);
+
+  // 모달이 닫힐 때 상태 초기화
+  useEffect(() => {
+    if (!isOpen) {
+      // 모달이 닫힐 때는 상태를 초기화하지 않음
+      // 다시 열릴 때 initialRole에 따라 처리하기 위함
+    }
+  }, [isOpen]);
 
   // ESC 키를 누르면 모달이 닫히도록 합니다
   useEffect(() => {

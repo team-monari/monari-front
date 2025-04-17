@@ -7,20 +7,28 @@ import { useAuth } from "@/contexts/AuthContext";
 const Header = () => {
   const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+  const [selectedLoginRole, setSelectedLoginRole] = useState<
+    "student" | "teacher" | undefined
+  >(undefined);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "error" | "success";
+  } | null>(null);
   const { isAuthenticated, userType, logout } = useAuth();
 
-  const showNotification = (message: string, type: 'error' | 'success') => {
+  const showNotification = (message: string, type: "error" | "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const openLoginModal = () => {
+  const openLoginModal = (role?: "student" | "teacher") => {
+    setSelectedLoginRole(role);
     setIsLoginModalOpen(true);
   };
 
   const closeLoginModal = () => {
     setIsLoginModalOpen(false);
+    setSelectedLoginRole(undefined);
   };
 
   // 역할에 따른 마이페이지 경로 결정
@@ -54,10 +62,10 @@ const Header = () => {
   const handleCreateLesson = () => {
     if (!isAuthenticated) {
       openLoginModal();
-    } else if (userType === 'STUDENT') {
-      showNotification('학생은 수업을 개설할 수 없습니다.', 'error');
+    } else if (userType === "STUDENT") {
+      showNotification("학생은 수업을 개설할 수 없습니다.", "error");
     } else {
-      router.push('/lessons/create');
+      router.push("/lessons/create");
     }
   };
 
@@ -138,30 +146,60 @@ const Header = () => {
             </button>
           </div>
         ) : (
-          <button
-            className="text-base text-gray-600 hover:text-[#1B9AF5]"
-            onClick={openLoginModal}
-          >
-            로그인
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              className="text-base text-gray-600 hover:text-[#1B9AF5]"
+              onClick={() => openLoginModal("student")}
+            >
+              로그인/회원가입
+            </button>
+            <button
+              className="text-base bg-[#1B9AF5] text-white px-4 py-2 rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+              onClick={() => openLoginModal("teacher")}
+            >
+              선생님으로 로그인
+            </button>
+          </div>
         )}
       </div>
 
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 px-6 py-4 rounded-xl shadow-xl transition-all duration-300 transform ${
-          notification.type === 'error' 
-            ? 'bg-red-50 text-red-700 border border-red-200' 
-            : 'bg-green-50 text-green-700 border border-green-200'
-        }`}>
+        <div
+          className={`fixed top-4 right-4 px-6 py-4 rounded-xl shadow-xl transition-all duration-300 transform ${
+            notification.type === "error"
+              ? "bg-red-50 text-red-700 border border-red-200"
+              : "bg-green-50 text-green-700 border border-green-200"
+          }`}
+        >
           <div className="flex items-center space-x-3">
-            {notification.type === 'error' ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            {notification.type === "error" ? (
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             )}
             <span className="font-medium text-lg">{notification.message}</span>
@@ -170,7 +208,11 @@ const Header = () => {
       )}
 
       {/* Login Modal */}
-      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={closeLoginModal}
+        initialRole={selectedLoginRole}
+      />
     </header>
   );
 };
