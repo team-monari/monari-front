@@ -23,72 +23,64 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
     searchType: 'title',
     keyword: ''
   });
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
     const { page, keyword, subject, schoolLevel, region } = router.query;
+    const newFilters = {
+      ...filters,
+      keyword: keyword as string || '',
+      subject: subject as string || '',
+      schoolLevel: schoolLevel as string || '',
+      region: region as string || ''
+    };
+
     if (page) {
       const pageNum = parseInt(page as string, 10);
       if (!isNaN(pageNum) && pageNum > 0) {
         setCurrentPage(pageNum);
       }
     }
-    setFilters(prev => ({
-      ...prev,
-      keyword: keyword as string || '',
-      subject: subject as string || '',
-      schoolLevel: schoolLevel as string || '',
-      region: region as string || ''
-    }));
-  }, [router.query]);
+
+    setFilters(newFilters);
+  }, [router.isReady, router.query]);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
     const loadData = async () => {
-      await loadLessons();
-      if (!filters.keyword) {
-        await loadTotalPages();
+      try {
+        setLoading(true);
+        const searchParams = new URLSearchParams();
+        if (filters.keyword) searchParams.append('keyword', filters.keyword);
+        if (filters.subject) searchParams.append('subject', filters.subject);
+        if (filters.schoolLevel) searchParams.append('schoolLevel', filters.schoolLevel);
+        if (filters.region) searchParams.append('region', filters.region);
+        searchParams.append('pageNumber', currentPage.toString());
+        searchParams.append('pageSize', '6');
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/search?${searchParams.toString()}`);
+        if (!response.ok) {
+          throw new Error('검색 요청에 실패했습니다.');
+        }
+
+        const data = await response.json();
+        setLessons(data.content || []);
+        setTotalPages(data.page?.totalPages || 0);
+        setError(null);
+      } catch (err) {
+        setError('검색 중 오류가 발생했습니다.');
+        console.error('Search error:', err);
+      } finally {
+        setLoading(false);
+        setIsInitialLoad(false);
       }
     };
-    
+
     loadData();
-  }, [currentPage, filters.keyword, filters.schoolLevel, filters.subject]);
-
-  const loadTotalPages = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/pages`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch total pages');
-      }
-      const data = await response.json();
-      setTotalPages(data.totalPages);
-    } catch (err) {
-      console.error('Error loading total pages:', err);
-    }
-  };
-
-  const loadLessons = async () => {
-    try {
-      setLoading(true);
-      let response;
-      if (filters.keyword) {
-        response = await searchLessons(
-          filters.keyword,
-          currentPage,
-          6,
-          filters.schoolLevel,
-          filters.subject
-        );
-        setTotalPages(response.page.totalPages);
-      } else {
-        response = await fetchLessons(currentPage);
-      }
-      setLessons(response.content);
-    } catch (err) {
-      setError('수업 목록을 불러오는데 실패했습니다.');
-      console.error('Error loading lessons:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [currentPage, filters.subject, filters.schoolLevel, filters.region, filters.keyword, router.isReady]);
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
@@ -195,7 +187,10 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
       <div className="text-center py-12 text-red-500">
         {error}
         <button
-          onClick={loadLessons}
+          onClick={() => {
+            setCurrentPage(1);
+            updateUrl(1, filters);
+          }}
           className="ml-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
         >
           다시 시도
