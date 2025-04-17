@@ -31,6 +31,8 @@ interface FormErrors {
   maxStudent?: string;
   locationId?: string;
   amount?: string;
+  dateRange?: string;
+  region?: string;
 }
 
 const SEOUL_DISTRICTS = [
@@ -57,13 +59,11 @@ const CreateLessonPage = () => {
     region: ''
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-
   const [locations, setLocations] = useState<Location[]>([]);
   const [showLocationList, setShowLocationList] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [formattedPrice, setFormattedPrice] = useState<string>('');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
 
@@ -89,19 +89,18 @@ const CreateLessonPage = () => {
     }
   };
 
-  const handleChange = (field: keyof FormData, value: string | number | Date | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
   const handleDateRangeChange = (dates: [Date | null, Date | null]) => {
-    setDateRange(dates);
     setFormData(prev => ({
       ...prev,
       startDate: dates[0],
       endDate: dates[1]
+    }));
+  };
+
+  const handleChange = (field: keyof FormData, value: string | number | Date | null) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -141,6 +140,64 @@ const CreateLessonPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 폼 검증
+    const errors: FormErrors = {};
+    let firstErrorField: string | null = null;
+
+    if (!formData.title.trim()) {
+      errors.title = '수업 제목을 입력해주세요.';
+      if (!firstErrorField) firstErrorField = 'title';
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = '수업 설명을 입력해주세요.';
+      if (!firstErrorField) firstErrorField = 'description';
+    }
+
+    if (!formData.price || formData.price === '0') {
+      errors.amount = '수업 가격을 입력해주세요.';
+      if (!firstErrorField) firstErrorField = 'amount';
+    }
+
+    if (!formData.minStudents || parseInt(formData.minStudents) < 1) {
+      errors.minStudent = '최소 인원을 입력해주세요.';
+      if (!firstErrorField) firstErrorField = 'minStudent';
+    }
+
+    if (!formData.maxStudents || parseInt(formData.maxStudents) < parseInt(formData.minStudents)) {
+      errors.maxStudent = '최대 인원은 최소 인원보다 크거나 같아야 합니다.';
+      if (!firstErrorField) firstErrorField = 'maxStudent';
+    }
+
+    if (!formData.locationId) {
+      errors.locationId = '수업 장소를 선택해주세요.';
+      if (!firstErrorField) firstErrorField = 'locationId';
+    }
+
+    if (!formData.startDate || !formData.endDate) {
+      errors.dateRange = '수업 기간을 선택해주세요.';
+      if (!firstErrorField) firstErrorField = 'dateRange';
+    }
+
+    if (!formData.region) {
+      errors.region = '지역을 선택해주세요.';
+      if (!firstErrorField) firstErrorField = 'region';
+    }
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // 첫 번째 에러 필드로 스크롤
+      if (firstErrorField) {
+        const errorElement = document.getElementById(firstErrorField);
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          errorElement.focus();
+        }
+      }
+      return;
+    }
+
     try {
       const result = await Swal.fire({
         title: '수업 개설',
@@ -294,6 +351,7 @@ const CreateLessonPage = () => {
                   수업 제목
                 </label>
                 <input
+                  id="title"
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
@@ -311,6 +369,7 @@ const CreateLessonPage = () => {
                 </label>
                 <div className="space-y-4">
                   <textarea
+                    id="description"
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
                     className={`w-full px-4 py-3 border ${formErrors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px] break-words whitespace-pre-wrap`}
@@ -332,15 +391,6 @@ const CreateLessonPage = () => {
                   {formErrors.description && (
                     <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
                   )}
-                  <div className="p-4 bg-blue-50 rounded-xl">
-                    <p className="text-sm font-medium text-blue-800 mb-2">수업 설명 작성 가이드</p>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>• 수업의 목표와 기대효과를 구체적으로 작성해주세요.</li>
-                      <li>• 수업 진행 방식과 시간을 명확하게 안내해주세요.</li>
-                      <li>• 월별 또는 주차별 커리큘럼을 상세히 설명해주세요.</li>
-                      <li>• 학생들의 참여와 피드백 방식을 포함해주세요.</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
 
@@ -351,6 +401,7 @@ const CreateLessonPage = () => {
                   </label>
                   <div className="relative">
                     <input
+                      id="amount"
                       type="text"
                       value={formattedPrice}
                       onChange={handlePriceChange}
@@ -371,6 +422,7 @@ const CreateLessonPage = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <input
+                        id="minStudent"
                         type="number"
                         value={formData.minStudents}
                         onChange={(e) => handleChange('minStudents', Number(e.target.value))}
@@ -383,6 +435,7 @@ const CreateLessonPage = () => {
                     </div>
                     <div>
                       <input
+                        id="maxStudent"
                         type="number"
                         value={formData.maxStudents}
                         onChange={(e) => handleChange('maxStudents', Number(e.target.value))}
@@ -401,38 +454,43 @@ const CreateLessonPage = () => {
                 <label className="block text-base font-semibold text-gray-800">
                   수업 기간
                 </label>
-                <DatePicker
-                  selectsRange={true}
-                  startDate={dateRange[0]}
-                  endDate={dateRange[1]}
-                  onChange={handleDateRangeChange}
-                  minDate={new Date()}
-                  maxDate={dateRange[0] ? new Date(dateRange[0].getTime() + 30 * 24 * 60 * 60 * 1000) : undefined}
-                  dateFormat="yyyy-MM-dd"
-                  placeholderText="수업 기간을 선택하세요"
-                  className="w-full"
-                  required
-                />
-                {formData.startDate && (
-                  <div className="mt-2 p-4 bg-blue-50 rounded-xl">
-                    <p className="text-sm text-blue-700">
-                      모집 마감일: {new Date(formData.startDate.getTime() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      <p className="text-xs text-blue-600">
-                        ※ 모집 마감일은 수업 시작일 7일 전으로 자동 설정됩니다.
+                <div id="dateRange">
+                  <DatePicker
+                    selectsRange={true}
+                    startDate={formData.startDate}
+                    endDate={formData.endDate}
+                    onChange={handleDateRangeChange}
+                    minDate={new Date()}
+                    maxDate={formData.startDate ? new Date(formData.startDate.getTime() + 30 * 24 * 60 * 60 * 1000) : undefined}
+                    dateFormat="yyyy-MM-dd"
+                    placeholderText="수업 기간을 선택하세요"
+                    className="w-full"
+                    required
+                  />
+                  {formData.startDate && (
+                    <div className="mt-2 p-4 bg-blue-50 rounded-xl">
+                      <p className="text-sm text-blue-700">
+                        모집 마감일: {new Date(formData.startDate.getTime() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                       </p>
-                      <p className="text-xs text-blue-600">
-                        ※ 수업 시작일 전까지는 수정이 가능하며, 시작일 이후에는 수정이 불가능합니다.
-                      </p>
-                      <p className="text-xs text-blue-600">
-                        ※ 모집 마감일 전까지는 수업 취소가 가능합니다.
-                      </p>
-                      <p className="text-xs text-blue-600">
-                        ※ 수업 기간은 최대 30일까지만 설정 가능합니다.
-                      </p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-blue-600">
+                          ※ 모집 마감일은 수업 시작일 7일 전으로 자동 설정됩니다.
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          ※ 수업 시작일 전까지는 수정이 가능하며, 시작일 이후에는 수정이 불가능합니다.
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          ※ 모집 마감일 전까지는 수업 취소가 가능합니다.
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          ※ 수업 기간은 최대 30일까지만 설정 가능합니다.
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+                {formErrors.dateRange && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.dateRange}</p>
                 )}
               </div>
 
@@ -496,6 +554,7 @@ const CreateLessonPage = () => {
                   지역
                 </label>
                 <select
+                  id="region"
                   name="region"
                   value={formData.region}
                   onChange={(e) => handleChange('region', e.target.value)}
@@ -509,6 +568,9 @@ const CreateLessonPage = () => {
                     </option>
                   ))}
                 </select>
+                {formErrors.region && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.region}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -517,6 +579,7 @@ const CreateLessonPage = () => {
                 </label>
                 <div className="relative">
                   <button
+                    id="locationId"
                     type="button"
                     onClick={() => setShowLocationList(!showLocationList)}
                     className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white`}
