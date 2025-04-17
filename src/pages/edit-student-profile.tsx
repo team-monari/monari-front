@@ -27,10 +27,6 @@ const EditStudentProfile = () => {
   const router = useRouter();
   const { accessToken, userType, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    null
-  );
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // 기본 폼 데이터
   const [formData, setFormData] = useState<StudentProfileData>({
@@ -106,11 +102,6 @@ const EditStudentProfile = () => {
           selectedGrade: gradeText,
           schoolName: data.schoolName || "",
         }));
-
-        // 프로필 이미지가 있으면 미리보기 설정
-        if (data.profileImageUrl) {
-          setProfileImagePreview(data.profileImageUrl);
-        }
       } catch (error) {
         console.error("학생 정보 가져오기 오류:", error);
       } finally {
@@ -234,10 +225,6 @@ const EditStudentProfile = () => {
       const apiData = {
         schoolLevel: apiSchoolLevel,
         grade: apiGrade,
-        // 프로필 이미지 URL이 변경된 경우만 포함
-        ...(formData.profileImageUrl !== null && {
-          profileImageUrl: formData.profileImageUrl,
-        }),
         // 학교 정보가 있는 경우만 포함
         ...(formData.schoolName && { schoolName: formData.schoolName }),
       };
@@ -282,41 +269,6 @@ const EditStudentProfile = () => {
     router.push("/mypage");
   };
 
-  // 이미지 파일 선택 처리
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // 이미지 파일 검증 (JPG, PNG, GIF 등)
-    if (!file.type.startsWith("image/")) {
-      alert("이미지 파일만 업로드 가능합니다.");
-      return;
-    }
-
-    // 파일 사이즈 제한 (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("5MB 이하의 파일만 업로드 가능합니다.");
-      return;
-    }
-
-    // 파일을 URL로 변환하여 미리보기 표시
-    const fileURL = URL.createObjectURL(file);
-    setProfileImagePreview(fileURL);
-
-    // 실제 프로젝트에서는 여기서 이미지를 서버에 업로드하고 URL을 받아와야 함
-    // 현재는 이미지 업로드 API가 따로 있다고 가정하고 구현
-    // 임시로 미리보기 URL을 사용
-    setFormData((prev) => ({
-      ...prev,
-      profileImageUrl: fileURL, // 실제로는 서버에서 받은 URL을 사용해야 함
-    }));
-  };
-
-  // 이미지 업로드 버튼 클릭 처리
-  const handleImageUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
   // 로딩 중 표시
   if (loading) {
     return (
@@ -356,56 +308,6 @@ const EditStudentProfile = () => {
 
         <div className="bg-white rounded-lg shadow-sm p-8">
           <form onSubmit={handleSubmit}>
-            {/* 프로필 이미지 미리보기 및 업로드 */}
-            <div className="mb-6 flex flex-col items-center">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-lg flex items-center justify-center mb-3">
-                {profileImagePreview ? (
-                  <img
-                    src={profileImagePreview}
-                    alt="프로필 이미지"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-500 text-3xl font-bold">
-                    {formData.name ? formData.name.charAt(0) : "?"}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleImageUploadClick}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                프로필 이미지 변경
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageChange}
-              />
-              {profileImagePreview && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfileImagePreview(null);
-                    setFormData((prev) => ({
-                      ...prev,
-                      profileImageUrl: null,
-                    }));
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = "";
-                    }
-                  }}
-                  className="text-sm text-red-500 mt-1 hover:text-red-700"
-                >
-                  이미지 삭제
-                </button>
-              )}
-            </div>
-
-            {/* 학생 ID와 이메일 정보, 이름 부분 제거 */}
             {formData.phone && (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="text-sm text-gray-500 mb-2">연락처</div>
