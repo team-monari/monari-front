@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+import ProfileImageUpload from "./ProfileImageUpload";
 
 // 학생 유형 정의
 type SchoolLevel = "MIDDLE" | "HIGH";
@@ -8,47 +8,56 @@ type Grade = "FIRST" | "SECOND" | "THIRD";
 interface ProfileHeaderProps {
   name: string;
   email: string;
-  profileImage?: string;
+  profileImage?: string | null;
+  canEditImage?: boolean;
+  onImageUpload?: (file: File) => Promise<void>;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   name,
   email,
   profileImage,
+  canEditImage = false,
+  onImageUpload,
 }) => {
   return (
     <div className="p-6 border-b border-gray-200">
       <div className="flex flex-col md:flex-row md:items-center">
         {/* 프로필 이미지 */}
         <div className="relative mb-4 md:mb-0 md:mr-6 self-center md:self-start">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-lg flex items-center justify-center">
-            {profileImage ? (
-              <Image
-                src={profileImage}
-                alt={`${name}의 프로필 이미지`}
-                width={96}
-                height={96}
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg
-                  className="w-12 h-12 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
+          {canEditImage && onImageUpload ? (
+            <ProfileImageUpload
+              currentImageUrl={profileImage || null}
+              onImageUpload={onImageUpload}
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-lg flex items-center justify-center">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={`${name}의 프로필 이미지`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <svg
+                    className="w-12 h-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+          )}
           <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
         </div>
 

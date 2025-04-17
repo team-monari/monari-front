@@ -7,6 +7,7 @@ import StudyCard, { StudyData } from "../components/StudyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import Swal from "sweetalert2";
 
 // 학생 프로필 인터페이스 정의
 interface StudentProfile {
@@ -23,9 +24,9 @@ interface Study {
   id: number;
   title: string;
   description: string;
-  subject: 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIAL';
-  schoolLevel: 'MIDDLE' | 'HIGH';
-  status: 'ACTIVE' | 'CLOSED';
+  subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIAL";
+  schoolLevel: "MIDDLE" | "HIGH";
+  status: "ACTIVE" | "CLOSED";
   createdAt: string;
   locationName: string;
   locationServiceUrl: string;
@@ -64,7 +65,9 @@ interface PageResponse<T> {
 const MyPage = () => {
   const router = useRouter();
   const { userType, accessToken, isAuthenticated } = useAuth();
-  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(
+    null
+  );
   const [myStudies, setMyStudies] = useState<Study[]>([]);
   const [myLessons, setMyLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,29 +76,144 @@ const MyPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [studiesError, setStudiesError] = useState<string | null>(null);
   const [lessonsError, setLessonsError] = useState<string | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
+  // 프로필 이미지 업로드 함수
+  const handleProfileImageUpload = async (file: File): Promise<void> => {
+    if (!accessToken) {
+      throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
+    }
+
+    try {
+      // FormData 생성 및 파일 추가
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // 환경 변수에서 API URL 가져오기
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const apiUrl = `${baseUrl}/api/v1/students/me/profile-image`;
+
+      // 이미지 업로드 API 호출
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          // Content-Type은 FormData를 사용할 때 자동으로 설정됨
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `이미지 업로드 실패: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("이미지 업로드 성공:", data);
+
+      // 이미지 URL이 응답에 포함된 경우 상태 업데이트
+      if (data.profileImageUrl) {
+        setProfileImageUrl(data.profileImageUrl);
+        // 프로필 정보도 업데이트
+        setStudentProfile((prev) =>
+          prev ? { ...prev, profileImageUrl: data.profileImageUrl } : null
+        );
+      } else {
+        // 이미지 URL이 응답에 없는 경우 이미지를 다시 로드
+        fetchProfileImage();
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "이미지 업로드 성공",
+        text: "프로필 이미지가 업데이트되었습니다.",
+        toast: true,
+        position: "top",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        width: "auto",
+        padding: "0.5em",
+        customClass: {
+          container: "z-50",
+          popup: "p-2",
+          title: "text-sm font-medium",
+          htmlContainer: "text-xs",
+        },
+      });
+    } catch (error) {
+      console.error("이미지 업로드 중 오류 발생:", error);
+      throw error;
+    }
+  };
+
+  // 프로필 이미지 조회 함수
+  const fetchProfileImage = async () => {
+    if (!accessToken) return;
+
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const apiUrl = `${baseUrl}/api/v1/students/me/profile-image`;
+
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        // 이미지가 없는 경우 등 404 오류는 정상적인 상황으로 처리
+        if (response.status === 404) {
+          setProfileImageUrl(null);
+          return;
+        }
+        throw new Error(`이미지 조회 실패: ${response.status}`);
+      }
+
+      // 이미지 데이터를 Blob으로 받아오기
+      const imageBlob = await response.blob();
+      const imageObjectUrl = URL.createObjectURL(imageBlob);
+      setProfileImageUrl(imageObjectUrl);
+    } catch (error) {
+      console.error("프로필 이미지 조회 중 오류 발생:", error);
+      // 이미지 조회 실패는 치명적인 오류가 아니므로 기본 이미지를 사용
+      setProfileImageUrl(null);
+    }
+  };
 
   // 내가 개설한 스터디 목록 가져오기
   const fetchMyStudies = async () => {
     setIsStudiesLoading(true);
     setStudiesError(null);
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/me`);
-      url.searchParams.append('size', '3');
-      
+      const url = new URL(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/me`
+      );
+      url.searchParams.append("size", "3");
+
       const response = await fetch(url.toString(), {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('스터디 목록을 불러오는데 실패했습니다.');
+        throw new Error("스터디 목록을 불러오는데 실패했습니다.");
       }
 
       const data = await response.json();
       setMyStudies(data.content);
     } catch (err) {
-      setStudiesError(err instanceof Error ? err.message : '스터디 목록을 불러오는데 실패했습니다.');
+      setStudiesError(
+        err instanceof Error
+          ? err.message
+          : "스터디 목록을 불러오는데 실패했습니다."
+      );
     } finally {
       setIsStudiesLoading(false);
     }
@@ -166,6 +284,9 @@ const MyPage = () => {
         const data = await response.json();
         console.log("받은 학생 데이터:", data);
         setStudentProfile(data);
+
+        // 프로필 이미지 가져오기
+        await fetchProfileImage();
       } catch (err) {
         console.error("학생 프로필 정보 가져오기 실패:", err);
         setError(
@@ -184,23 +305,29 @@ const MyPage = () => {
     setIsLessonsLoading(true);
     setLessonsError(null);
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/student/me`);
-      url.searchParams.append('size', '3');
-      
+      const url = new URL(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/student/me`
+      );
+      url.searchParams.append("size", "3");
+
       const response = await fetch(url.toString(), {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('수업 목록을 불러오는데 실패했습니다.');
+        throw new Error("수업 목록을 불러오는데 실패했습니다.");
       }
 
       const data = await response.json();
       setMyLessons(data.content);
     } catch (err) {
-      setLessonsError(err instanceof Error ? err.message : '수업 목록을 불러오는데 실패했습니다.');
+      setLessonsError(
+        err instanceof Error
+          ? err.message
+          : "수업 목록을 불러오는데 실패했습니다."
+      );
     } finally {
       setIsLessonsLoading(false);
     }
@@ -260,7 +387,9 @@ const MyPage = () => {
               <ProfileHeader
                 name={studentProfile.name}
                 email={studentProfile.email}
-                profileImage={studentProfile.profileImageUrl || undefined}
+                profileImage={profileImageUrl || studentProfile.profileImageUrl}
+                canEditImage={true}
+                onImageUpload={handleProfileImageUpload}
               />
             </>
           )}
@@ -330,17 +459,27 @@ const MyPage = () => {
         <section className="mb-10">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">내가 개설한 스터디</h2>
-            <Link 
-              href="/mystudies" 
+            <Link
+              href="/mystudies"
               className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
             >
               <span>더보기</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
-          
+
           {isStudiesLoading ? (
             <div className="flex justify-center items-center h-48">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B9AF5]"></div>
@@ -358,52 +497,70 @@ const MyPage = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">{study.title}</h3>
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      study.status === 'ACTIVE' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {study.status === 'ACTIVE' ? '모집중' : '모집완료'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      study.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                      'bg-green-100 text-green-600'
-                    }`}>
-                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
-                    </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {study.subject === 'MATH' ? '수학' :
-                       study.subject === 'ENGLISH' ? '영어' :
-                       study.subject === 'KOREAN' ? '국어' :
-                       study.subject === 'SCIENCE' ? '과학' : '사회'}
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {study.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        study.status === "ACTIVE"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {study.status === "ACTIVE" ? "모집중" : "모집완료"}
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 truncate">{study.description}</p>
+                  <div className="flex items-center gap-1 mb-3">
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        study.schoolLevel === "MIDDLE"
+                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {study.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                    </span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                      {study.subject === "MATH"
+                        ? "수학"
+                        : study.subject === "ENGLISH"
+                        ? "영어"
+                        : study.subject === "KOREAN"
+                        ? "국어"
+                        : study.subject === "SCIENCE"
+                        ? "과학"
+                        : "사회"}
+                    </span>
+                  </div>
+
+                  <p className="text-gray-600 text-sm mb-4 truncate">
+                    {study.description}
+                  </p>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg 
-                        className="w-4 h-4 text-gray-500" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
                           d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
                         />
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span className="text-sm text-gray-600">{study.locationName}</span>
+                      <span className="text-sm text-gray-600">
+                        {study.locationName}
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -430,43 +587,80 @@ const MyPage = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">{lesson.title}</h3>
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      lesson.status === 'ACTIVE' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {lesson.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        lesson.status === "ACTIVE"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
                       {lesson.status}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-1 mb-3">
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      lesson.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                      'bg-green-100 text-green-600'
-                    }`}>
-                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                    <span
+                      className={`px-2 py-1 text-sm rounded-full ${
+                        lesson.schoolLevel === "MIDDLE"
+                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
                     </span>
                     <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {lesson.subject === 'MATH' ? '수학' :
-                       lesson.subject === 'ENGLISH' ? '영어' :
-                       lesson.subject === 'KOREAN' ? '국어' :
-                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                      {lesson.subject === "MATH"
+                        ? "수학"
+                        : lesson.subject === "ENGLISH"
+                        ? "영어"
+                        : lesson.subject === "KOREAN"
+                        ? "국어"
+                        : lesson.subject === "SCIENCE"
+                        ? "과학"
+                        : "사회"}
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 truncate">{lesson.description}</p>
-                  
+                  <p className="text-gray-600 text-sm mb-4 truncate">
+                    {lesson.description}
+                  </p>
+
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
-                        {new Date(lesson.startDate).toLocaleDateString()} ~ {new Date(lesson.endDate).toLocaleDateString()}
+                        {new Date(lesson.startDate).toLocaleDateString()} ~{" "}
+                        {new Date(lesson.endDate).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
                         {lesson.currentStudent}/{lesson.maxStudent}명
