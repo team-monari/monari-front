@@ -7,6 +7,7 @@ import FilterSection from "../components/FilterSection";
 import LessonCard from "../components/LessonCard";
 import { useAuth } from "../contexts/AuthContext";
 import Swal from "sweetalert2";
+import { Region, regionToKorean } from "../utils/region";
 
 interface Study {
   id: number;
@@ -20,6 +21,7 @@ interface Study {
   locationServiceUrl: string;
   studentPublicId: string;
   studentName: string;
+  region: Region;
 }
 
 interface Lesson {
@@ -450,14 +452,13 @@ const Home = () => {
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span className="text-sm text-gray-600">
-                        {study.locationName}
-                      </span>
+                      <span className="text-sm text-gray-600">{study.locationName}</span>
+                      <span className="text-sm text-gray-600">({regionToKorean[study.region]})</span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
           )}
         </section>
 
