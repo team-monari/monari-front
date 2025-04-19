@@ -65,18 +65,21 @@ export default function StudyDetail() {
 
   useEffect(() => {
     const fetchStudyDetail = async () => {
-      if (!id || !accessToken) return;
+      if (!id) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
+        const headers: HeadersInit = {};
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/${id}`,
           {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
+            headers,
           }
         );
 
