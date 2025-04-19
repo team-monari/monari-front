@@ -43,6 +43,7 @@ const SEOUL_DISTRICTS = [
 
 const CreateLessonPage = () => {
   const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -68,8 +69,58 @@ const CreateLessonPage = () => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
 
   useEffect(() => {
-    fetchLocations();
-  }, []);
+    const checkAuth = async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      const userType = localStorage.getItem('userType');
+
+      if (!accessToken) {
+        const result = await Swal.fire({
+          title: '로그인 필요',
+          text: '수업 개설은 선생님만이 사용할 수 있는 기능입니다. 로그인하시겠습니까?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: '예',
+          cancelButtonText: '아니오',
+          confirmButtonColor: '#1B9AF5',
+          cancelButtonColor: '#6B7280',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+
+        if (result.isConfirmed) {
+          router.push('/auth/login?role=TEACHER');
+        } else {
+          router.push('/');
+        }
+        return;
+      }
+
+      if (userType !== 'TEACHER') {
+        await Swal.fire({
+          title: '접근 불가',
+          text: '수업 개설은 선생님만이 사용할 수 있는 기능입니다.',
+          icon: 'error',
+          confirmButtonText: '확인',
+          confirmButtonColor: '#1B9AF5',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+        router.push('/');
+        return;
+      }
+
+      try {
+        await fetchLocations();
+      } catch (error) {
+        console.error('장소 목록을 불러오는 중 오류 발생:', error);
+        setError('장소 목록을 불러오는데 실패했습니다.');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const fetchLocations = async () => {
     try {
@@ -140,6 +191,43 @@ const CreateLessonPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const accessToken = localStorage.getItem('accessToken');
+    const userType = localStorage.getItem('userType');
+
+    if (!accessToken) {
+      const result = await Swal.fire({
+        title: '로그인 필요',
+        text: '수업 개설은 선생님만이 사용할 수 있는 기능입니다. 로그인하시겠습니까?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '예',
+        cancelButtonText: '아니오',
+        confirmButtonColor: '#1B9AF5',
+        cancelButtonColor: '#6B7280',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+
+      if (result.isConfirmed) {
+        router.push('/auth/login?role=TEACHER');
+      }
+      return;
+    }
+
+    if (userType !== 'TEACHER') {
+      await Swal.fire({
+        title: '접근 불가',
+        text: '수업 개설은 선생님만이 사용할 수 있는 기능입니다.',
+        icon: 'error',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#1B9AF5',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+      router.push('/');
+      return;
+    }
+
     // 폼 검증
     const errors: FormErrors = {};
     let firstErrorField: string | null = null;
@@ -187,7 +275,6 @@ const CreateLessonPage = () => {
     setFormErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      // 첫 번째 에러 필드로 스크롤
       if (firstErrorField) {
         const errorElement = document.getElementById(firstErrorField);
         if (errorElement) {
@@ -253,11 +340,6 @@ const CreateLessonPage = () => {
           region: formData.region
         };
 
-        const accessToken = localStorage.getItem('accessToken');
-        if (!accessToken) {
-          throw new Error('로그인이 필요합니다.');
-        }
-
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons`, {
           method: 'POST',
           headers: {
@@ -295,6 +377,32 @@ const CreateLessonPage = () => {
       });
     }
   };
+
+  if (isCheckingAuth) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-[1280px]">
+          <div className="text-center py-12">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-[1280px]">
+          <div className="text-center py-12 text-red-500">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
