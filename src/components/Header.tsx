@@ -162,26 +162,30 @@ const Header = () => {
             >
               스터디 찾기
             </Link>
-            <Link
-              href="/create-study"
-              className={`text-base ${
-                router.pathname === "/create-study"
-                  ? "text-[#1B9AF5]"
-                  : "text-gray-600"
-              } hover:text-[#1B9AF5]`}
-            >
-              스터디 개설
-            </Link>
-            <button
-              onClick={handleCreateLesson}
-              className={`text-base ${
-                router.pathname === "/lessons/create"
-                  ? "text-[#1B9AF5]"
-                  : "text-gray-600"
-              } hover:text-[#1B9AF5]`}
-            >
-              수업 개설
-            </button>
+            {isAuthenticated && userType === "TEACHER" && (
+              <button
+                onClick={handleCreateLesson}
+                className={`text-base ${
+                  router.pathname === "/lessons/create"
+                    ? "text-[#1B9AF5]"
+                    : "text-gray-600"
+                } hover:text-[#1B9AF5]`}
+              >
+                수업 개설
+              </button>
+            )}
+            {isAuthenticated && userType === "STUDENT" && (
+              <Link
+                href="/create-study"
+                className={`text-base ${
+                  router.pathname === "/create-study"
+                    ? "text-[#1B9AF5]"
+                    : "text-gray-600"
+                } hover:text-[#1B9AF5]`}
+              >
+                스터디 개설
+              </Link>
+            )}
           </nav>
         </div>
 

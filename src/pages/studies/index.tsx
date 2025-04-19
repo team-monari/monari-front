@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Header from '../../components/Header';
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
+import { regions, getRegionText, Region, regionToKorean } from '../../utils/region';
 
 interface Study {
   id: number;
@@ -16,6 +17,7 @@ interface Study {
   locationServiceUrl: string;
   studentPublicId: string;
   studentName: string;
+  region: Region;
 }
 
 interface PageResponse<T> {
@@ -57,14 +59,17 @@ const getStatusColor = (status: Study['status']) => {
 
 export default function Studies() {
   const { accessToken } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState('전체');
-  const [selectedSubject, setSelectedSubject] = useState('전체');
-  const [activeTab, setActiveTab] = useState('제목');
+  const [filters, setFilters] = useState({
+    subject: '',
+    schoolLevel: '',
+    region: '' as Region | '',
+    searchType: 'title',
+    keyword: ''
+  });
   const [pageResponse, setPageResponse] = useState<PageResponse<Study>>({
     content: [],
     page: {
-      size: 10,
+      size: 6,
       number: 0,
       totalElements: 0,
       totalPages: 0
@@ -73,86 +78,46 @@ export default function Studies() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // API 호출 함수
-  const fetchStudies = async (page: number = 0) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies`);
-      if (page > 0) {
-        url.searchParams.append('pageNum', String(page + 1));
-      }
-      
-      const headers: HeadersInit = {};
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-      
-      const response = await fetch(url.toString(), {
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error('스터디 목록을 불러오는데 실패했습니다.');
-      }
-
-      const data = await response.json();
-      setPageResponse(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '스터디 목록을 불러오는데 실패했습니다.');
-      setPageResponse(prev => ({ ...prev, content: [] }));
-    } finally {
-      setIsLoading(false);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // 컴포넌트 마운트 시 스터디 목록 로드
-  useEffect(() => {
-    fetchStudies();
-  }, []);
-
-  // 검색 실행 함수
   const handleSearch = async (page: number = 0) => {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/search`);
+      const searchParams = new URLSearchParams();
       
-      // 페이지 번호 추가
-      if (page > 0) {
-        url.searchParams.append('pageNum', String(page + 1));
-      }
-
-      // 검색어가 있는 경우 검색 타입에 따라 파라미터 추가
-      if (searchTerm) {
-        if (activeTab === '제목') {
-          url.searchParams.append('titleKeyword', searchTerm);
-        } else {
-          url.searchParams.append('descriptionKeyword', searchTerm);
+      if (filters.keyword) {
+        if (filters.searchType === 'title') {
+          searchParams.append('titleKeyword', filters.keyword);
+        } else if (filters.searchType === 'description') {
+          searchParams.append('descriptionKeyword', filters.keyword);
         }
       }
 
-      // 학년 필터 추가
-      if (selectedGrade !== '전체') {
-        url.searchParams.append('schoolLevel', selectedGrade);
-      }
-
-      // 과목 필터 추가
-      if (selectedSubject !== '전체') {
-        url.searchParams.append('subject', selectedSubject);
-      }
+      if (filters.subject) searchParams.append('subject', filters.subject);
+      if (filters.schoolLevel) searchParams.append('schoolLevel', filters.schoolLevel);
+      if (filters.region) searchParams.append('region', filters.region);
+      searchParams.append('pageNum', String(page + 1));
+      searchParams.append('pageSize', '6');
 
       const headers: HeadersInit = {};
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const response = await fetch(url.toString(), {
-        headers,
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/search?${searchParams.toString()}`,
+        { headers }
+      );
 
       if (!response.ok) {
-        throw new Error('검색에 실패했습니다.');
+        throw new Error('검색 요청에 실패했습니다.');
       }
 
       const data = await response.json();
@@ -165,12 +130,19 @@ export default function Studies() {
     }
   };
 
-  const handlePageChange = (newPage: number) => {
-    if (searchTerm || selectedGrade !== '전체' || selectedSubject !== '전체') {
-      handleSearch(newPage);
-    } else {
-      fetchStudies(newPage);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
     }
+  };
+
+  // 컴포넌트 마운트 시 스터디 목록 로드
+  useEffect(() => {
+    handleSearch();
+  }, []);
+
+  const handlePageChange = (newPage: number) => {
+    handleSearch(newPage);
   };
 
   return (
@@ -182,104 +154,91 @@ export default function Studies() {
 
       <Header />
 
-      <main className="container mx-auto px-4 py-8 max-w-[1280px]">
-        <h1 className="text-3xl font-bold mb-6 text-black">스터디 찾기</h1>
+      <main className="container mx-auto px-6 py-8 max-w-[1280px]">
+        <h1 className="text-2xl font-bold mb-8">스터디 찾기</h1>
 
         {/* 검색 섹션 */}
         <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="스터디 검색"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-                />
-                <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+          <div className="space-y-6">
+            {/* 검색 영역 */}
+            <div className="flex items-center gap-4">
+              <select
+                name="searchType"
+                value={filters.searchType}
+                onChange={handleChange}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+              >
+                <option value="title">제목</option>
+                <option value="description">내용</option>
+              </select>
+              <input
+                type="text"
+                name="keyword"
+                value={filters.keyword}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder="검색어를 입력하세요"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={() => handleSearch()}
+                className="px-6 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+              >
+                검색
+              </button>
+            </div>
+
+            {/* 필터 영역 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">교육 대상</label>
+                <select
+                  name="schoolLevel"
+                  value={filters.schoolLevel}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                  <option value="">전체</option>
+                  <option value="MIDDLE">중학교</option>
+                  <option value="HIGH">고등학교</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">과목</label>
+                <select
+                  name="subject"
+                  value={filters.subject}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+                >
+                  <option value="">전체</option>
+                  <option value="MATH">수학</option>
+                  <option value="ENGLISH">영어</option>
+                  <option value="KOREAN">국어</option>
+                  <option value="SCIENCE">과학</option>
+                  <option value="SOCIAL">사회</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">지역</label>
+                <select
+                  name="region"
+                  value={filters.region}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+                >
+                  <option value="">전체</option>
+                  {Object.values(regions).map((region) => (
+                    <option key={region} value={region}>
+                      {getRegionText(region)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveTab('제목')}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === '제목'
-                    ? 'bg-[#1B9AF5] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                제목
-              </button>
-              <button
-                onClick={() => setActiveTab('내용')}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === '내용'
-                    ? 'bg-[#1B9AF5] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                내용
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                대상
-              </label>
-              <select
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-              >
-                <option value="전체">전체</option>
-                <option value="MIDDLE">중학교</option>
-                <option value="HIGH">고등학교</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                과목
-              </label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-              >
-                <option value="전체">전체</option>
-                <option value="MATH">수학</option>
-                <option value="ENGLISH">영어</option>
-                <option value="KOREAN">국어</option>
-                <option value="SCIENCE">과학</option>
-                <option value="SOCIAL">사회</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={() => handleSearch()}
-              disabled={isLoading}
-              className={`px-6 py-2 bg-[#1B9AF5] text-white rounded-md hover:bg-[#1B9AF5]/90 transition-colors ${
-                isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {isLoading ? '검색 중...' : '검색'}
-            </button>
           </div>
         </div>
 
@@ -343,6 +302,7 @@ export default function Studies() {
                         />
                       </svg>
                       <span className="text-sm text-gray-600">{study.locationName}</span>
+                      <span className="text-sm text-gray-600">({regionToKorean[study.region]})</span>
                     </div>
                   </div>
                 </Link>
@@ -360,11 +320,10 @@ export default function Studies() {
                   &lt;
                 </button>
                 {Array.from({ length: pageResponse.page.totalPages }, (_, i) => {
-                  // 현재 페이지 주변의 페이지만 표시
                   if (
-                    i === 0 || // 첫 페이지
-                    i === pageResponse.page.totalPages - 1 || // 마지막 페이지
-                    Math.abs(i - pageResponse.page.number) <= 1 // 현재 페이지 주변
+                    i === 0 ||
+                    i === pageResponse.page.totalPages - 1 ||
+                    Math.abs(i - pageResponse.page.number) <= 1
                   ) {
                     return (
                       <button
@@ -380,7 +339,6 @@ export default function Studies() {
                       </button>
                     );
                   }
-                  // 생략 부호 (...) 표시
                   if (i === pageResponse.page.number - 2 || i === pageResponse.page.number + 2) {
                     return (
                       <span
