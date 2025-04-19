@@ -40,10 +40,7 @@ const EditTeacherProfile = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // 프로필 이미지 미리보기용 상태
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    null
-  );
+  // 프로필 이미지 미리보기용 상태 제거
 
   // 선생님 프로필 정보 가져오기
   useEffect(() => {
@@ -101,10 +98,7 @@ const EditTeacherProfile = () => {
           accountHolder: data.accountHolder || "",
         });
 
-        // 프로필 이미지가 있으면 미리보기 설정
-        if (data.profileImageUrl) {
-          setProfileImagePreview(data.profileImageUrl);
-        }
+        // 프로필 이미지 관련 코드 제거
       } catch (err) {
         console.error("선생님 프로필 정보 가져오기 실패:", err);
         setErrors({ fetch: "프로필 정보를 불러오는 중 오류가 발생했습니다." });
@@ -136,22 +130,7 @@ const EditTeacherProfile = () => {
     }
   };
 
-  // 프로필 이미지 변경 처리
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setProfileImagePreview(result);
-        setFormData((prev) => ({
-          ...prev,
-          profileImageUrl: result,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // 프로필 이미지 변경 처리 함수 제거
 
   // 폼 유효성 검사
   const validateForm = () => {
@@ -172,10 +151,7 @@ const EditTeacherProfile = () => {
       newErrors.career = "경력은 500자 이내로 입력해주세요";
     }
 
-    // 프로필 이미지 URL 유효성 검사 (선택사항이므로 값이 있는 경우만 검사)
-    if (formData.profileImageUrl && formData.profileImageUrl.length > 500) {
-      newErrors.profileImageUrl = "이미지 URL은 500자 이내로 입력해주세요";
-    }
+    // 프로필 이미지 URL 유효성 검사 제거
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -282,55 +258,7 @@ const EditTeacherProfile = () => {
 
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
           <form onSubmit={handleSubmit}>
-            {/* 프로필 이미지 섹션 */}
-            <div className="flex flex-col items-center mb-8">
-              <div className="relative mb-4">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                  {profileImagePreview ? (
-                    <Image
-                      src={profileImagePreview}
-                      alt="프로필 이미지"
-                      className="w-full h-full object-cover"
-                      width={128}
-                      height={128}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-purple-100 flex items-center justify-center text-purple-500 text-4xl font-bold">
-                      <span>?</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer">
-                    <label htmlFor="profileImage" className="cursor-pointer">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-white"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <input
-                        type="file"
-                        id="profileImage"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 mb-2">
-                프로필 이미지 (선택사항)
-              </p>
-              {errors.profileImageUrl && (
-                <p className="text-sm text-red-500">{errors.profileImageUrl}</p>
-              )}
-            </div>
+            {/* 프로필 이미지 섹션 제거 */}
 
             {/* 프로필 정보 섹션 */}
             <div className="space-y-6">
