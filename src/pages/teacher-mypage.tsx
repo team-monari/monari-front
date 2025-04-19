@@ -6,6 +6,7 @@ import TeacherEducationSection from "../components/TeacherEducationSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import Swal from "sweetalert2";
 
 // 선생님 프로필 인터페이스 정의
 interface TeacherProfile {
@@ -14,11 +15,14 @@ interface TeacherProfile {
   university: string;
   major: string;
   career: string;
-  profileImageUrl: string | null;
   bankName: string | null;
   accountNumber: string | null;
   accountHolder: string | null;
+  publicId: UUID;
 }
+
+// UUID 타입 정의
+type UUID = string;
 
 interface Lesson {
   lessonId: number;
@@ -51,6 +55,18 @@ interface PageResponse<T> {
   };
 }
 
+// 다운로드 이미지 데이터 인터페이스
+interface DownloadImageDto {
+  data: Uint8Array;
+  contentType: string;
+}
+
+// 이미지 응답 인터페이스
+interface TeacherProfileImageResponse {
+  message: string;
+  success: boolean;
+}
+
 const TeacherMyPage = () => {
   const router = useRouter();
   const { userType, accessToken, isAuthenticated } = useAuth();
@@ -62,6 +78,222 @@ const TeacherMyPage = () => {
   const [isLessonsLoading, setIsLessonsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lessonsError, setLessonsError] = useState<string | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+
+  // 프로필 이미지 업로드 함수
+  const handleProfileImageUpload = async (file: File): Promise<void> => {
+    if (!accessToken) {
+      throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
+    }
+
+    setIsImageLoading(true);
+
+    try {
+      // FormData 생성 및 파일 추가
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // 환경 변수에서 API URL 가져오기
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const apiUrl = `${baseUrl}/api/v1/teachers/me/profile-image`;
+
+      // 이미지 업로드 API 호출
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          // Content-Type은 FormData를 사용할 때 자동으로 설정됨
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `이미지 업로드 실패: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("프로필 이미지 업로드 성공. 응답:", data);
+
+      // 업로드 성공 메시지 표시
+      Swal.fire({
+        icon: "success",
+        title: "이미지 업로드 성공",
+        text: "프로필 이미지가 업데이트되었습니다.",
+        toast: true,
+        position: "top",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+
+      // 이미지 업로드 성공 후, 최신 이미지를 직접 다시 가져옴
+      if (teacherProfile?.publicId) {
+        try {
+          // 이전 Blob URL이 있으면 해제
+          if (profileImageUrl && profileImageUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(profileImageUrl);
+          }
+
+          // 새 이미지 데이터 요청 (약간의 지연 후 요청하여 서버에 이미지가 저장될 시간 확보)
+          setTimeout(async () => {
+            try {
+              await fetchLatestProfileImage();
+            } catch (delayedError) {
+              console.error("지연 후 이미지 로드 실패:", delayedError);
+            }
+          }, 500);
+
+          // 바로 한 번 요청해보고 (실패할 가능성 있음)
+          await fetchLatestProfileImage();
+        } catch (fetchError) {
+          console.error("업로드 후 이미지 다시 가져오기 실패:", fetchError);
+
+          // 실패 시 사용자에게 새로고침 안내
+          Swal.fire({
+            icon: "info",
+            title: "이미지 업데이트됨",
+            text: "이미지가 업로드되었습니다. 새 이미지를 보려면 페이지를 새로고침해 주세요.",
+            toast: true,
+            position: "top",
+            showConfirmButton: true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("이미지 업로드 중 오류:", error);
+      Swal.fire({
+        icon: "error",
+        title: "이미지 업로드 실패",
+        text: "프로필 이미지 업로드에 실패했습니다. 다시 시도해주세요.",
+        toast: true,
+        position: "top",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+      throw error;
+    } finally {
+      setIsImageLoading(false);
+    }
+  };
+
+  // 최신 프로필 이미지를 가져오는 함수
+  const fetchLatestProfileImage = async () => {
+    if (!accessToken || !teacherProfile || !teacherProfile.publicId) return;
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const apiUrl = `${baseUrl}/api/v1/teachers/${teacherProfile.publicId}/profile-image`;
+
+    console.log("최신 프로필 이미지 요청:", apiUrl);
+
+    // 이미지 데이터 직접 요청 (캐시 방지 헤더 추가)
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return; // 이미지가 없는 경우는 오류로 처리하지 않음
+      }
+      throw new Error(`최신 이미지 조회 실패: ${response.status}`);
+    }
+
+    // Content-Type 확인
+    const contentType = response.headers.get("Content-Type");
+    if (!contentType || !contentType.startsWith("image/")) {
+      throw new Error("응답이 이미지가 아닙니다");
+    }
+
+    // 이미지 데이터를 Blob으로 변환
+    const imageBlob = await response.blob();
+    if (imageBlob.size === 0) {
+      throw new Error("빈 이미지 데이터");
+    }
+
+    // Blob URL 생성
+    const blobUrl = URL.createObjectURL(imageBlob);
+    console.log("최신 프로필 이미지 로드 완료. Blob URL:", blobUrl);
+
+    // 프로필 이미지 URL 설정
+    setProfileImageUrl(blobUrl);
+
+    // 프로필 정보 업데이트
+    setTeacherProfile((prev) =>
+      prev ? { ...prev, profileImageUrl: blobUrl } : null
+    );
+
+    return blobUrl;
+  };
+
+  // 프로필 이미지 조회 함수 (초기 로딩용)
+  const fetchProfileImage = async () => {
+    if (!accessToken || !teacherProfile || !teacherProfile.publicId) return;
+
+    try {
+      // 이미 이미지 URL이 있으면 중복 요청 방지
+      if (profileImageUrl && !profileImageUrl.includes("?t=")) return;
+
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const apiUrl = `${baseUrl}/api/v1/teachers/${teacherProfile.publicId}/profile-image`;
+
+      console.log("프로필 이미지 요청:", apiUrl);
+
+      // 이미지 데이터 직접 요청
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        // 404는 이미지가 없는 정상적인 경우로 처리
+        if (response.status === 404) {
+          return;
+        }
+        throw new Error(`이미지 조회 실패: ${response.status}`);
+      }
+
+      // Content-Type 확인
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType || !contentType.startsWith("image/")) {
+        console.error("응답이 이미지가 아닙니다. Content-Type:", contentType);
+        return;
+      }
+
+      // 이미지 데이터를 Blob으로 변환
+      const imageBlob = await response.blob();
+      if (imageBlob.size === 0) return;
+
+      // Blob URL 생성
+      const blobUrl = URL.createObjectURL(imageBlob);
+      console.log("프로필 이미지 로드 완료. Blob URL:", blobUrl);
+
+      // 프로필 이미지 URL 설정
+      setProfileImageUrl(blobUrl);
+
+      // 프로필 정보 업데이트
+      setTeacherProfile((prev) =>
+        prev ? { ...prev, profileImageUrl: blobUrl } : null
+      );
+    } catch (error) {
+      console.error("프로필 이미지 조회 중 오류:", error);
+    }
+  };
 
   // 내가 개설한 수업 목록 가져오기
   const fetchMyLessons = async () => {
@@ -85,7 +317,7 @@ const TeacherMyPage = () => {
 
       const data: PageResponse<Lesson> = await response.json();
       console.log("API Response:", data);
-      
+
       setLessons(data.content);
     } catch (err) {
       console.error("Error fetching lessons:", err);
@@ -146,7 +378,26 @@ const TeacherMyPage = () => {
         }
 
         const data = await response.json();
+        console.log("받은 선생님 프로필 데이터:", data);
+
+        // publicId 확인 및 로깅
+        if (!data.publicId) {
+          console.warn("선생님 프로필에 publicId가 없습니다:", data);
+        } else {
+          console.log("선생님 publicId:", data.publicId);
+        }
+
+        // 프로필 데이터 설정
         setTeacherProfile(data);
+
+        // 프로필 데이터 로드 완료 후 이미지 요청
+        // publicId가 있으면 별도로 이미지 API 호출
+        if (data.publicId) {
+          // 약간의 딜레이를 두고 이미지 요청 (프로필 데이터가 먼저 표시되도록)
+          setTimeout(() => {
+            fetchProfileImage();
+          }, 100);
+        }
       } catch (err) {
         console.error("선생님 프로필 정보 가져오기 실패:", err);
         setError(
@@ -159,6 +410,23 @@ const TeacherMyPage = () => {
 
     fetchTeacherProfile();
   }, [isAuthenticated, userType, accessToken, router]);
+
+  // publicId가 있고 이미지가 없는 경우 이미지 로드
+  useEffect(() => {
+    if (teacherProfile?.publicId && !profileImageUrl) {
+      // 페이지 로드 시 프로필 이미지 가져오기
+      fetchProfileImage();
+    }
+  }, [teacherProfile, profileImageUrl]);
+
+  // 컴포넌트 언마운트 시 blob URL 정리
+  useEffect(() => {
+    return () => {
+      if (profileImageUrl && profileImageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(profileImageUrl);
+      }
+    };
+  }, [profileImageUrl]);
 
   // 로딩 중 표시
   if (isLoading) {
@@ -207,7 +475,10 @@ const TeacherMyPage = () => {
             <TeacherProfileHeader
               name={teacherProfile.name || "이름 미입력"}
               email={teacherProfile.email || "이메일 미입력"}
-              profileImageUrl={teacherProfile.profileImageUrl}
+              profileImageUrl={profileImageUrl}
+              canEditImage={true}
+              onImageUpload={handleProfileImageUpload}
+              isLoading={isImageLoading}
             />
           )}
         </div>
@@ -417,16 +688,37 @@ const TeacherMyPage = () => {
 
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
-                        {new Date(lesson.startDate).toLocaleDateString()} - {new Date(lesson.endDate).toLocaleDateString()}
+                        {new Date(lesson.startDate).toLocaleDateString()} -{" "}
+                        {new Date(lesson.endDate).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
                       </svg>
                       <span className="text-sm text-gray-600">
                         {lesson.currentStudent}/{lesson.maxStudent}명
@@ -436,8 +728,18 @@ const TeacherMyPage = () => {
                       href={`/lessons/${lesson.lessonId}/payments`}
                       className="mt-2 flex items-center justify-center gap-2 px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
                       결제 현황 상세보기
                     </Link>

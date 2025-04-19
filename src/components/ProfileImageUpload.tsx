@@ -1,22 +1,53 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface ProfileImageUploadProps {
   currentImageUrl: string | null;
   onImageUpload: (file: File) => Promise<void>;
+  isLoading?: boolean;
 }
 
 const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   currentImageUrl,
   onImageUpload,
+  isLoading: externalLoading = false,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl);
+  const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 현재 로딩 상태 (내부 상태 + 외부 props)
+  const isCurrentlyLoading = isUploading || externalLoading;
+
+  // currentImageUrl이 변경될 때 previewUrl도 업데이트
+  useEffect(() => {
+    console.log("ProfileImageUpload: currentImageUrl 변경", currentImageUrl);
+    if (currentImageUrl !== previewUrl && !isUploading) {
+      setPreviewUrl(currentImageUrl);
+      setImageError(false); // 새 이미지 URL로 오류 상태 초기화
+    }
+  }, [currentImageUrl, isUploading, previewUrl]);
+
+  // 컴포넌트 언마운트 시 Blob URL 정리
+  useEffect(() => {
+    return () => {
+      // 컴포넌트 언마운트 시 생성한 로컬 blob URL 정리
+      if (
+        previewUrl &&
+        previewUrl.startsWith("blob:") &&
+        previewUrl !== currentImageUrl
+      ) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl, currentImageUrl]);
+
   const handleImageClick = () => {
-    fileInputRef.current?.click();
+    if (!isCurrentlyLoading) {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,9 +55,10 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
     if (!file) return;
 
     try {
-      // 파일 선택 직후 미리보기 이미지 생성
+      // 파일 선택 직후 미리보기 이미지 생성 (사용자에게 즉시 피드백)
       const localPreviewUrl = URL.createObjectURL(file);
       setPreviewUrl(localPreviewUrl);
+      setImageError(false);
 
       // 업로드 중 상태로 변경
       setIsUploading(true);
@@ -41,11 +73,24 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       setIsUploading(false);
 
       // 업로드 실패 시 원래 이미지로 복원
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setPreviewUrl(currentImageUrl);
 
-      // 사용자에게 오류 알림
-      alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+      // 사용자에게 오류 알림은 상위 컴포넌트에서 처리
+    } finally {
+      // 파일 입력 초기화 (동일한 파일 재선택 허용)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
+  };
+
+  // 이미지 로드 오류 처리
+  const handleImageError = () => {
+    console.error("ProfileImageUpload: 이미지 로드 실패 - URL:", previewUrl);
+    setImageError(true);
   };
 
   return (
@@ -62,16 +107,22 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
         className="hidden"
         accept="image/*"
         onChange={handleFileChange}
+        disabled={isCurrentlyLoading}
       />
 
       {/* 이미지 또는 기본 아바타 표시 */}
-      {previewUrl ? (
-        <Image
-          src={previewUrl}
-          alt="프로필 이미지"
-          fill
-          className="object-cover"
-        />
+      {previewUrl && !imageError ? (
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
+          <Image
+            src={previewUrl}
+            alt="프로필 이미지"
+            fill
+            className="object-cover"
+            priority
+            onError={handleImageError}
+            unoptimized // Next.js 이미지 최적화 비활성화 (blob URL 사용 시 필요)
+          />
+        </div>
       ) : (
         <div className="w-full h-full flex items-center justify-center">
           <svg
@@ -92,7 +143,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       )}
 
       {/* 호버 시 오버레이 표시 */}
-      {isHovering && !isUploading && (
+      {isHovering && !isCurrentlyLoading && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <svg
             className="w-8 h-8 text-white"
@@ -118,7 +169,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       )}
 
       {/* 업로드 중 로딩 표시 */}
-      {isUploading && (
+      {isCurrentlyLoading && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
         </div>
