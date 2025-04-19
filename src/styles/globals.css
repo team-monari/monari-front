@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* SweetAlert2 버튼 스타일 */
+.swal2-styled {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.swal2-styled.swal2-confirm {
+  background-color: #1B9AF5 !important;
+  color: white !important;
+}
+
+.swal2-styled.swal2-cancel {
+  background-color: #6B7280 !important;
+  color: white !important;
+}
+
+.swal2-styled:hover {
+  opacity: 0.9 !important;
+}
+
 :root {
   --foreground-rgb: 17, 24, 39;
   --background-rgb: 249, 250, 251;

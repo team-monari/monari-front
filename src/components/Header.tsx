@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import LoginModal from "./LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
+import Swal from "sweetalert2";
 
 const Header = () => {
   const router = useRouter();
@@ -59,11 +60,75 @@ const Header = () => {
     router.push("/");
   };
 
-  const handleCreateLesson = () => {
+  const handleCreateLesson = async () => {
     if (!isAuthenticated) {
-      openLoginModal();
+      const result = await Swal.fire({
+        title: '선생님 전용 기능',
+        html: `
+          <div class="text-center">
+            <div class="mb-4">
+              <div class="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+                <svg class="w-8 h-8 text-[#1B9AF5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+            </div>
+            <div class="text-gray-600 mb-2">
+              해당 기능은 <span class="font-semibold text-[#1B9AF5]">선생님</span>만<br/>이용이 가능합니다
+            </div>
+            <div class="text-sm text-gray-500">
+              지금 로그인 하시겠습니까?
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '로그인하기',
+        cancelButtonText: '다음에 하기',
+        confirmButtonColor: '#1B9AF5',
+        cancelButtonColor: '#6B7280',
+        customClass: {
+          popup: 'rounded-2xl',
+          title: 'text-xl font-bold text-gray-800 mb-4',
+          confirmButton: 'px-6 py-3 rounded-xl text-sm font-medium',
+          cancelButton: 'px-6 py-3 rounded-xl text-sm font-medium'
+        },
+        buttonsStyling: true,
+        reverseButtons: true
+      });
+
+      if (result.isConfirmed) {
+        setSelectedLoginRole('teacher');
+        setIsLoginModalOpen(true);
+      }
     } else if (userType === "STUDENT") {
-      showNotification("학생은 수업을 개설할 수 없습니다.", "error");
+      await Swal.fire({
+        title: '접근 제한',
+        html: `
+          <div class="text-center">
+            <div class="mb-4">
+              <div class="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <div class="text-gray-600 mb-2">
+              학생은 수업을 개설할 수 없습니다
+            </div>
+            <div class="text-sm text-gray-500">
+              선생님 계정으로 로그인해주세요
+            </div>
+          </div>
+        `,
+        confirmButtonText: '확인',
+        confirmButtonColor: '#1B9AF5',
+        customClass: {
+          popup: 'rounded-2xl',
+          title: 'text-xl font-bold text-gray-800 mb-4',
+          confirmButton: 'px-6 py-3 rounded-xl text-sm font-medium'
+        },
+        buttonsStyling: true
+      });
     } else {
       router.push("/lessons/create");
     }
@@ -97,26 +162,30 @@ const Header = () => {
             >
               스터디 찾기
             </Link>
-            <Link
-              href="/create-study"
-              className={`text-base ${
-                router.pathname === "/create-study"
-                  ? "text-[#1B9AF5]"
-                  : "text-gray-600"
-              } hover:text-[#1B9AF5]`}
-            >
-              스터디 개설
-            </Link>
-            <button
-              onClick={handleCreateLesson}
-              className={`text-base ${
-                router.pathname === "/lessons/create"
-                  ? "text-[#1B9AF5]"
-                  : "text-gray-600"
-              } hover:text-[#1B9AF5]`}
-            >
-              수업 개설
-            </button>
+            {isAuthenticated && userType === "TEACHER" && (
+              <button
+                onClick={handleCreateLesson}
+                className={`text-base ${
+                  router.pathname === "/lessons/create"
+                    ? "text-[#1B9AF5]"
+                    : "text-gray-600"
+                } hover:text-[#1B9AF5]`}
+              >
+                수업 개설
+              </button>
+            )}
+            {isAuthenticated && userType === "STUDENT" && (
+              <Link
+                href="/create-study"
+                className={`text-base ${
+                  router.pathname === "/create-study"
+                    ? "text-[#1B9AF5]"
+                    : "text-gray-600"
+                } hover:text-[#1B9AF5]`}
+              >
+                스터디 개설
+              </Link>
+            )}
           </nav>
         </div>
 

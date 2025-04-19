@@ -489,7 +489,7 @@ const MyPage = () => {
               {studiesError}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {myStudies.map((study) => (
                 <Link
                   key={study.id}
@@ -564,8 +564,8 @@ const MyPage = () => {
                     </div>
                   </div>
                 </Link>
-              ))}
-            </div>
+            ))}
+          </div>
           )}
         </section>
 
@@ -580,7 +580,7 @@ const MyPage = () => {
               {lessonsError}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {myLessons.map((lesson) => (
                 <div
                   key={lesson.lessonId}
@@ -668,15 +668,15 @@ const MyPage = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+            ))}
+          </div>
           )}
         </section>
 
-        <footer className="mt-12 text-center text-sm text-gray-500 py-8">
-          <p>© 2025 모나리. All rights reserved.</p>
-          <p className="mt-2">이용약관 | 개인정보처리방침</p>
-        </footer>
+      <footer className="mt-12 text-center text-sm text-gray-500 py-8">
+        <p>© 2025 모나리. All rights reserved.</p>
+        <p className="mt-2">이용약관 | 개인정보처리방침</p>
+      </footer>
       </main>
     </div>
   );

@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Header from '../../components/Header';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
+import { Region, regionToKorean } from '../../utils/region';
 
 // 스터디 상태 타입
 type StudyStatus = 'ACTIVE' | 'CLOSED';
@@ -26,6 +27,7 @@ interface StudyDetail {
   locationServiceUrl: string;
   studentPublicId: string;
   studentName: string;
+  region: Region;
 }
 
 const getSubjectLabel = (subject: Subject) => {
@@ -65,18 +67,21 @@ export default function StudyDetail() {
 
   useEffect(() => {
     const fetchStudyDetail = async () => {
-      if (!id || !accessToken) return;
+      if (!id) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
+        const headers: HeadersInit = {};
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/${id}`,
           {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
+            headers,
           }
         );
 
@@ -215,6 +220,7 @@ export default function StudyDetail() {
                     ) : (
                       <p className="font-medium text-gray-900">{study.locationName}</p>
                     )}
+                    <p className="text-sm text-gray-500 mt-1">({regionToKorean[study.region]})</p>
                   </div>
                 </div>
               </div>
