@@ -83,10 +83,13 @@ export default function Studies() {
         url.searchParams.append('pageNum', String(page + 1));
       }
       
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -139,10 +142,13 @@ export default function Studies() {
         url.searchParams.append('subject', selectedSubject);
       }
 
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -306,14 +312,10 @@ export default function Studies() {
                   </div>
                   
                   <div className="flex items-center gap-1 mb-3">
-                    <span className={`px-2 py-1 text-sm rounded-full ${
-                      study.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                      study.schoolLevel === 'HIGH' ? 'bg-green-100 text-green-600' :
-                      'bg-purple-100 text-purple-600'
-                    }`}>
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
                       {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
                     </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
                       {getSubjectLabel(study.subject)}
                     </span>
                   </div>

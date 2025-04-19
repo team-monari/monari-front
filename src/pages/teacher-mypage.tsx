@@ -290,7 +290,7 @@ const TeacherMyPage = () => {
                   )}
                 </div>
               </div>
-            </div>
+        </div>
 
             {/* 프로필 정보 안내 메시지 */}
             <div className="mt-6 text-sm">
@@ -360,7 +360,7 @@ const TeacherMyPage = () => {
               {lessonsError}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {lessons.map((lesson) => (
                 <Link
                   key={lesson.lessonId}
@@ -443,8 +443,8 @@ const TeacherMyPage = () => {
                     </Link>
                   </div>
                 </Link>
-              ))}
-            </div>
+            ))}
+          </div>
           )}
         </section>
       </main>
