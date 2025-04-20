@@ -51,9 +51,9 @@ const getStatusLabel = (status: StudyStatus) => {
 
 const getStatusColor = (status: StudyStatus) => {
   switch (status) {
-    case 'ACTIVE': return 'bg-yellow-100 text-yellow-600';
-    case 'CLOSED': return 'bg-gray-100 text-gray-600';
-    default: return 'bg-gray-100 text-gray-600';
+    case 'ACTIVE': return 'bg-green-100 text-green-800';
+    case 'CLOSED': return 'bg-gray-100 text-gray-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
 };
 
@@ -153,10 +153,7 @@ export default function StudyDetail() {
             {/* 제목 및 상태 */}
             <div className="mb-6 relative">
               <div className="absolute top-0 right-0">
-                <div className={`flex items-center gap-2 px-4 py-2 ${getStatusColor(study.status)} rounded-full font-medium`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(study.status)}`}>
                   <span>{getStatusLabel(study.status)}</span>
                 </div>
               </div>
