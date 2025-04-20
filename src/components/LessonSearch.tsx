@@ -21,7 +21,8 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
     schoolLevel: '',
     region: '',
     searchType: 'title',
-    keyword: ''
+    keyword: '',
+    lessonType: ''
   });
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -58,6 +59,7 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
         if (filters.subject) searchParams.append('subject', filters.subject);
         if (filters.schoolLevel) searchParams.append('schoolLevel', filters.schoolLevel);
         if (filters.region) searchParams.append('region', filters.region);
+        if (filters.lessonType) searchParams.append('lessonType', filters.lessonType);
         searchParams.append('pageNumber', currentPage.toString());
         searchParams.append('pageSize', '6');
 
@@ -80,7 +82,7 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
     };
 
     loadData();
-  }, [currentPage, filters.subject, filters.schoolLevel, filters.region, filters.keyword, router.isReady]);
+  }, [currentPage, filters.subject, filters.schoolLevel, filters.region, filters.keyword, filters.lessonType, router.isReady]);
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
@@ -221,6 +223,7 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
             startDate={lesson.startDate}
             endDate={lesson.endDate}
             status={lesson.status}
+            lessonType={lesson.lessonType}
           />
         ))}
       </div>

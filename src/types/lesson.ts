@@ -28,6 +28,7 @@ export interface Lesson {
   major: string;
   career: string;
   profileImageUrl?: string;
+  lessonType: string;
 }
 
 export interface LessonFilters {

@@ -7,6 +7,7 @@ import { Location, fetchLocationById, getLocationUrl } from '../../services/loca
 import Swal from 'sweetalert2';
 import { getRegionText, Region } from '../../utils/region';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface TeacherProfile {
   name: string;
@@ -30,6 +31,9 @@ const LessonDetail: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [map, setMap] = useState<any>(null);
+  const [marker, setMarker] = useState<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   const getSchoolLevelText = (level: string) => {
     switch (level) {
@@ -56,6 +60,96 @@ const LessonDetail: React.FC = () => {
         return '국어';
       default:
         return subject;
+    }
+  };
+
+  const getLessonTypeInfo = (type: string) => {
+    if (!type) {
+      return {
+        text: '알 수 없음',
+        bgColor: 'bg-gray-50',
+        textColor: 'text-gray-600',
+        icon: null
+      };
+    }
+
+    switch (type.toUpperCase()) {
+      case 'ONLINE':
+        return {
+          text: '온라인',
+          bgColor: 'bg-blue-50',
+          textColor: 'text-blue-600',
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          )
+        };
+      case 'OFFLINE':
+        return {
+          text: '오프라인',
+          bgColor: 'bg-green-50',
+          textColor: 'text-green-600',
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )
+        };
+      default:
+        return {
+          text: '알 수 없음',
+          bgColor: 'bg-gray-50',
+          textColor: 'text-gray-600',
+          icon: null
+        };
+    }
+  };
+
+  const getStatusInfo = (status: string, currentStudent: number, maxStudent: number) => {
+    if (!status) {
+      return {
+        text: '알 수 없음',
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-800'
+      };
+    }
+
+    // 수업 인원이 꽉 찼을 경우 모집 완료로 표시
+    if (currentStudent >= maxStudent) {
+      return {
+        text: '모집 완료',
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-800'
+      };
+    }
+
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return {
+          text: '모집중',
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800'
+        };
+      case 'CLOSED':
+        return {
+          text: '종료',
+          bgColor: 'bg-gray-100',
+          textColor: 'text-gray-800'
+        };
+      case 'CANCELED':
+        return {
+          text: '취소',
+          bgColor: 'bg-red-100',
+          textColor: 'text-red-800'
+        };
+      default:
+        return {
+          text: '알 수 없음',
+          bgColor: 'bg-gray-100',
+          textColor: 'text-gray-800'
+        };
     }
   };
 
@@ -103,6 +197,89 @@ const LessonDetail: React.FC = () => {
 
     fetchLesson();
   }, [id]);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_ID}&libraries=services&autoload=false`;
+    script.async = true;
+    
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        setIsMapLoaded(true);
+        console.log('Kakao Maps loaded successfully');
+      });
+    };
+
+    script.onerror = (error) => {
+      console.error('Failed to load Kakao Maps:', error);
+    };
+    
+    document.head.appendChild(script);
+    
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMapLoaded && location && window.kakao) {
+      const container = document.getElementById('map');
+      if (!container) return;
+
+      try {
+        // 서울시청 좌표 (기본값)
+        const defaultCoords = {
+          lat: 37.5665,
+          lng: 126.9780
+        };
+
+        let coords;
+        if (location.x && location.y) {
+          // x, y 좌표가 있는 경우
+          coords = new window.kakao.maps.LatLng(
+            parseFloat(location.y),
+            parseFloat(location.x)
+          );
+        } else {
+          // x, y 좌표가 없는 경우 서울시청 좌표 사용
+          coords = new window.kakao.maps.LatLng(
+            defaultCoords.lat,
+            defaultCoords.lng
+          );
+          console.warn('Location coordinates not found, using default coordinates (Seoul City Hall)');
+        }
+
+        const options = {
+          center: coords,
+          level: 3
+        };
+
+        const newMap = new window.kakao.maps.Map(container, options);
+        
+        // 마커 생성
+        const marker = new window.kakao.maps.Marker({
+          position: coords,
+          map: newMap
+        });
+
+        // 인포윈도우로 장소에 대한 설명을 표시
+        const infowindow = new window.kakao.maps.InfoWindow({
+          content: `<div style="padding:5px;font-size:12px;">
+            ${location.locationName}
+            ${!location.x || !location.y ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
+          </div>`
+        });
+        infowindow.open(newMap, marker);
+
+        setMap(newMap);
+        setMarker(marker);
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+      }
+    }
+  }, [isMapLoaded, location]);
 
   const handleEnroll = async () => {
     try {
@@ -249,6 +426,9 @@ const LessonDetail: React.FC = () => {
     ? Math.round(((lesson.amount - calculatedAmount) / lesson.amount) * 100)
     : 0;
 
+  // getStatusInfo 호출 부분 수정
+  const statusInfo = getStatusInfo(lesson.status, lesson.currentStudent, lesson.maxStudent);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -257,13 +437,15 @@ const LessonDetail: React.FC = () => {
           {/* 헤더 */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
-            <span className={`px-4 py-2 rounded-full text-sm font-medium ${
-              isFull 
-                ? 'bg-red-100 text-red-800'
-                : 'bg-green-100 text-green-800'
-            }`}>
-              {isFull ? '모집 완료' : '모집중'}
-            </span>
+            <div className="flex gap-2">
+              <div className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 ${getLessonTypeInfo(lesson.lessonType).bgColor} ${getLessonTypeInfo(lesson.lessonType).textColor}`}>
+                {getLessonTypeInfo(lesson.lessonType).icon}
+                {getLessonTypeInfo(lesson.lessonType).text}
+              </div>
+              <div className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor}`}>
+                {statusInfo.text}
+              </div>
+            </div>
           </div>
 
           {/* 선생님 정보 */}
@@ -405,24 +587,27 @@ const LessonDetail: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">수업 장소</h2>
             <div className="bg-white rounded-lg p-6 shadow-sm">
               {location ? (
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <a
+                        href={getLocationUrl(location)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-900 font-medium hover:text-[#1B9AF5] transition-colors"
+                      >
+                        {location.locationName}
+                      </a>
+                      <p className="text-gray-500 text-sm">{location.address}</p>
+                    </div>
                   </div>
-                  <div>
-                    <a
-                      href={getLocationUrl(location)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-900 font-medium hover:text-[#1B9AF5] transition-colors"
-                    >
-                      {location.locationName}
-                    </a>
-                    <p className="text-gray-500 text-sm">{location.address}</p>
-                  </div>
+                  <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
                 </div>
               ) : (
                 <div className="flex items-center">

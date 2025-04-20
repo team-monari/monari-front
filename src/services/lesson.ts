@@ -22,6 +22,7 @@ export interface Lesson {
   teacherMajor: string;
   teacherCareer: string;
   teacherProfileImageUrl: string;
+  lessonType: string;
 }
 
 export interface LessonResponse {
