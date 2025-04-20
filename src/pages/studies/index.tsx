@@ -51,9 +51,9 @@ const getStatusLabel = (status: Study['status']) => {
 
 const getStatusColor = (status: Study['status']) => {
   switch (status) {
-    case 'ACTIVE': return 'bg-yellow-100 text-yellow-600';
-    case 'CLOSED': return 'bg-gray-100 text-gray-600';
-    default: return 'bg-gray-100 text-gray-600';
+    case 'ACTIVE': return 'bg-green-100 text-green-800';
+    case 'CLOSED': return 'bg-gray-100 text-gray-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
 };
 
@@ -265,7 +265,7 @@ export default function Studies() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-lg font-medium text-gray-900">{study.title}</h3>
-                    <span className={`px-2 py-1 text-sm rounded-full ${getStatusColor(study.status)}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(study.status)}`}>
                       {getStatusLabel(study.status)}
                     </span>
                   </div>

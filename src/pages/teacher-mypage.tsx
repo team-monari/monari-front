@@ -643,42 +643,31 @@ const TeacherMyPage = () => {
                       {lesson.title}
                     </h3>
                     <span
-                      className={`px-2 py-1 text-sm rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full ${
                         lesson.status === "RECRUITING"
-                          ? "bg-yellow-100 text-yellow-600"
+                          ? "bg-green-100 text-green-800"
                           : lesson.status === "IN_PROGRESS"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {lesson.status === "RECRUITING"
                         ? "모집중"
                         : lesson.status === "IN_PROGRESS"
                         ? "진행중"
-                        : "완료"}
+                        : "모집완료"}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1 mb-3">
-                    <span
-                      className={`px-2 py-1 text-sm rounded-full ${
-                        lesson.schoolLevel === "MIDDLE"
-                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
-                          : "bg-green-100 text-green-600"
-                      }`}
-                    >
-                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
                     </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {lesson.subject === "MATH"
-                        ? "수학"
-                        : lesson.subject === "ENGLISH"
-                        ? "영어"
-                        : lesson.subject === "KOREAN"
-                        ? "국어"
-                        : lesson.subject === "SCIENCE"
-                        ? "과학"
-                        : "사회"}
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                      {lesson.subject === 'MATH' ? '수학' :
+                       lesson.subject === 'ENGLISH' ? '영어' :
+                       lesson.subject === 'KOREAN' ? '국어' :
+                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
                     </span>
                   </div>
 
@@ -687,42 +676,46 @@ const TeacherMyPage = () => {
                   </p>
 
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-600">
-                        {new Date(lesson.startDate).toLocaleDateString()} -{" "}
-                        {new Date(lesson.endDate).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                        <svg
+                          className="w-4 h-4 text-gray-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span className="text-sm text-gray-600">
+                          {new Date(lesson.startDate).toLocaleDateString()} -{" "}
+                          {new Date(lesson.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-600">
-                        {lesson.currentStudent}/{lesson.maxStudent}명
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                        <svg
+                          className="w-4 h-4 text-gray-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        <span className="text-sm text-gray-600">
+                          {lesson.currentStudent}/{lesson.maxStudent}명
+                        </span>
+                      </div>
                     </div>
                     <Link
                       href={`/lessons/${lesson.lessonId}/payments`}

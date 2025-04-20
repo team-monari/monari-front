@@ -105,7 +105,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
   const getStatusInfo = (status: string) => {
     const isFull = currentStudent >= maxStudent;
     if (isFull) {
-      return { text: '모집 완료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
+      return { text: '모집완료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
     }
     switch (status) {
       case 'ACTIVE':
@@ -138,7 +138,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
   const getButtonText = () => {
     if (status === 'CANCELED') return '취소된 수업';
     if (status === 'CLOSED') return '종료된 수업';
-    if (isFull) return '모집 완료';
+    if (isFull) return '모집완료';
     return '참여하기';
   };
 

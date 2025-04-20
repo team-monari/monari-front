@@ -15,7 +15,7 @@ interface Study {
   description: string;
   subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIAL";
   schoolLevel: "MIDDLE" | "HIGH";
-  status: "ACTIVE" | "CLOSED";
+  status: "ACTIVE" | "CLOSED" | "IN_PROGRESS";
   createdAt: string;
   locationName: string;
   locationServiceUrl: string;
@@ -75,6 +75,8 @@ const getStatusLabel = (status: Study["status"]) => {
       return "모집중";
     case "CLOSED":
       return "모집완료";
+    case "IN_PROGRESS":
+      return "진행중";
     default:
       return status;
   }
@@ -86,6 +88,8 @@ const getStatusColor = (status: Study["status"]) => {
       return "bg-yellow-100 text-yellow-600";
     case "CLOSED":
       return "bg-gray-100 text-gray-600";
+    case "IN_PROGRESS":
+      return "bg-blue-100 text-blue-800";
     default:
       return "bg-gray-100 text-gray-600";
   }
@@ -296,13 +300,15 @@ const Home = () => {
                       {lesson.title}
                     </h3>
                     <span
-                      className={`px-2 py-1 text-sm rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full ${
                         lesson.status === "ACTIVE"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-800"
+                          : lesson.status === "IN_PROGRESS"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {lesson.status === "ACTIVE" ? "모집중" : "모집마감"}
+                      {lesson.status === "ACTIVE" ? "모집중" : lesson.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
                     </span>
                   </div>
 
@@ -411,11 +417,15 @@ const Home = () => {
                       {study.title}
                     </h3>
                     <span
-                      className={`px-2 py-1 text-sm rounded-full ${getStatusColor(
-                        study.status
-                      )}`}
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        study.status === "ACTIVE"
+                          ? "bg-green-100 text-green-800"
+                          : study.status === "IN_PROGRESS"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
                     >
-                      {getStatusLabel(study.status)}
+                      {study.status === "ACTIVE" ? "모집중" : study.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
                     </span>
                   </div>
 
