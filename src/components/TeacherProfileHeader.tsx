@@ -100,7 +100,23 @@ const TeacherProfileHeader: React.FC<TeacherProfileHeaderProps> = ({
 
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
-          <p className="text-gray-600 mt-1">{email}</p>
+          <div className="flex items-center mt-3 text-gray-600 text-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+            {email}
+          </div>
         </div>
       </div>
     </div>
