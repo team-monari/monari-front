@@ -3,22 +3,10 @@ import Head from 'next/head';
 import Header from '../../components/Header';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-
-// Location 인터페이스를 API 응답 구조에 맞게 수정
-interface Location {
-  id: number;
-  serviceSubcategory: string;
-  serviceStatus: string;
-  paymentMethod: string;
-  locationName: string;
-  serviceUrl: string;
-  registrationStartDateTime: string;
-  registrationEndDateTime: string;
-  cancellationStartDateTime: string;
-  cancellationEndDateTime: string;
-  cancellationPolicyInfo: string;
-  cancellationDeadline: number;
-}
+import { regions, getRegionText } from '../../utils/region';
+import { locationApi, Location } from '../../services/location';
+import Swal from 'sweetalert2';
+import LoginModal from '@/components/LoginModal';
 
 interface FormData {
   title: string;
@@ -26,62 +14,143 @@ interface FormData {
   subject: string;
   schoolLevel: string;
   location: string;
+  locationId: number | null;
+  region: string;
+}
+
+interface FormErrors {
+  locationId?: string;
 }
 
 export default function CreateStudy() {
   const router = useRouter();
   const { accessToken } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     title: '',
     schoolLevel: '',
     subject: '',
     location: '',
-    description: ''
+    locationId: null,
+    description: '',
+    region: ''
   });
-
   const [locations, setLocations] = useState<Location[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showLocationList, setShowLocationList] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
 
-  // API 호출 함수
-  const fetchLocations = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/locations`);
-      if (!response.ok) {
-        throw new Error('장소 정보를 불러오는데 실패했습니다.');
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!accessToken) {
+        const result = await Swal.fire({
+          title: '로그인 필요',
+          text: '스터디 개설은 회원 기능입니다. 로그인하시겠습니까?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: '예',
+          cancelButtonText: '아니오',
+          confirmButtonColor: '#1B9AF5',
+          cancelButtonColor: '#6B7280',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+
+        if (result.isConfirmed) {
+          setShowLoginModal(true);
+        } else {
+          router.push('/');
+        }
       }
-      const data = await response.json();
-      console.log('API Response:', data); 
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [accessToken, router]);
+
+  const fetchLocations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await locationApi.getLocations();
       setLocations(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '장소 정보를 불러오는데 실패했습니다.');
-      setLocations([]);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 목록을 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch locations:', err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // 컴포넌트 마운트 시 장소 데이터 로드
   useEffect(() => {
-    fetchLocations();
-  }, []);
+    if (accessToken) {
+      fetchLocations();
+    }
+  }, [accessToken]);
 
-  const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const locationId = Number(e.target.value);
-    const location = locations.find(loc => loc.id === locationId) || null;
-    setSelectedLocation(location);
-    setFormData(prev => ({
-      ...prev,
-      location: e.target.value,
-    }));
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B9AF5]"></div>
+      </div>
+    );
+  }
+
+  if (!accessToken) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto px-6 py-12 max-w-[1280px]">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">로그인이 필요합니다</h2>
+            <p className="text-gray-600 mb-6">스터디 개설은 회원만 이용할 수 있는 기능입니다.</p>
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="bg-[#1B9AF5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#1B9AF5]/90 transition-colors"
+            >
+              로그인하기
+            </button>
+          </div>
+        </main>
+        {showLoginModal && <LoginModal isOpen={true} onClose={() => setShowLoginModal(false)} initialRole="student" />}
+      </div>
+    );
+  }
+
+  const handleSelectLocation = async (location: Location) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const detailedLocation = await locationApi.getLocation(location.id);
+      setSelectedLocation(detailedLocation);
+      setFormData(prev => ({
+        ...prev,
+        location: `${location.locationName}`,
+        locationId: location.id
+      }));
+      setShowLocationList(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 상세 정보를 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch location details:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies`, {
@@ -95,7 +164,8 @@ export default function CreateStudy() {
           description: formData.description,
           subject: formData.subject,
           schoolLevel: formData.schoolLevel,
-          locationId: Number(formData.location),
+          locationId: formData.locationId,
+          region: formData.region
         })
       });
 
@@ -103,15 +173,25 @@ export default function CreateStudy() {
         throw new Error('스터디 생성에 실패했습니다.');
       }
 
-      // const data = await response.json();
-      console.log('스터디 생성 성공:');
+      await Swal.fire({
+        title: '스터디 개설 완료',
+        text: '스터디가 성공적으로 개설되었습니다.',
+        icon: 'success',
+        confirmButtonColor: '#1B9AF5',
+      });
+
       router.push('/studies');
       
     } catch (error) {
       console.error('Error:', error);
-      alert('스터디 생성에 실패했습니다. 다시 시도해주세요.');
+      await Swal.fire({
+        title: '오류 발생',
+        text: '스터디 개설 중 오류가 발생했습니다. 다시 시도해주세요.',
+        icon: 'error',
+        confirmButtonColor: '#1B9AF5',
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -139,7 +219,7 @@ export default function CreateStudy() {
           <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 shadow-sm space-y-6">
             {/* 스터디 제목 */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-base font-semibold text-gray-800 mb-2">
                 제목
               </label>
               <input
@@ -157,7 +237,7 @@ export default function CreateStudy() {
             {/* 대상과 과목 */}
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label htmlFor="schoolLevel" className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-base font-semibold text-gray-800 mb-2">
                   대상
                 </label>
                 <select
@@ -175,7 +255,7 @@ export default function CreateStudy() {
               </div>
 
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-base font-semibold text-gray-800 mb-2">
                   과목
                 </label>
                 <select
@@ -199,39 +279,157 @@ export default function CreateStudy() {
             {/* 장소 선택 */}
             <div className="space-y-4">
               <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                  장소 선택
+                <label className="block text-base font-semibold text-gray-800 mb-2">
+                  지역
                 </label>
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5]"></div>
-                  </div>
-                ) : error ? (
-                  <div className="text-red-500 text-sm mb-2">{error}</div>
-                ) : (
-                  <select
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleLocationChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-                    required
-                  >
-                    <option value="">장소를 선택하세요</option>
-                    {locations.map(location => (
-                      <option key={location.id} value={location.id}>
-                        {location.locationName}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <select
+                  id="region"
+                  name="region"
+                  value={formData.region}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+                  required
+                >
+                  <option value="">지역을 선택해주세요</option>
+                  {Object.values(regions).map((region) => (
+                    <option key={region} value={region}>
+                      {getRegionText(region)}
+                    </option>
+                  ))}
+                </select>
               </div>
 
+              <div className="space-y-2">
+                <label className="block text-base font-semibold text-gray-800">
+                  스터디 장소
+                </label>
+                <div className="relative">
+                  <button
+                    id="locationId"
+                    type="button"
+                    onClick={() => setShowLocationList(!showLocationList)}
+                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white`}
+                  >
+                    {formData.location || '장소를 선택하세요'}
+                  </button>
+                  {formErrors.locationId && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.locationId}</p>
+                  )}
+                  {showLocationList && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+                      {loading ? (
+                        <div className="p-4 text-center text-gray-500">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
+                          로딩 중...
+                        </div>
+                      ) : error ? (
+                        <div className="p-4 text-center">
+                          <div className="text-red-500 mb-2">{error}</div>
+                          <button
+                            onClick={fetchLocations}
+                            className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
+                          >
+                            다시 시도
+                          </button>
+                        </div>
+                      ) : locations.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                      ) : (
+                        <ul className="divide-y divide-gray-200">
+                          {locations.map((location) => (
+                            <li
+                              key={location.id}
+                              className="p-4 hover:bg-gray-50 cursor-pointer"
+                              onClick={() => handleSelectLocation(location)}
+                            >
+                              <div className="font-medium">{location.locationName}</div>
+                              <div className="text-sm text-gray-500">{location.serviceSubcategory}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {selectedLocation && (
+                <div className="mt-4 p-6 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedLocation.serviceStatus === '예약마감' 
+                        ? 'bg-red-100 text-red-700' 
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {selectedLocation.serviceStatus}
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">장소명</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.locationName}</div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">서비스 소분류</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.serviceSubcategory}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">결제 방법</div>
+                      <div className="font-medium text-gray-800">{selectedLocation.paymentMethod}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">등록 가능 기간</div>
+                        <div className="font-medium text-gray-800">
+                          {selectedLocation.registrationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.registrationEndDateTime?.split('T')[0] ?? '미정'}
+                        </div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">취소 가능 기간</div>
+                        <div className="font-medium text-gray-800">
+                          {selectedLocation.cancellationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.cancellationEndDateTime?.split('T')[0] ?? '미정'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">취소 정책</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.cancellationPolicyInfo}</div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">취소 마감일</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.cancellationDeadline}일 전</div>
+                      </div>
+                    </div>
+
+                    {selectedLocation.serviceUrl && (
+                      <div className="mt-4">
+                        <a
+                          href={selectedLocation.serviceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          서비스 바로가기
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 스터디 상세 설명 */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-base font-semibold text-gray-800 mb-2">
                 상세 설명
               </label>
               <textarea
@@ -264,12 +462,12 @@ export default function CreateStudy() {
             <div className="flex justify-center pt-4">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={loading}
                 className={`bg-[#1B9AF5] text-white px-6 py-3 rounded-lg font-medium 
-                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1B9AF5]/90'} 
+                  ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1B9AF5]/90'} 
                   transition-colors`}
               >
-                {isLoading ? '생성 중...' : '등록'}
+                {loading ? '생성 중...' : '등록'}
               </button>
             </div>
           </form>
