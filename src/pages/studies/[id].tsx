@@ -170,13 +170,10 @@ export default function StudyDetail() {
 
             {/* 태그 영역 */}
             <div className="flex gap-2 mb-8">
-              <span className={`px-3 py-1.5 rounded-full text-sm ${
-                study.schoolLevel === 'MIDDLE' ? 'bg-[#1B9AF5]/10 text-[#1B9AF5]' :
-                'bg-green-100 text-green-600'
-              }`}>
+              <span className={`px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100`}>
                 {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
               </span>
-              <span className="px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-full text-sm">
+              <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
                 {getSubjectLabel(study.subject)}
               </span>
             </div>
