@@ -275,6 +275,7 @@ const Home = () => {
               </svg>
             </Link>
           </div>
+
           {isLessonsLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AF5]"></div>
@@ -308,13 +309,18 @@ const Home = () => {
 
                   <div className="flex items-center gap-1 mb-3">
                     <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
                     </span>
                     <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.subject === 'MATH' ? '수학' :
-                       lesson.subject === 'ENGLISH' ? '영어' :
-                       lesson.subject === 'KOREAN' ? '국어' :
-                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                      {lesson.subject === "MATH"
+                        ? "수학"
+                        : lesson.subject === "ENGLISH"
+                        ? "영어"
+                        : lesson.subject === "KOREAN"
+                        ? "국어"
+                        : lesson.subject === "SCIENCE"
+                        ? "과학"
+                        : "사회"}
                     </span>
                   </div>
 
@@ -363,19 +369,19 @@ const Home = () => {
                           {lesson.currentStudent}/{lesson.maxStudent}명
                         </span>
                       </div>
-                </div>
-              </div>
+                    </div>
+                  </div>
                 </Link>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </section>
 
         <section className="mb-16">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold">스터디 모집</h2>
-            <Link 
-              href="/studies" 
+            <Link
+              href="/studies"
               className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
             >
               <span>더보기</span>
@@ -398,12 +404,14 @@ const Home = () => {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AF5]"></div>
             </div>
+          ) : error ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {studies.slice(0, 3).map((study) => (
-              <Link 
+                <Link
                   key={study.id}
-                href={`/studies/${study.id}`} 
+                  href={`/studies/${study.id}`}
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -421,7 +429,7 @@ const Home = () => {
 
                   <div className="flex items-center gap-1 mb-3">
                     <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                      {study.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
                     </span>
                     <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
                       {getSubjectLabel(study.subject)}
@@ -452,8 +460,12 @@ const Home = () => {
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span className="text-sm text-gray-600">{study.locationName}</span>
-                      <span className="text-sm text-gray-600">({regionToKorean[study.region]})</span>
+                      <span className="text-sm text-gray-600">
+                        {study.locationName}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        ({regionToKorean[study.region]})
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -544,4 +556,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;

@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
   }
 
   if (accessToken) {
-    config.headers["X-Social-Access-Token"] = accessToken;
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
   return config;
@@ -31,14 +31,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      // 토큰 만료 등의 인증 에러 처리
-      localStorage.removeItem("token");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("userType");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
-    }
+    // 401 에러가 발생해도 자동으로 로그아웃하지 않고 오류만 반환
+    // 필요한 경우 호출하는 컴포넌트에서 직접 처리하도록 함
+    console.error("API 요청 에러:", error.response?.status, error.message);
     return Promise.reject(error);
   }
 );

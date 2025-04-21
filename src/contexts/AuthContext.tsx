@@ -4,6 +4,7 @@ import React, {
   useState,
   ReactNode,
   useEffect,
+  useCallback,
 } from "react";
 import Swal from "sweetalert2";
 
@@ -30,8 +31,9 @@ interface AuthContextType {
   userType: string | null;
   accessToken: string | null;
   login: (data: AuthData) => void;
-  logout: () => void;
+  logout: (showNotification?: boolean, expiredToken?: boolean) => void;
   getAccessToken: () => string | null;
+  checkTokenValidity: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,16 +51,112 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
     return null;
   });
+  const [isTokenValidated, setIsTokenValidated] = useState(false);
+
+  // 로그아웃 함수를 useCallback으로 감싸서 의존성 문제 해결
+  const logout = useCallback(
+    (showNotification = true, expiredToken = false) => {
+      // 로그아웃 전에 현재 userType 정보 저장
+      const currentUserType = userType;
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userType");
+      localStorage.removeItem("user");
+      setIsAuthenticated(false);
+      setAccessToken(null);
+      setUser(null);
+      setUserType(null);
+
+      // 로그아웃 알림 표시 - 중앙 상단에 작은 토스트 형태로 표시
+      if (showNotification) {
+        Swal.fire({
+          icon: expiredToken ? "info" : "info",
+          title: expiredToken ? "로그인 세션 만료" : "로그아웃 완료",
+          text: expiredToken
+            ? "로그인 세션이 만료되었습니다. 다시 로그인해주세요."
+            : `${
+                currentUserType === "STUDENT" ? "학생" : "선생님"
+              } 계정에서 로그아웃 되었습니다`,
+          toast: true,
+          position: "top",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          width: "auto",
+          padding: "0.5em",
+          customClass: {
+            container: "z-50",
+            popup: "p-2",
+            title: "text-sm font-medium",
+            htmlContainer: "text-xs",
+          },
+        });
+      }
+    },
+    [userType]
+  );
+
+  // 토큰 유효성 검사 함수
+  const validateToken = async (token: string): Promise<boolean> => {
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+      // 실제 서비스에 맞는 API 엔드포인트 사용
+      const endpoint = "/api/v1/auth/me";
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // 응답이 성공적이면 토큰이 유효한 것으로 간주
+        return true;
+      } else {
+        // 응답이 400 Bad Request일 경우 에러 내용 확인
+        const errorData = await response.json();
+        // AUTH4001 코드가 있으면 토큰이 만료된 것으로 판단
+        if (errorData.code === "AUTH4001") {
+          console.warn("토큰이 만료되었습니다:", errorData.message);
+          return false;
+        }
+        // 다른 오류인 경우 (네트워크 문제 등)는 토큰 검증 실패로 직접 판단하지 않음
+        return response.status !== 401; // 401이 아니면 다른 오류로 간주하고 유효한 것으로 처리
+      }
+    } catch (error) {
+      console.error("토큰 검증 중 오류 발생:", error);
+      // 네트워크 오류의 경우 토큰 검증에 실패했다고 직접적으로 판단하지 않음
+      // 인터넷 연결 문제일 수 있으므로 기존 인증 상태 유지
+      return true;
+    }
+  };
+
+  // 토큰 유효성 확인 함수 (외부에서 호출 가능)
+  const checkTokenValidity = async (): Promise<boolean> => {
+    if (!accessToken) return false;
+    return await validateToken(accessToken);
+  };
 
   // 앱 초기화 시 로컬 스토리지에서 인증 정보 불러오기
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedAccessToken = localStorage.getItem("accessToken");
-    const storedUserType = localStorage.getItem("userType");
-    const storedUser = localStorage.getItem("user");
+    const loadAuthData = async () => {
+      const token = localStorage.getItem("token");
+      const storedAccessToken = localStorage.getItem("accessToken");
+      const storedUserType = localStorage.getItem("userType");
+      const storedUser = localStorage.getItem("user");
 
-    if (token || storedAccessToken) {
-      // token 또는 accessToken이 있으면 인증된 상태로 간주
+      if (!storedAccessToken) {
+        // 저장된 토큰이 없으면 인증되지 않은 상태로 설정
+        setIsTokenValidated(true);
+        return;
+      }
+
+      // 토큰이 있으면 일단 인증된 상태로 설정
       setIsAuthenticated(true);
       if (storedAccessToken) setAccessToken(storedAccessToken);
       if (storedUserType) setUserType(storedUserType);
@@ -74,7 +172,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           userType: storedUserType || undefined,
         });
       }
-    }
+
+      // 백그라운드에서 토큰 유효성 검사 (결과에 따라 로그아웃 처리하지 않음)
+      try {
+        validateToken(storedAccessToken).then((isValid) => {
+          // 유효성 검사 결과를 기록만 하고, 자동 로그아웃 처리는 하지 않음
+          console.log("토큰 유효성 검사 결과:", isValid);
+        });
+      } catch (error) {
+        console.error("토큰 검증 중 오류 발생:", error);
+      }
+
+      setIsTokenValidated(true);
+    };
+
+    loadAuthData();
   }, []);
 
   // accessToken이 변경될 때마다 localStorage에 저장
@@ -132,46 +244,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // 로그인 성공 알림은 메인 페이지에서 처리하도록 제거
   };
 
-  const logout = () => {
-    // 로그아웃 전에 현재 userType 정보 저장
-    const currentUserType = userType;
-
-    localStorage.removeItem("token");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userType");
-    localStorage.removeItem("user");
-    setIsAuthenticated(false);
-    setAccessToken(null);
-    setUser(null);
-    setUserType(null);
-
-    // 로그아웃 알림 표시 - 중앙 상단에 작은 토스트 형태로 표시
-    Swal.fire({
-      icon: "info",
-      title: "로그아웃 완료",
-      text: `${
-        currentUserType === "STUDENT" ? "학생" : "선생님"
-      } 계정에서 로그아웃 되었습니다`,
-      toast: true,
-      position: "top",
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-      width: "auto",
-      padding: "0.5em",
-      customClass: {
-        container: "z-50",
-        popup: "p-2",
-        title: "text-sm font-medium",
-        htmlContainer: "text-xs",
-      },
-    });
-  };
-
   // accessToken을 가져오는 메서드
   const getAccessToken = () => {
     return accessToken;
   };
+
+  // 앱이 로딩되는 동안 스플래시 화면 또는 로딩 표시
+  if (!isTokenValidated) {
+    return null; // 또는 로딩 컴포넌트 반환
+  }
 
   return (
     <AuthContext.Provider
@@ -183,6 +264,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         login,
         logout,
         getAccessToken,
+        checkTokenValidity,
       }}
     >
       {children}
