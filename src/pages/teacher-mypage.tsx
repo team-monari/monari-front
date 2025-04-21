@@ -636,18 +636,18 @@ const TeacherMyPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {lessons.map((lesson) => (
+              {lessons.slice(0, 3).map((lesson) => (
                 <Link
                   key={lesson.lessonId}
                   href={`/lessons/${lesson.lessonId}`}
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
                       {lesson.title}
                     </h3>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                         lesson.status === "RECRUITING"
                           ? "bg-green-100 text-green-800"
                           : lesson.status === "IN_PROGRESS"
