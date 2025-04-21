@@ -222,16 +222,22 @@ export default function CreateStudy() {
               <label className="block text-base font-semibold text-gray-800 mb-2">
                 제목
               </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="스터디 제목을 입력하세요"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="스터디 제목을 입력하세요"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent pr-12"
+                  maxLength={100}
+                  required
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                  {formData.title.length}/100
+                </div>
+              </div>
             </div>
 
             {/* 대상과 과목 */}

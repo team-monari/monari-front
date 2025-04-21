@@ -264,8 +264,10 @@ export default function Studies() {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">{study.title}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(study.status)}`}>
+                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
+                      {study.title}
+                    </h3>
+                    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getStatusColor(study.status)}`}>
                       {getStatusLabel(study.status)}
                     </span>
                   </div>

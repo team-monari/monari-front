@@ -297,11 +297,11 @@ const Home = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
                       {lesson.title}
                     </h3>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                         lesson.status === "ACTIVE"
                           ? "bg-green-100 text-green-800"
                           : lesson.status === "IN_PROGRESS"
@@ -421,11 +421,11 @@ const Home = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
                       {study.title}
                     </h3>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                         study.status === "ACTIVE"
                           ? "bg-green-100 text-green-800"
                           : study.status === "IN_PROGRESS"
