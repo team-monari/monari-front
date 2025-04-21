@@ -294,7 +294,7 @@ const Home = () => {
                 <Link
                   key={lesson.lessonId}
                   href={`/lessons/${lesson.lessonId}`}
-                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow border border-blue-100"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
@@ -418,7 +418,7 @@ const Home = () => {
                 <Link
                   key={study.id}
                   href={`/studies/${study.id}`}
-                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow border border-blue-100"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
