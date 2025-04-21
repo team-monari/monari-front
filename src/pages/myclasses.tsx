@@ -144,15 +144,36 @@ const MyClasses = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>개설 수업 목록 | 모나리</title>
-        <meta name="description" content="모나리 개설 수업 목록" />
+        <title>개설 수업 | 모나리</title>
+        <meta name="description" content="모나리 개설 수업" />
       </Head>
 
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">개설 수업 목록</h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <span></span>
+            </button>
+            <h1 className="text-2xl font-bold">개설 수업</h1>
+          </div>
           <div className="text-gray-600">
             총 {totalElements}개의 수업
           </div>

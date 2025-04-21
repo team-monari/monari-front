@@ -492,7 +492,7 @@ const MyPage = () => {
             </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {myStudies.map((study) => (
+              {myStudies.slice(0, 3).map((study) => (
                 <Link
                   key={study.id}
                   href={`/studies/${study.id}`}
@@ -562,7 +562,32 @@ const MyPage = () => {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-xl font-bold mb-4">내가 참여한 수업</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">내가 참여한 수업</h2>
+            <Link
+              href="/mylessons"
+              className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push('/mylessons');
+              }}
+            >
+              <span>더보기</span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
+          </div>
           {isLessonsLoading ? (
             <div className="flex justify-center items-center h-48">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B9AF5]"></div>
@@ -573,13 +598,13 @@ const MyPage = () => {
             </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {myLessons.map((lesson) => (
+              {myLessons.slice(0, 3).map((lesson) => (
                 <div
                   key={lesson.lessonId}
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
                       {lesson.title}
                     </h3>
                     <span
