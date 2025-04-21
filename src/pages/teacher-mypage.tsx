@@ -561,40 +561,44 @@ const TeacherMyPage = () => {
                   )}
                 </div>
               </div>
-        </div>
+            </div>
 
-            {/* 프로필 정보 안내 메시지 */}
-            <div className="mt-6 text-sm">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="flex items-start">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-blue-500 mt-0.5 mr-2"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <div>
-                    <p className="text-blue-800 font-medium">
-                      프로필 정보가 불완전합니다
-                    </p>
-                    <p className="text-blue-600 mt-1">
-                      프로필 정보를 완성하면 학생들이 더 신뢰할 수 있습니다.
-                    </p>
-                    <Link href="/edit-teacher-profile">
-                      <button className="mt-2 text-blue-600 hover:text-blue-800 font-medium">
-                        프로필 수정하기 →
-                      </button>
-                    </Link>
+            {/* 프로필 정보 안내 메시지 - 필수 정보가 미입력된 경우에만 표시 */}
+            {(!teacherProfile.university ||
+              !teacherProfile.major ||
+              !teacherProfile.career) && (
+              <div className="mt-6 text-sm">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="flex items-start">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-blue-500 mt-0.5 mr-2"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-blue-800 font-medium">
+                        프로필 정보가 불완전합니다
+                      </p>
+                      <p className="text-blue-600 mt-1">
+                        프로필 정보를 완성하면 학생들이 더 신뢰할 수 있습니다.
+                      </p>
+                      <Link href="/edit-teacher-profile">
+                        <button className="mt-2 text-blue-600 hover:text-blue-800 font-medium">
+                          프로필 수정하기 →
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -631,7 +635,7 @@ const TeacherMyPage = () => {
               {lessonsError}
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {lessons.map((lesson) => (
                 <Link
                   key={lesson.lessonId}
@@ -661,13 +665,18 @@ const TeacherMyPage = () => {
 
                   <div className="flex items-center gap-1 mb-3">
                     <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
                     </span>
                     <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.subject === 'MATH' ? '수학' :
-                       lesson.subject === 'ENGLISH' ? '영어' :
-                       lesson.subject === 'KOREAN' ? '국어' :
-                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
+                      {lesson.subject === "MATH"
+                        ? "수학"
+                        : lesson.subject === "ENGLISH"
+                        ? "영어"
+                        : lesson.subject === "KOREAN"
+                        ? "국어"
+                        : lesson.subject === "SCIENCE"
+                        ? "과학"
+                        : "사회"}
                     </span>
                   </div>
 
@@ -738,8 +747,8 @@ const TeacherMyPage = () => {
                     </Link>
                   </div>
                 </Link>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </section>
       </main>
