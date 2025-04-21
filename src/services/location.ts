@@ -16,6 +16,8 @@ export interface Location {
   cancellationStartDateTime?: string;
   cancellationEndDateTime?: string;
   cancellationPolicyInfo?: string;
+  x?: string;
+  y?: string;
 }
 
 // API URL 설정

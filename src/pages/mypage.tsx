@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Swal from "sweetalert2";
+import { regionToKorean, Region } from '../utils/region';
 
 // 학생 프로필 인터페이스 정의
 interface StudentProfile {
@@ -26,12 +27,13 @@ interface Study {
   description: string;
   subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIAL";
   schoolLevel: "MIDDLE" | "HIGH";
-  status: "ACTIVE" | "CLOSED";
+  status: "ACTIVE" | "CLOSED" | "IN_PROGRESS";
   createdAt: string;
   locationName: string;
   locationServiceUrl: string;
   studentPublicId: string;
   studentName: string;
+  region: Region;
 }
 
 interface Lesson {
@@ -497,40 +499,31 @@ const MyPage = () => {
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-medium text-gray-900 truncate max-w-[80%]">
                       {study.title}
                     </h3>
                     <span
-                      className={`px-2 py-1 text-sm rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                         study.status === "ACTIVE"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-800"
+                          : study.status === "IN_PROGRESS"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {study.status === "ACTIVE" ? "모집중" : "모집완료"}
+                      {study.status === "ACTIVE" ? "모집중" : study.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1 mb-3">
-                    <span
-                      className={`px-2 py-1 text-sm rounded-full ${
-                        study.schoolLevel === "MIDDLE"
-                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
-                          : "bg-green-100 text-green-600"
-                      }`}
-                    >
-                      {study.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
                     </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {study.subject === "MATH"
-                        ? "수학"
-                        : study.subject === "ENGLISH"
-                        ? "영어"
-                        : study.subject === "KOREAN"
-                        ? "국어"
-                        : study.subject === "SCIENCE"
-                        ? "과학"
-                        : "사회"}
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                      {study.subject === "MATH" ? "수학" :
+                       study.subject === "ENGLISH" ? "영어" :
+                       study.subject === "KOREAN" ? "국어" :
+                       study.subject === "SCIENCE" ? "과학" : "사회"}
                     </span>
                   </div>
 
@@ -558,9 +551,8 @@ const MyPage = () => {
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span className="text-sm text-gray-600">
-                        {study.locationName}
-                      </span>
+                      <span className="text-sm text-gray-600">{study.locationName}</span>
+                      <span className="text-sm text-gray-600">({regionToKorean[study.region]})</span>
                     </div>
                   </div>
                 </Link>
@@ -591,36 +583,27 @@ const MyPage = () => {
                       {lesson.title}
                     </h3>
                     <span
-                      className={`px-2 py-1 text-sm rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full ${
                         lesson.status === "ACTIVE"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-800"
+                          : lesson.status === "IN_PROGRESS"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {lesson.status}
+                      {lesson.status === "ACTIVE" ? "모집중" : lesson.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1 mb-3">
-                    <span
-                      className={`px-2 py-1 text-sm rounded-full ${
-                        lesson.schoolLevel === "MIDDLE"
-                          ? "bg-[#1B9AF5]/10 text-[#1B9AF5]"
-                          : "bg-green-100 text-green-600"
-                      }`}
-                    >
-                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                      {lesson.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
                     </span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-sm rounded-full">
-                      {lesson.subject === "MATH"
-                        ? "수학"
-                        : lesson.subject === "ENGLISH"
-                        ? "영어"
-                        : lesson.subject === "KOREAN"
-                        ? "국어"
-                        : lesson.subject === "SCIENCE"
-                        ? "과학"
-                        : "사회"}
+                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                      {lesson.subject === 'MATH' ? '수학' :
+                       lesson.subject === 'ENGLISH' ? '영어' :
+                       lesson.subject === 'KOREAN' ? '국어' :
+                       lesson.subject === 'SCIENCE' ? '과학' : '사회'}
                     </span>
                   </div>
 
@@ -629,42 +612,46 @@ const MyPage = () => {
                   </p>
 
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-600">
-                        {new Date(lesson.startDate).toLocaleDateString()} ~{" "}
-                        {new Date(lesson.endDate).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                        <svg
+                          className="w-4 h-4 text-gray-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span className="text-sm text-gray-600">
+                          {new Date(lesson.startDate).toLocaleDateString()} ~{" "}
+                          {new Date(lesson.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-600">
-                        {lesson.currentStudent}/{lesson.maxStudent}명
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                        <svg
+                          className="w-4 h-4 text-gray-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        <span className="text-sm text-gray-600">
+                          {lesson.currentStudent}/{lesson.maxStudent}명
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
