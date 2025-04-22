@@ -22,6 +22,12 @@ interface FormErrors {
   locationId?: string;
 }
 
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
 export default function CreateStudy() {
   const router = useRouter();
   const { accessToken } = useAuth();
@@ -42,6 +48,9 @@ export default function CreateStudy() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [map, setMap] = useState<any>(null);
+  const [marker, setMarker] = useState<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -94,6 +103,89 @@ export default function CreateStudy() {
       fetchLocations();
     }
   }, [accessToken]);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_ID}&libraries=services&autoload=false`;
+    script.async = true;
+    
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        setIsMapLoaded(true);
+        console.log('Kakao Maps loaded successfully');
+      });
+    };
+
+    script.onerror = (error) => {
+      console.error('Failed to load Kakao Maps:', error);
+    };
+    
+    document.head.appendChild(script);
+    
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMapLoaded && selectedLocation && window.kakao) {
+      const container = document.getElementById('map');
+      if (!container) return;
+
+      try {
+        // 서울시청 좌표 (기본값)
+        const defaultCoords = {
+          lat: 37.5665,
+          lng: 126.9780
+        };
+
+        let coords;
+        if (selectedLocation.x && selectedLocation.y) {
+          // x, y 좌표가 있는 경우
+          coords = new window.kakao.maps.LatLng(
+            parseFloat(selectedLocation.y),
+            parseFloat(selectedLocation.x)
+          );
+        } else {
+          // x, y 좌표가 없는 경우 서울시청 좌표 사용
+          coords = new window.kakao.maps.LatLng(
+            defaultCoords.lat,
+            defaultCoords.lng
+          );
+          console.warn('Location coordinates not found, using default coordinates (Seoul City Hall)');
+        }
+
+        const options = {
+          center: coords,
+          level: 3
+        };
+
+        const newMap = new window.kakao.maps.Map(container, options);
+        
+        // 마커 생성
+        const marker = new window.kakao.maps.Marker({
+          position: coords,
+          map: newMap
+        });
+
+        // 인포윈도우로 장소에 대한 설명을 표시
+        const infowindow = new window.kakao.maps.InfoWindow({
+          content: `<div style="padding:5px;font-size:12px;">
+            ${selectedLocation.locationName}
+            ${!selectedLocation.x || !selectedLocation.y ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
+          </div>`
+        });
+        infowindow.open(newMap, marker);
+
+        setMap(newMap);
+        setMarker(marker);
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+      }
+    }
+  }, [isMapLoaded, selectedLocation]);
 
   if (isLoading) {
     return (
@@ -371,6 +463,7 @@ export default function CreateStudy() {
                     </span>
                   </div>
                   <div className="space-y-4">
+                    <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white p-4 rounded-lg">
                         <div className="text-sm text-gray-500 mb-1">장소명</div>
