@@ -97,16 +97,37 @@ const getStatusColor = (status: Study["status"]) => {
 
 const Home = () => {
   const router = useRouter();
-  const { accessToken } = useAuth();
+  const { accessToken, checkTokenValidity } = useAuth();
   const [studies, setStudies] = useState<Study[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLessonsLoading, setIsLessonsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lessonsError, setLessonsError] = useState<string | null>(null);
+  const [tokenChecked, setTokenChecked] = useState(false);
+
+  // 페이지 로드 시 토큰 유효성 검사
+  useEffect(() => {
+    const validateToken = async () => {
+      try {
+        if (accessToken) {
+          await checkTokenValidity();
+        }
+      } catch (error) {
+        console.error("토큰 검증 중 오류 발생:", error);
+      } finally {
+        setTokenChecked(true);
+      }
+    };
+
+    validateToken();
+  }, [accessToken, checkTokenValidity]);
 
   // API 호출 함수
   const fetchStudies = async () => {
+    // 토큰 검사가 완료되지 않았으면 기다림
+    if (accessToken && !tokenChecked) return;
+
     setIsLoading(true);
     setError(null);
     try {
@@ -123,6 +144,10 @@ const Home = () => {
       });
 
       if (!response.ok) {
+        // 만약 401 에러가 발생하면 (토큰 만료 가능성)
+        if (response.status === 401) {
+          throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+        }
         throw new Error("스터디 목록을 불러오는데 실패했습니다.");
       }
 
@@ -142,6 +167,9 @@ const Home = () => {
 
   // 수업 목록 가져오기
   const fetchLessons = async () => {
+    // 토큰 검사가 완료되지 않았으면 기다림
+    if (accessToken && !tokenChecked) return;
+
     setIsLessonsLoading(true);
     setLessonsError(null);
     try {
@@ -158,6 +186,10 @@ const Home = () => {
       });
 
       if (!response.ok) {
+        // 만약 401 에러가 발생하면 (토큰 만료 가능성)
+        if (response.status === 401) {
+          throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+        }
         throw new Error("수업 목록을 불러오는데 실패했습니다.");
       }
 
@@ -180,9 +212,12 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchStudies();
-    fetchLessons();
-  }, []);
+    // 토큰 검사가 완료되거나, 토큰이 없는 경우 API 호출
+    if (tokenChecked || !accessToken) {
+      fetchStudies();
+      fetchLessons();
+    }
+  }, [tokenChecked, accessToken]);
 
   // 로그인 성공 확인 및 알림 표시
   useEffect(() => {
@@ -309,7 +344,11 @@ const Home = () => {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {lesson.status === "ACTIVE" ? "모집중" : lesson.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
+                      {lesson.status === "ACTIVE"
+                        ? "모집중"
+                        : lesson.status === "IN_PROGRESS"
+                        ? "진행중"
+                        : "모집완료"}
                     </span>
                   </div>
 
@@ -433,7 +472,11 @@ const Home = () => {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {study.status === "ACTIVE" ? "모집중" : study.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
+                      {study.status === "ACTIVE"
+                        ? "모집중"
+                        : study.status === "IN_PROGRESS"
+                        ? "진행중"
+                        : "모집완료"}
                     </span>
                   </div>
 

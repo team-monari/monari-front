@@ -125,8 +125,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           console.warn("토큰이 만료되었습니다:", errorData.message);
           return false;
         }
+        // 401 Unauthorized는 토큰이 유효하지 않음을 의미
+        if (response.status === 401) {
+          console.warn("토큰이 유효하지 않습니다.");
+          return false;
+        }
         // 다른 오류인 경우 (네트워크 문제 등)는 토큰 검증 실패로 직접 판단하지 않음
-        return response.status !== 401; // 401이 아니면 다른 오류로 간주하고 유효한 것으로 처리
+        return true; // 다른 오류는 토큰 유효성과 직접적인 관련이 없을 수 있음
       }
     } catch (error) {
       console.error("토큰 검증 중 오류 발생:", error);
@@ -139,7 +144,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // 토큰 유효성 확인 함수 (외부에서 호출 가능)
   const checkTokenValidity = async (): Promise<boolean> => {
     if (!accessToken) return false;
-    return await validateToken(accessToken);
+    const isValid = await validateToken(accessToken);
+    if (!isValid) {
+      // 토큰이 유효하지 않으면 로그아웃 처리
+      logout(true, true);
+    }
+    return isValid;
   };
 
   // 앱 초기화 시 로컬 스토리지에서 인증 정보 불러오기
@@ -156,7 +166,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         return;
       }
 
-      // 토큰이 있으면 일단 인증된 상태로 설정
+      // 토큰 유효성 검사
+      const isValid = await validateToken(storedAccessToken);
+
+      if (!isValid) {
+        // 토큰이 유효하지 않으면 로그아웃 처리
+        console.log("저장된 토큰이 유효하지 않아 로그아웃합니다.");
+        logout(true, true);
+        setIsTokenValidated(true);
+        return;
+      }
+
+      // 토큰이 유효하면 인증 상태 설정
       setIsAuthenticated(true);
       if (storedAccessToken) setAccessToken(storedAccessToken);
       if (storedUserType) setUserType(storedUserType);
@@ -173,21 +194,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         });
       }
 
-      // 백그라운드에서 토큰 유효성 검사 (결과에 따라 로그아웃 처리하지 않음)
-      try {
-        validateToken(storedAccessToken).then((isValid) => {
-          // 유효성 검사 결과를 기록만 하고, 자동 로그아웃 처리는 하지 않음
-          console.log("토큰 유효성 검사 결과:", isValid);
-        });
-      } catch (error) {
-        console.error("토큰 검증 중 오류 발생:", error);
-      }
-
       setIsTokenValidated(true);
     };
 
     loadAuthData();
   }, []);
+
+  // 주기적으로 토큰 유효성 검사 (5분마다)
+  useEffect(() => {
+    // 토큰이 없으면 검사하지 않음
+    if (!accessToken) return;
+
+    const tokenCheckInterval = setInterval(async () => {
+      console.log("토큰 유효성 주기적 검사 실행");
+      const isValid = await validateToken(accessToken);
+      if (!isValid) {
+        console.log("토큰이 만료되어 로그아웃합니다.");
+        logout(true, true);
+      }
+    }, 5 * 60 * 1000); // 5분마다 체크
+
+    return () => {
+      clearInterval(tokenCheckInterval);
+    };
+  }, [accessToken, logout]);
 
   // accessToken이 변경될 때마다 localStorage에 저장
   useEffect(() => {

@@ -38,6 +38,14 @@ export function useApi<T>() {
     if (isHandlingTokenExpired.current) return;
 
     isHandlingTokenExpired.current = true;
+    console.log("토큰 만료 감지: 로그아웃 처리 시작");
+
+    // 로컬 스토리지에서 인증 정보 제거
+    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userType");
+    localStorage.removeItem("user");
+
     // 세션 타임아웃 처리 - 알림 표시 후 로그아웃
     setTimeout(() => {
       logout(true, true);
@@ -110,7 +118,7 @@ export function useApi<T>() {
               requiresAuth &&
               !skipTokenExpireCheck
             ) {
-              console.warn("인증 토큰이 만료되었습니다.");
+              console.warn("인증 토큰이 만료되었습니다 (AUTH4001).");
 
               // 에러 메시지 설정
               const errorMessage =
@@ -145,7 +153,7 @@ export function useApi<T>() {
           ) {
             // 로그아웃 관련 요청이 아닌 경우만 토큰 만료로 간주
             if (!url.includes("/logout") && !url.includes("/signout")) {
-              console.warn("인증 토큰이 만료되었습니다.");
+              console.warn("인증 토큰이 만료되었습니다 (401 Unauthorized).");
 
               // 에러 메시지 설정
               const errorMessage =
