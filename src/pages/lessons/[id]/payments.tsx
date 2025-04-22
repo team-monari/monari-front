@@ -4,17 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Toast from '@/components/Toast';
 import ConfirmationModal from '@/components/ConfirmationModal';
-
-interface Enrollment {
-  name: string;
-  schoolName: string | null;
-  schoolLevel: string | null;
-  grade: number | null;
-  status: 'REQUESTED' | 'COMPLETED' | 'REFUNDED' | 'PENDING';
-  finalPrice: number;
-  createDateTime: string;
-  publicId: string;
-}
+import { Enrollment, EnrollmentStatus } from '@/types/enrollment';
 
 const LessonPayments = () => {
   const router = useRouter();
@@ -28,7 +18,7 @@ const LessonPayments = () => {
     isOpen: boolean;
     studentName: string;
     publicId: string;
-    newStatus: Enrollment['status'];
+    newStatus: EnrollmentStatus;
   } | null>(null);
 
   useEffect(() => {
@@ -61,7 +51,7 @@ const LessonPayments = () => {
     fetchEnrollments();
   }, [id, accessToken]);
 
-  const handleStatusChange = async (publicId: string, newStatus: Enrollment['status']) => {
+  const handleStatusChange = async (publicId: string, newStatus: EnrollmentStatus) => {
     if (!id || !accessToken || !publicId) {
       setToast({ message: '잘못된 요청입니다.', type: 'error' });
       return;
@@ -98,31 +88,39 @@ const LessonPayments = () => {
     }
   };
 
-  const getStatusColor = (status: Enrollment['status']) => {
+  const getStatusColor = (status: EnrollmentStatus) => {
     switch (status) {
-      case 'REQUESTED':
+      case EnrollmentStatus.REQUESTED:
         return 'bg-blue-100 text-blue-600';
-      case 'COMPLETED':
+      case EnrollmentStatus.COMPLETED:
         return 'bg-green-100 text-green-600';
-      case 'REFUNDED':
+      case EnrollmentStatus.REFUNDED:
         return 'bg-red-100 text-red-600';
-      case 'PENDING':
+      case EnrollmentStatus.PENDING:
         return 'bg-yellow-100 text-yellow-600';
+      case EnrollmentStatus.REFUND_REQUESTED:
+        return 'bg-orange-100 text-orange-600';
+      case EnrollmentStatus.CANCELLED:
+        return 'bg-gray-100 text-gray-600';
       default:
         return 'bg-gray-100 text-gray-600';
     }
   };
 
-  const getStatusText = (status: Enrollment['status']) => {
+  const getStatusText = (status: EnrollmentStatus) => {
     switch (status) {
-      case 'REQUESTED':
+      case EnrollmentStatus.REQUESTED:
         return '신청됨';
-      case 'COMPLETED':
+      case EnrollmentStatus.COMPLETED:
         return '완료';
-      case 'REFUNDED':
+      case EnrollmentStatus.REFUNDED:
         return '환불됨';
-      case 'PENDING':
+      case EnrollmentStatus.PENDING:
         return '대기중';
+      case EnrollmentStatus.REFUND_REQUESTED:
+        return '환불 요청됨';
+      case EnrollmentStatus.CANCELLED:
+        return '취소됨';
       default:
         return status;
     }
@@ -232,15 +230,17 @@ const LessonPayments = () => {
                           isOpen: true,
                           studentName: enrollment.name,
                           publicId: enrollment.publicId,
-                          newStatus: e.target.value as Enrollment['status']
+                          newStatus: e.target.value as EnrollmentStatus
                         });
                       }}
                       className="w-full px-3 py-2 text-sm border-gray-300 rounded-lg focus:ring-[#1B9AF5] focus:border-[#1B9AF5]"
                     >
-                      <option value="REQUESTED">신청됨</option>
-                      <option value="COMPLETED">완료</option>
-                      <option value="REFUNDED">환불됨</option>
-                      <option value="PENDING">대기중</option>
+                      <option value={EnrollmentStatus.REQUESTED}>신청됨</option>
+                      <option value={EnrollmentStatus.COMPLETED}>완료</option>
+                      <option value={EnrollmentStatus.REFUNDED}>환불됨</option>
+                      <option value={EnrollmentStatus.PENDING}>대기중</option>
+                      <option value={EnrollmentStatus.REFUND_REQUESTED}>환불 요청됨</option>
+                      <option value={EnrollmentStatus.CANCELLED}>취소됨</option>
                     </select>
                   </div>
                 </div>
