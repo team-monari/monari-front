@@ -4,6 +4,7 @@ import Header from '../../components/Header';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Region, regionToKorean } from '../../utils/region';
+import Image from 'next/image';
 
 // 스터디 상태 타입
 type StudyStatus = 'ACTIVE' | 'CLOSED';
@@ -28,6 +29,8 @@ interface StudyDetail {
   studentPublicId: string;
   studentName: string;
   region: Region;
+  locationX?: string;
+  locationY?: string;
 }
 
 const getSubjectLabel = (subject: Subject) => {
@@ -64,6 +67,9 @@ export default function StudyDetail() {
   const [study, setStudy] = useState<StudyDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [map, setMap] = useState<any>(null);
+  const [marker, setMarker] = useState<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
     const fetchStudyDetail = async () => {
@@ -100,6 +106,89 @@ export default function StudyDetail() {
 
     fetchStudyDetail();
   }, [id, accessToken]);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_ID}&libraries=services&autoload=false`;
+    script.async = true;
+    
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        setIsMapLoaded(true);
+        console.log('Kakao Maps loaded successfully');
+      });
+    };
+
+    script.onerror = (error) => {
+      console.error('Failed to load Kakao Maps:', error);
+    };
+    
+    document.head.appendChild(script);
+    
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMapLoaded && study && window.kakao) {
+      const container = document.getElementById('map');
+      if (!container) return;
+
+      try {
+        // 서울시청 좌표 (기본값)
+        const defaultCoords = {
+          lat: 37.5665,
+          lng: 126.9780
+        };
+
+        let coords;
+        if (study.locationX && study.locationY) {
+          // x, y 좌표가 있는 경우
+          coords = new window.kakao.maps.LatLng(
+            parseFloat(study.locationY),
+            parseFloat(study.locationX)
+          );
+        } else {
+          // x, y 좌표가 없는 경우 서울시청 좌표 사용
+          coords = new window.kakao.maps.LatLng(
+            defaultCoords.lat,
+            defaultCoords.lng
+          );
+          console.warn('Location coordinates not found, using default coordinates (Seoul City Hall)');
+        }
+
+        const options = {
+          center: coords,
+          level: 3
+        };
+
+        const newMap = new window.kakao.maps.Map(container, options);
+        
+        // 마커 생성
+        const marker = new window.kakao.maps.Marker({
+          position: coords,
+          map: newMap
+        });
+
+        // 인포윈도우로 장소에 대한 설명을 표시
+        const infowindow = new window.kakao.maps.InfoWindow({
+          content: `<div style="padding:5px;font-size:12px;">
+            ${study.locationName}
+            ${!study.locationX || !study.locationY ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
+          </div>`
+        });
+        infowindow.open(newMap, marker);
+
+        setMap(newMap);
+        setMarker(marker);
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+      }
+    }
+  }, [isMapLoaded, study]);
 
   if (isLoading) {
     return (
@@ -194,28 +283,31 @@ export default function StudyDetail() {
             <div>
               <h2 className="text-lg font-bold mb-4">스터디 장소</h2>
               <div className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <svg className="w-5 h-5 text-[#1B9AF5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      {study.locationServiceUrl ? (
+                        <a 
+                          href={study.locationServiceUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="font-medium text-gray-900 hover:text-[#1B9AF5] hover:underline"
+                        >
+                          {study.locationName}
+                        </a>
+                      ) : (
+                        <p className="font-medium text-gray-900">{study.locationName}</p>
+                      )}
+                      <p className="text-sm text-gray-500 mt-1">({regionToKorean[study.region]})</p>
+                    </div>
                   </div>
-                  <div>
-                    {study.locationServiceUrl ? (
-                      <a 
-                        href={study.locationServiceUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="font-medium text-gray-900 hover:text-[#1B9AF5] hover:underline"
-                      >
-                        {study.locationName}
-                      </a>
-                    ) : (
-                      <p className="font-medium text-gray-900">{study.locationName}</p>
-                    )}
-                    <p className="text-sm text-gray-500 mt-1">({regionToKorean[study.region]})</p>
-                  </div>
+                  <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
                 </div>
               </div>
             </div>
