@@ -285,9 +285,12 @@ const Home = () => {
             >
               수업 찾기
             </Link>
-            <button className="text-gray-700 px-6 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50">
+            <Link
+              href="/aboutus"
+              className="text-gray-700 px-6 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50"
+            >
               더 알아보기
-            </button>
+            </Link>
           </div>
         </section>
 
