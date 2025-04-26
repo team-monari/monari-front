@@ -154,10 +154,22 @@ const CreateLessonPage = () => {
   };
 
   const handleChange = (field: keyof FormData, value: string | number | Date | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value === '' || value === null ? '' : value
-    }));
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [field]: value === '' || value === null ? '' : value
+      };
+      
+      // If lesson type is changed to ONLINE, reset location information and region
+      if (field === 'lessonType' && value === 'ONLINE') {
+        newFormData.location = '온라인';  // UI 표시용
+        newFormData.locationId = null;    // 서버 전송용
+        newFormData.region = '온라인';    // UI 표시용
+        setSelectedLocation(null);
+      }
+      
+      return newFormData;
+    });
   };
 
   const handleSelectLocation = async (location: Location) => {
@@ -168,7 +180,7 @@ const CreateLessonPage = () => {
       setSelectedLocation(detailedLocation);
       setFormData(prev => ({
         ...prev,
-        location: `${location.locationName}`,
+        location: formData.lessonType === 'ONLINE' ? '온라인' : `${location.locationName}`,
         locationId: location.id
       }));
       setShowLocationList(false);
@@ -262,19 +274,22 @@ const CreateLessonPage = () => {
       if (!firstErrorField) firstErrorField = 'maxStudent';
     }
 
-    if (!formData.locationId) {
-      errors.locationId = '수업 장소를 선택해주세요.';
-      if (!firstErrorField) firstErrorField = 'locationId';
+    // 오프라인 수업일 때만 장소와 지역 검증
+    if (formData.lessonType === 'OFFLINE') {
+      if (!formData.locationId) {
+        errors.locationId = '수업 장소를 선택해주세요.';
+        if (!firstErrorField) firstErrorField = 'locationId';
+      }
+
+      if (!formData.region) {
+        errors.region = '지역을 선택해주세요.';
+        if (!firstErrorField) firstErrorField = 'region';
+      }
     }
 
     if (!formData.startDate || !formData.endDate) {
       errors.dateRange = '수업 기간을 선택해주세요.';
       if (!firstErrorField) firstErrorField = 'dateRange';
-    }
-
-    if (!formData.region) {
-      errors.region = '지역을 선택해주세요.';
-      if (!firstErrorField) firstErrorField = 'region';
     }
 
     setFormErrors(errors);
@@ -299,8 +314,8 @@ const CreateLessonPage = () => {
             <div class="bg-yellow-50 p-4 rounded-lg mb-4">
               <p class="text-yellow-800 font-semibold mb-2">⚠️ 환불 정책 안내</p>
               <ul class="text-yellow-700 text-sm list-disc pl-4">
-                <li>수업 시작 7일 전까지는 전액 환불이 가능합니다.</li>
-                <li>수업 시작 이후에는 환불이 불가능합니다.</li>
+                <li>환불 정책은 선생님이 직접 명시합니다. <b>수업 설명에 반드시 환불 규정을 작성해 주세요.</b></li>
+                <li>수업 취소는 모집 마감일(데드라인) 이전까지만 가능하며, 100% 환불됩니다.</li>
               </ul>
             </div>
             <div class="bg-blue-50 p-4 rounded-lg">
@@ -322,7 +337,6 @@ const CreateLessonPage = () => {
       });
 
       if (result.isConfirmed) {
-        // Calculate deadline (startDate - 7 days if no date range is selected)
         const deadline = formData.startDate 
           ? new Date(formData.startDate)
           : new Date();
@@ -338,11 +352,11 @@ const CreateLessonPage = () => {
           amount: formData.price,
           startDate: formData.startDate?.toISOString().split('T')[0],
           endDate: formData.endDate?.toISOString().split('T')[0],
-          locationId: formData.locationId,
+          locationId: formData.lessonType === 'ONLINE' ? null : formData.locationId,
           grade: formData.grade,
           status: 'ACTIVE',
           deadline: deadline.toISOString().split('T')[0],
-          region: formData.region,
+          region: formData.lessonType === 'ONLINE' ? null : formData.region,
           lessonType: formData.lessonType,
         };
 
@@ -630,20 +644,7 @@ const CreateLessonPage = () => {
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
                     className={`w-full px-4 py-3 border ${formErrors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px] break-words whitespace-pre-wrap`}
-                    placeholder={`1. 수업 목표
-- 중2 수학 내신 1등급 달성
-- 기초 개념부터 심화 문제까지 체계적 학습
-- 개인별 맞춤형 학습 관리
-
-2. 수업 방식
-- 매주 수요일 오후 3시~5시 수업 진행
-- 실시간 문제 풀이 및 개념 설명
-- 주간 테스트로 성취도 확인
-
-3. 커리큘럼
-- 1개월차: 기초 개념 정리
-- 2개월차: 심화 문제 풀이
-- 3개월차: 실전 문제 및 기출 분석`}
+                    placeholder={`1. 수업 목표\n- 중2 수학 내신 1등급 달성\n- 기초 개념부터 심화 문제까지 체계적 학습\n- 개인별 맞춤형 학습 관리\n\n2. 수업 방식\n- 매주 수요일 오후 3시~5시 수업 진행\n- 실시간 문제 풀이 및 개념 설명\n- 주간 테스트로 성취도 확인\n\n3. 커리큘럼\n- 1개월차: 기초 개념 정리\n- 2개월차: 심화 문제 풀이\n- 3개월차: 실전 문제 및 기출 분석\n\n4. 환불 규정 (필수)\n- 환불 규정을 반드시 명시해 주세요. (예: 모집 마감일 이후 환불 불가, 모집 마감일 이전 100% 환불 등)`}
                   />
                   {formErrors.description && (
                     <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
@@ -770,17 +771,22 @@ const CreateLessonPage = () => {
                 <select
                   id="region"
                   name="region"
-                  value={formData.region}
+                  value={formData.lessonType === 'ONLINE' ? '온라인' : formData.region}
                   onChange={(e) => handleChange('region', e.target.value)}
-                  className={inputStyles.base}
-                  required
+                  className={`${inputStyles.base} ${formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={formData.lessonType === 'ONLINE'}
+                  required={formData.lessonType === 'OFFLINE'}
                 >
                   <option value="">지역을 선택해주세요</option>
-                  {Object.values(regions).map((region) => (
-                    <option key={region} value={region}>
-                      {getRegionText(region)}
-                    </option>
-                  ))}
+                  {formData.lessonType === 'ONLINE' ? (
+                    <option value="온라인">온라인</option>
+                  ) : (
+                    Object.values(regions).map((region) => (
+                      <option key={region} value={region}>
+                        {getRegionText(region)}
+                      </option>
+                    ))
+                  )}
                 </select>
                 {formErrors.region && (
                   <p className="mt-1 text-sm text-red-500">{formErrors.region}</p>
@@ -843,14 +849,17 @@ const CreateLessonPage = () => {
                     id="locationId"
                     type="button"
                     onClick={() => setShowLocationList(!showLocationList)}
-                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white`}
+                    disabled={formData.lessonType === 'ONLINE'}
+                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white ${
+                      formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
-                    {formData.location || '장소를 선택하세요'}
+                    {formData.lessonType === 'ONLINE' ? '온라인' : formData.location || '장소를 선택하세요'}
                   </button>
                   {formErrors.locationId && (
                     <p className="mt-1 text-sm text-red-500">{formErrors.locationId}</p>
                   )}
-                  {showLocationList && (
+                  {showLocationList && formData.lessonType !== 'ONLINE' && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
                       {loading ? (
                         <div className="p-4 text-center text-gray-500">
@@ -886,7 +895,7 @@ const CreateLessonPage = () => {
                     </div>
                   )}
                 </div>
-                {selectedLocation && (
+                {selectedLocation && formData.lessonType !== 'ONLINE' && (
                   <div className="mt-4 p-6 bg-gray-50 rounded-xl">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>

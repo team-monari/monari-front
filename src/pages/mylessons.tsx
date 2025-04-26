@@ -76,13 +76,13 @@ const RefundPolicy = () => (
             <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span className="text-blue-900">수업 시작 7일 전까지 전액 환불 가능</span>
+            <span className="text-blue-900">환불 정책은 선생님이 직접 명시합니다.</span>
           </li>
           <li className="flex items-start gap-3">
             <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span className="text-blue-900">환불 신청 후 3-5일 이내 처리</span>
+            <span className="text-blue-900">수업 취소는 모집 마감일(데드라인) 이전까지만 가능하며, 100% 환불됩니다.</span>
           </li>
         </ul>
       </div>
@@ -98,13 +98,7 @@ const RefundPolicy = () => (
             <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-            <span className="text-red-900">수업 시작 후 환불 불가</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span className="text-red-900">수업 일정 변경 불가</span>
+            <span className="text-red-900">수업 시작 이후에는 선생님이 명시한 환불 규정에 따릅니다.</span>
           </li>
         </ul>
       </div>
@@ -287,8 +281,8 @@ const MyLessons = () => {
           <p class="mb-2">정말 수업을 취소하시겠습니까?</p>
           <p class="text-sm text-gray-600 mb-2">환불 정책:</p>
           <ul class="text-sm text-gray-600 list-disc pl-4 mb-4">
-            <li>수업 시작 7일 전까지 전액 환불 가능</li>
-            <li>수업 시작 후 환불 불가</li>
+            <li>환불 정책은 선생님이 직접 명시합니다.</li>
+            <li>수업 취소는 모집 마감일(데드라인) 이전까지만 가능하며, 100% 환불됩니다.</li>
           </ul>
         </div>
       `,
@@ -330,12 +324,10 @@ const MyLessons = () => {
               html: `
                 <div class="text-left">
                   <p class="mb-2">수업 취소 기간이 지났습니다.</p>
-                  <p class="text-sm text-gray-600 mb-2">환불 신청을 진행하시겠습니까?</p>
-                  <p class="text-sm text-gray-600">환불 정책:</p>
+                  <p class="text-sm text-gray-600 mb-2">환불 정책:</p>
                   <ul class="text-sm text-gray-600 list-disc pl-4 mt-2">
-                    <li>수업 시작 7일 전까지: 전액 환불</li>
-                    <li>수업 시작전 7일 이내: 일부 환불</li>
-                    <li>수업 시작 후: 환불 불가</li>
+                    <li>환불 정책은 선생님이 직접 명시합니다.</li>
+                    <li>수업 취소는 모집 마감일(데드라인) 이전까지만 가능하며, 100% 환불됩니다.</li>
                   </ul>
                 </div>
               `,
@@ -366,11 +358,10 @@ const MyLessons = () => {
                       html: `
                         <div class="text-left">
                           <p class="mb-2">환불 신청 기간이 지났습니다.</p>
-                          <p class="text-sm text-gray-600">환불 가능 기간:</p>
+                          <p class="text-sm text-gray-600">환불 정책:</p>
                           <ul class="text-sm text-gray-600 list-disc pl-4 mt-2">
-                            <li>수업 시작 7일 전까지: 전액 환불</li>
-                            <li>수업 시작전 7일 이내: 일부 환불</li>
-                            <li>수업 시작 후: 환불 불가</li>
+                            <li>환불 정책은 선생님이 직접 명시합니다.</li>
+                            <li>수업 취소는 모집 마감일(데드라인) 이전까지만 가능하며, 100% 환불됩니다.</li>
                           </ul>
                         </div>
                       `,

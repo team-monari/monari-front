@@ -196,7 +196,7 @@ const LessonDetail: React.FC = () => {
     };
 
     fetchLesson();
-  }, [id]);
+  }, [id, router.query.refresh]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -282,6 +282,16 @@ const LessonDetail: React.FC = () => {
   }, [isMapLoaded, location]);
 
   const handleEnroll = async () => {
+    if (lesson && lesson.status !== 'ACTIVE') {
+      await Swal.fire({
+        title: '신청 불가',
+        text: '이 수업은 더 이상 신청할 수 없습니다.',
+        icon: 'warning',
+        confirmButtonColor: '#1B9AF5',
+      });
+      return;
+    }
+
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
@@ -305,8 +315,9 @@ const LessonDetail: React.FC = () => {
             <div class="bg-blue-50 p-4 rounded-lg">
               <h3 class="font-semibold text-blue-800 mb-2">📌 기본 규정</h3>
               <ul class="list-disc pl-4 space-y-1 text-gray-700">
-                <li>수업 신청 후 취소는 7일 전까지 가능합니다.</li>
-                <li>수업 시작 후 환불은 불가능합니다.</li>
+                <li><b>수업 신청 전, 반드시 선생님이 명시한 환불 규정을 확인하세요.</b></li>
+                <li>환불 정책은 선생님이 직접 명시합니다.</li>
+                <li>수업 취소는 모집 마감일(데드라인) 이전까지만 가능하며, 100% 환불됩니다.</li>
                 <li>수업 인원이 최소 인원에 미달할 경우 수업이 취소될 수 있습니다.</li>
               </ul>
             </div>
@@ -332,7 +343,6 @@ const LessonDetail: React.FC = () => {
             <div class="bg-yellow-50 p-4 rounded-lg">
               <h3 class="font-semibold text-yellow-800 mb-2">⚠️ 주의사항</h3>
               <ul class="list-disc pl-4 space-y-1 text-gray-700">
-                <li>수업 시작 후에는 환불이 불가능하니 신중하게 신청해주세요.</li>
                 <li>수업 인원이 최소 인원에 미달할 경우 수업이 취소될 수 있습니다.</li>
               </ul>
             </div>
@@ -366,7 +376,8 @@ const LessonDetail: React.FC = () => {
               icon: 'success',
               confirmButtonColor: '#1B9AF5',
             });
-            router.push(`/lessons/${id}`);
+            await new Promise(res => setTimeout(res, 700));
+            router.push(`/lessons/${id}?refresh=${Date.now()}`);
           }
         }
       });
@@ -537,7 +548,11 @@ const LessonDetail: React.FC = () => {
                 </div>
                 <div className="flex justify-between py-3 border-b border-gray-100">
                   <span className="text-gray-600">지역</span>
-                  <span className="text-gray-900 font-medium">{getRegionText(lesson.region as Region)}</span>
+                  <span className="text-gray-900 font-medium">
+                    {lesson.region === 'ONLINE'
+                      ? '온라인'
+                      : getRegionText(lesson.region as Region)}
+                  </span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-gray-100">
                   <span className="text-gray-600">수업 기간</span>
@@ -586,7 +601,16 @@ const LessonDetail: React.FC = () => {
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">수업 장소</h2>
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              {location ? (
+              {lesson.lessonType === 'ONLINE' ? (
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-blue-700 font-semibold">온라인</span>
+                </div>
+              ) : location ? (
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
@@ -683,14 +707,14 @@ const LessonDetail: React.FC = () => {
                 </div>
                 <button
                   className={`px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isFull 
+                    isFull || lesson.status !== 'ACTIVE'
                       ? 'bg-gray-500 text-white cursor-not-allowed'
                       : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
                   }`}
-                  disabled={isFull}
+                  disabled={isFull || lesson.status !== 'ACTIVE'}
                   onClick={handleEnroll}
                 >
-                  {isFull ? '모집 완료' : '수업 신청하기'}
+                  {isFull ? '모집 완료' : lesson.status !== 'ACTIVE' ? '신청 불가' : '수업 신청하기'}
                 </button>
               </div>
             </div>
