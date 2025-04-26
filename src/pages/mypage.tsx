@@ -599,8 +599,9 @@ const MyPage = () => {
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {myLessons.slice(0, 3).map((lesson) => (
-                <div
+                <Link
                   key={lesson.lessonId}
+                  href={`/lessons/${lesson.lessonId}`}
                   className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -679,7 +680,7 @@ const MyPage = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
             ))}
           </div>
           )}
