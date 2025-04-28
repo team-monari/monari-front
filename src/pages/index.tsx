@@ -8,6 +8,12 @@ import LessonCard from "../components/LessonCard";
 import { useAuth } from "../contexts/AuthContext";
 import Swal from "sweetalert2";
 import { Region, regionToKorean } from "../utils/region";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+// Add type declaration for react-slick
+declare module 'react-slick'
 
 interface Study {
   id: number;
@@ -273,10 +279,10 @@ const Home = () => {
       <main className="container mx-auto px-6 py-12 max-w-[1280px]">
         <section className="text-center mb-16">
           <h1 className="text-3xl font-bold mb-4">
-            선생님과 학생을 연결하는 플랫폼
+            공부의 문턱을 낮추다, 모나리
           </h1>
           <p className="text-gray-600 mb-8">
-            현재 진행중인 인기 팀당 프로젝트를 확인해보세요
+            배움에 필요한 모든 것을 합리적인 가격으로 완성하세요
           </p>
           <div className="flex gap-4 justify-center">
             <Link
@@ -329,100 +335,59 @@ const Home = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {lessons.slice(0, 3).map((lesson) => (
-                <Link
+                <LessonCard
                   key={lesson.lessonId}
-                  href={`/lessons/${lesson.lessonId}`}
-                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow border border-blue-100"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
-                      {lesson.title}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        lesson.status === "ACTIVE"
-                          ? "bg-green-100 text-green-800"
-                          : lesson.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {lesson.status === "ACTIVE"
-                        ? "모집중"
-                        : lesson.status === "IN_PROGRESS"
-                        ? "진행중"
-                        : "모집완료"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
-                    </span>
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.subject === "MATH"
-                        ? "수학"
-                        : lesson.subject === "ENGLISH"
-                        ? "영어"
-                        : lesson.subject === "KOREAN"
-                        ? "국어"
-                        : lesson.subject === "SCIENCE"
-                        ? "과학"
-                        : "사회"}
-                    </span>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-4 truncate">
-                    {lesson.description}
-                  </p>
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                        <svg
-                          className="w-4 h-4 text-gray-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="text-sm text-gray-600">
-                          {new Date(lesson.startDate).toLocaleDateString()} ~{" "}
-                          {new Date(lesson.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                        <svg
-                          className="w-4 h-4 text-gray-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                        <span className="text-sm text-gray-600">
-                          {lesson.currentStudent}/{lesson.maxStudent}명
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                  lessonId={lesson.lessonId}
+                  title={lesson.title}
+                  description={lesson.description}
+                  subject={lesson.subject}
+                  schoolLevel={lesson.schoolLevel}
+                  minStudent={lesson.minStudent}
+                  maxStudent={lesson.maxStudent}
+                  currentStudent={lesson.currentStudent}
+                  amount={lesson.amount}
+                  startDate={lesson.startDate}
+                  endDate={lesson.endDate}
+                  status={lesson.status}
+                  lessonType="OFFLINE"
+                />
               ))}
             </div>
           )}
+        </section>
+
+        {/* Banner Slider Section */}
+        <section className="mb-16">
+          <Slider
+            dots={true}
+            infinite={true}
+            speed={500}
+            slidesToShow={2}
+            slidesToScroll={1}
+            autoplay={true}
+            autoplaySpeed={3000}
+            arrows={true}
+            className="banner-slider"
+            responsive={[
+              {
+                breakpoint: 768,
+                settings: {
+                  slidesToShow: 1,
+                  slidesToScroll: 1,
+                }
+              }
+            ]}
+          >
+            {[1, 2, 3, 4].map((num) => (
+              <div key={num} className="relative h-[300px] px-3">
+                <img
+                  src={`/images/main/${num}.png`}
+                  alt={`Banner ${num}`}
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+              </div>
+            ))}
+          </Slider>
         </section>
 
         <section className="mb-16">
