@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '../../components/Header';
 import { useRouter } from 'next/router';
 import { locationApi, Location } from '../../services/location';
@@ -72,6 +72,8 @@ const CreateLessonPage = () => {
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const locationListRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -174,16 +176,29 @@ const CreateLessonPage = () => {
 
   const handleSelectLocation = async (location: Location) => {
     try {
+      const currentScrollPosition = window.scrollY;
+      
       setLoading(true);
       setError(null);
+      
       const detailedLocation = await locationApi.getLocation(location.id);
-      setSelectedLocation(detailedLocation);
-      setFormData(prev => ({
-        ...prev,
-        location: formData.lessonType === 'ONLINE' ? '온라인' : `${location.locationName}`,
-        locationId: location.id
-      }));
-      setShowLocationList(false);
+      
+      // 상태 업데이트를 batch로 처리
+      React.startTransition(() => {
+        setSelectedLocation(detailedLocation);
+        setFormData(prev => ({
+          ...prev,
+          location: formData.lessonType === 'ONLINE' ? '온라인' : `${location.locationName}`,
+          locationId: location.id
+        }));
+        setShowLocationList(false);
+      });
+      
+      // 다음 렌더링 사이클에서 스크롤 위치 복원
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScrollPosition);
+      });
+      
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -195,6 +210,35 @@ const CreateLessonPage = () => {
       setLoading(false);
     }
   };
+
+  const handleToggleLocationList = () => {
+    if (formData.lessonType !== 'ONLINE') {
+      const currentScrollPosition = window.scrollY;
+      
+      // 상태 업데이트를 batch로 처리
+      React.startTransition(() => {
+        setShowLocationList(!showLocationList);
+      });
+      
+      // 다음 렌더링 사이클에서 스크롤 위치 복원
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScrollPosition);
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationListRef.current && !locationListRef.current.contains(event.target as Node)) {
+        setShowLocationList(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/,/g, '');
@@ -844,11 +888,11 @@ const CreateLessonPage = () => {
                 <label className="block text-base font-semibold text-gray-800">
                   수업 장소
                 </label>
-                <div className="relative">
+                <div className="relative" ref={locationListRef}>
                   <button
                     id="locationId"
                     type="button"
-                    onClick={() => setShowLocationList(!showLocationList)}
+                    onClick={handleToggleLocationList}
                     disabled={formData.lessonType === 'ONLINE'}
                     className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white ${
                       formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''
@@ -870,10 +914,14 @@ const CreateLessonPage = () => {
                         <div className="p-4 text-center">
                           <div className="text-red-500 mb-2">{error}</div>
                           <button
-                            onClick={fetchLocations}
+                            onClick={() => {
+                              scrollPositionRef.current = window.scrollY;
+                              setShowLocationList(false);
+                              window.scrollTo(0, scrollPositionRef.current);
+                            }}
                             className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
                           >
-                            다시 시도
+                            닫기
                           </button>
                         </div>
                       ) : locations.length === 0 ? (

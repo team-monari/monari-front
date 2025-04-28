@@ -18,19 +18,31 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log('Change event:', { name, value });
-    
-    const updatedFilters = {
-      ...filters,
-      [name]: value
-    };
     
     if (name === 'keyword') {
       setSearchKeyword(value);
+    } else {
+      // 검색어 이외의 필터는 즉시 적용
+      const updatedFilters = {
+        ...filters,
+        [name]: value
+      };
+      onFilterChange(updatedFilters);
     }
-    
-    console.log('Updated filters:', updatedFilters);
+  };
+
+  const handleSearch = () => {
+    const updatedFilters = {
+      ...filters,
+      keyword: searchKeyword
+    };
     onFilterChange(updatedFilters);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -52,12 +64,13 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
           name="keyword"
           value={searchKeyword}
           onChange={handleChange}
+          onKeyPress={handleKeyPress}
           placeholder="검색어를 입력하세요"
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
         />
         <button
           type="button"
-          onClick={() => onFilterChange(filters)}
+          onClick={handleSearch}
           className="px-6 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
         >
           검색

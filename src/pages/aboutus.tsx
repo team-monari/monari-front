@@ -4,6 +4,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { staggerContainer, fadeInUp } from '../utils/motion';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface Testimonial {
   role: string;
@@ -344,7 +356,7 @@ const AboutUsPage = () => {
                 before: "수학 4등급, 과학 3등급",
                 after: "수학 1등급, 과학 1등급",
                 period: "1년",
-                result: "서울대 의예과 합격",
+                result: "서○대 ○○과 합격",
                 description: "체계적인 학습 관리와 꾸준한 문제 풀이로 성적 향상",
                 improvement: "수학 3등급, 과학 2등급 향상",
                 studyMethod: "주 3회 1:1 맞춤 수업 + 주말 그룹 스터디",
@@ -356,7 +368,7 @@ const AboutUsPage = () => {
                 before: "국어 5등급, 영어 4등급",
                 after: "국어 2등급, 영어 1등급",
                 period: "8개월",
-                result: "연세대 경영학과 합격",
+                result: "연○대 ○○학과 합격",
                 description: "기초부터 차근차근, 독해력 향상에 중점",
                 improvement: "국어 3등급, 영어 3등급 향상",
                 studyMethod: "주 2회 1:1 맞춤 수업 + 온라인 학습",
@@ -368,7 +380,7 @@ const AboutUsPage = () => {
                 before: "평균 5등급",
                 after: "평균 2등급",
                 period: "1년 6개월",
-                result: "고려대 컴퓨터학과 합격",
+                result: "고○대 ○○○학과 합격",
                 description: "취약 과목 집중 관리로 전체적인 성적 향상",
                 improvement: "평균 3등급 향상",
                 studyMethod: "주 4회 1:1 맞춤 수업 + 주말 특강",
@@ -486,6 +498,72 @@ const AboutUsPage = () => {
           </div>
         </section>
 
+        {/* 기대효과 및 사교육비 절감 그래프 섹션 */}
+        <section className="mb-40">
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/80">
+              사교육비 변화와 모나리의 기대효과
+            </h2>
+            <p className="text-lg text-gray-600">
+              최근 10여년간 사교육비 추이와 모나리 서비스의 절감 효과를 한눈에 확인하세요.
+            </p>
+          </motion.div>
+          <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-lg p-12">
+            <Bar
+              data={{
+                labels: [
+                  '2010', '2011', '2012', '2013', '2014', '2015', '2016',
+                  '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'
+                ],
+                datasets: [
+                  {
+                    label: '학생 1인당 월평균 사교육비 (만원)',
+                    data: [32.1, 32.8, 31.2, 32.8, 33.5, 33.8, 35.2, 39.1, 41.1, 45.1, 45.3, 52.9, 59.6, 62.8, 67.3],
+                    backgroundColor: '#1B9AF5',
+                    barThickness: 40,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { position: 'top' },
+                  title: {
+                    display: true,
+                    text: '연도별 학생 1인당 월평균 사교육비 (2010~2024)',
+                    font: { size: 28 },
+                  },
+                },
+                scales: {
+                  x: { ticks: { font: { size: 18 } } },
+                  y: {
+                    beginAtZero: true,
+                    title: { display: true, text: '만원', font: { size: 20 } },
+                    ticks: { font: { size: 18 } },
+                  },
+                },
+                layout: { padding: 32 },
+              }}
+              height={120}
+            />
+            <p className="mt-4 text-gray-600 text-base">
+              ※ 본 그래프는 공공 통계자료를 바탕으로 연도별로 집계한 학생 1인당 월평균 사교육비입니다.<br/>
+              <span className="text-blue-700 font-semibold">모나리 이용 시 약 30% 절감이 가능합니다.</span>
+            </p>
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg text-blue-800 text-base">
+              <b>예상 절감 예시</b><br />
+              예를 들어, 2024년 기준 평균 사교육비 67.3만원에서 <b>모나리 이용 시 약 20.2만원(30%) 절감</b>되어 <b>약 47.1만원</b>이 예상됩니다.<br />
+              <span className="text-xs text-gray-500">※ 실제 절감 효과는 개인별로 다를 수 있습니다.</span>
+            </div>
+          </div>
+        </section>
+
         {/* FAQ Section */}
         <section className="mb-40">
           <motion.div
@@ -562,6 +640,12 @@ const AboutUsPage = () => {
           </motion.div>
         </section>
       </main>
+      <footer className="bg-gray-50 py-8">
+        <div className="container mx-auto px-4 text-center text-sm text-gray-500">
+          <p>※ 본 페이지에 기재된 내용은 모나리의 기대효과이며, 실제 결과는 개인별 상황에 따라 다를 수 있습니다.</p>
+          <p>※ 모든 수치와 통계는 참고용이며, 법적 효력이 없습니다.</p>
+        </div>
+      </footer>
     </div>
   );
 };
