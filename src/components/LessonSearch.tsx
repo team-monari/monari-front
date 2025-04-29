@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Lesson, fetchLessons, searchLessons } from '../services/lesson';
+import { SearchType } from '../types/lesson';
 import LessonCard from './LessonCard';
 import FilterSection from './FilterSection';
 import Card from './Card';
@@ -20,7 +21,7 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
     subject: '',
     schoolLevel: '',
     region: '',
-    searchType: 'title',
+    searchType: SearchType.TITLE,
     keyword: '',
     lessonType: ''
   });
@@ -60,6 +61,7 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
         if (filters.schoolLevel) searchParams.append('schoolLevel', filters.schoolLevel);
         if (filters.region) searchParams.append('region', filters.region);
         if (filters.lessonType) searchParams.append('lessonType', filters.lessonType);
+        searchParams.append('searchType', filters.searchType);
         searchParams.append('pageNumber', currentPage.toString());
         searchParams.append('pageSize', '6');
 
@@ -82,7 +84,7 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
     };
 
     loadData();
-  }, [currentPage, filters.subject, filters.schoolLevel, filters.region, filters.keyword, filters.lessonType, router.isReady]);
+  }, [currentPage, filters.subject, filters.schoolLevel, filters.region, filters.keyword, filters.lessonType, filters.searchType, router.isReady]);
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);

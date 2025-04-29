@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { regions, getRegionText } from '../utils/region';
+import { SearchType } from '../types/lesson';
 
 interface FilterSectionProps {
   filters: {
     subject: string;
     schoolLevel: string;
     region: string;
-    searchType: string;
+    searchType: SearchType;
     lessonType: string;
     keyword?: string;
   };
@@ -55,9 +56,9 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
           onChange={handleChange}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
         >
-          <option value="title">제목</option>
-          <option value="description">설명</option>
-          <option value="subject">과목</option>
+          <option value={SearchType.TITLE}>제목</option>
+          <option value={SearchType.DESCRIPTION}>내용</option>
+          <option value={SearchType.ALL}>제목 + 내용</option>
         </select>
         <input
           type="text"

@@ -82,4 +82,10 @@ export interface PublicServiceLocation {
   V_MAX: string;
   REVSTDDAYNM: string;
   REVSTDDAY: string;
+}
+
+export enum SearchType {
+  TITLE = 'TITLE',
+  DESCRIPTION = 'DESCRIPTION',
+  ALL = 'ALL'
 } 
