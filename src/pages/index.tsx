@@ -11,9 +11,10 @@ import { Region, regionToKorean } from "../utils/region";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import ChatBot from "../components/ChatBot";
 
 // Add type declaration for react-slick
-declare module 'react-slick'
+declare module "react-slick";
 
 interface Study {
   id: number;
@@ -265,18 +266,18 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>모나리 - 선생님과 학생을 연결하는 플랫폼</title>
+        <title>모나리 - 스터디 & 과외 매칭 플랫폼</title>
         <meta
           name="description"
-          content="모나리 - 선생님과 학생을 연결하는 플랫폼"
+          content="학생과 선생님을 위한 스터디 & 과외 매칭 서비스"
         />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <Header />
-
-      <main className="container mx-auto px-6 py-12 max-w-[1280px]">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-20">
         <section className="text-center mb-16">
           <h1 className="text-3xl font-bold mb-4">
             공부의 문턱을 낮추다, 모나리
@@ -374,8 +375,8 @@ const Home = () => {
                 settings: {
                   slidesToShow: 1,
                   slidesToScroll: 1,
-                }
-              }
+                },
+              },
             ]}
           >
             {[1, 2, 3, 4].map((num) => (
@@ -573,6 +574,9 @@ const Home = () => {
           <p className="mt-2">이용약관 | 개인정보처리방침</p>
         </footer>
       </main>
+
+      {/* 챗봇 컴포넌트 추가 */}
+      <ChatBot />
     </div>
   );
 };
