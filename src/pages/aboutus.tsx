@@ -85,20 +85,20 @@ const AboutUsPage = () => {
             initial="initial"
             whileInView="animate"
             viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center"
+            className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center"
           >
             <motion.div variants={fadeInUp} className="space-y-8">
-              <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1B9AF5] via-[#1B9AF5]/90 to-[#1B9AF5] leading-tight">
+              <h1 className="text-4xl md:text-[56px] font-bold text-[#1B9AF5] leading-[1.3]">
                 합리적인 가격으로
                 <br />
                 최고의 교육을 받으세요
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-xl text-gray-600">
                 시장 최저가로 제공되는
                 <br />
                 고품질 과외 및 스터디 서비스
               </p>
-              <div className="flex flex-col sm:flex-row gap-6 pt-6">
+              <div className="flex flex-col sm:flex-row gap-6">
                 <Link
                   href="/lessons"
                   className="bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/90 text-white px-10 py-5 rounded-2xl font-medium hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 text-base shadow-lg shadow-[#1B9AF5]/20"
@@ -133,7 +133,7 @@ const AboutUsPage = () => {
             initial="initial"
             whileInView="animate"
             viewport={{ once: true }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
           >
             {[
               { number: "10,000+", label: "활성 사용자" },
@@ -144,9 +144,9 @@ const AboutUsPage = () => {
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                className="p-10 bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 backdrop-blur-sm bg-opacity-80 min-h-[200px] flex flex-col justify-center items-center text-center"
+                className="bg-white rounded-3xl shadow-lg p-8 flex flex-col items-center justify-center text-center"
               >
-                <div className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/80 mb-6">
+                <div className="text-[48px] font-bold text-[#1B9AF5] mb-4">
                   {stat.number}
                 </div>
                 <div className="text-lg text-gray-600">
@@ -183,9 +183,9 @@ const AboutUsPage = () => {
             <table className="w-full bg-white rounded-3xl shadow-lg">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="p-6 text-left text-xl font-bold text-[#1B9AF5]">구분</th>
-                  <th className="p-6 text-left text-xl font-bold text-[#1B9AF5]">모나리</th>
-                  <th className="p-6 text-left text-xl font-bold text-[#1B9AF5]">타 플랫폼</th>
+                  <th className="p-8 text-left text-xl font-bold text-[#1B9AF5] min-w-[120px]">구분</th>
+                  <th className="p-8 text-left text-xl font-bold text-[#1B9AF5] min-w-[200px]">모나리</th>
+                  <th className="p-8 text-left text-xl font-bold text-[#1B9AF5] min-w-[200px]">타 플랫폼</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,9 +217,9 @@ const AboutUsPage = () => {
                   }
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="p-6 text-lg font-medium text-gray-700">{row.category}</td>
-                    <td className="p-6 text-lg text-gray-600">{row.monari}</td>
-                    <td className="p-6 text-lg text-gray-600">{row.others}</td>
+                    <td className="p-8 text-lg font-medium text-gray-700">{row.category}</td>
+                    <td className="p-8 text-lg text-gray-600">{row.monari}</td>
+                    <td className="p-8 text-lg text-gray-600">{row.others}</td>
                   </tr>
                 ))}
               </tbody>
@@ -390,7 +390,7 @@ const AboutUsPage = () => {
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                className="p-8 bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden group"
+                className="p-8 bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden group min-h-[400px]"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1B9AF5]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative">
@@ -435,24 +435,24 @@ const AboutUsPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/80">
+            <h2 className="text-4xl md:text-[48px] font-bold mb-8 text-[#1B9AF5]">
               실제 사용자 후기
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-xl text-gray-600">
               모나리를 통해 만족스러운 학습 경험을 한 사용자들의 이야기
             </p>
           </motion.div>
           <div className="relative overflow-hidden">
             <motion.div
-              className="flex space-x-8"
+              className="flex space-x-8 py-4"
               animate={{
-                x: [0, -1000],
+                x: [0, -2000],
               }}
               transition={{
                 x: {
                   repeat: Infinity,
                   repeatType: "loop",
-                  duration: 30,
+                  duration: 40,
                   ease: "linear",
                 },
               }}
@@ -460,18 +460,13 @@ const AboutUsPage = () => {
               {[...testimonials, ...testimonials].map((story, index) => (
                 <motion.div
                   key={index}
-                  className="min-w-[450px] p-12 bg-gradient-to-br from-[#1B9AF5]/5 to-white rounded-3xl shadow-lg min-h-[350px] flex flex-col justify-between relative overflow-hidden group"
+                  className="min-w-[400px] p-8 bg-white rounded-3xl shadow-lg flex flex-col justify-between relative"
                   whileHover={{
-                    scale: 1.05,
-                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                  }}
-                  transition={{
-                    duration: 0.3,
-                    ease: "easeOut",
+                    scale: 1.02,
+                    transition: { duration: 0.2 }
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#1B9AF5]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative">
+                  <div>
                     <div className="flex items-center mb-6">
                       <div className="w-12 h-12 bg-[#1B9AF5]/10 rounded-full flex items-center justify-center mr-4">
                         <span className="text-xl text-[#1B9AF5]">👨‍🎓</span>
@@ -480,21 +475,21 @@ const AboutUsPage = () => {
                         {story.role}
                       </h3>
                     </div>
-                    <p className="text-lg text-gray-600 italic leading-relaxed mb-6">
+                    <p className="text-lg text-gray-600 mb-6 min-h-[80px] break-keep">
                       "{story.quote}"
                     </p>
-                    <div className="flex items-center">
-                      <div className="w-1 h-8 bg-[#1B9AF5] rounded-full mr-4" />
-                      <p className="text-base text-gray-500 font-medium">
-                        - {story.author}
-                      </p>
-                    </div>
+                  </div>
+                  <div className="flex items-center mt-4">
+                    <div className="w-1 h-8 bg-[#1B9AF5] rounded-full mr-4"></div>
+                    <p className="text-base text-gray-500">
+                      - {story.author}
+                    </p>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
-            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
+            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
           </div>
         </section>
 
@@ -573,7 +568,7 @@ const AboutUsPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-5xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/80">
+            <h2 className="text-4xl md:text-[48px] font-bold mb-8 text-[#1B9AF5]">
               자주 묻는 질문
             </h2>
           </motion.div>
@@ -624,7 +619,7 @@ const AboutUsPage = () => {
             className="text-center"
           >
             <motion.div variants={fadeInUp}>
-              <h2 className="text-5xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/80">
+              <h2 className="text-4xl md:text-[48px] font-bold mb-8 text-[#1B9AF5]">
                 지금 바로 시작하세요
               </h2>
               <p className="text-xl text-gray-600 mb-12">
@@ -632,7 +627,7 @@ const AboutUsPage = () => {
               </p>
               <Link
                 href="/"
-                className="bg-gradient-to-r from-[#1B9AF5] to-[#1B9AF5]/90 text-white px-14 py-6 rounded-2xl font-medium hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 inline-block text-lg shadow-lg shadow-[#1B9AF5]/20"
+                className="bg-[#1B9AF5] text-white px-14 py-6 rounded-2xl font-medium hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 inline-block text-lg"
               >
                 서비스 이용하기
               </Link>
