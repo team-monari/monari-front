@@ -20,6 +20,9 @@ export default function App({ Component, pageProps }: AppProps) {
             }
           `}
         </style>
+        <link rel="icon" href="/images/logo/monari.png" />
+        <link rel="apple-touch-icon" href="/images/logo/monari.png" />
+        <meta name="msapplication-TileImage" content="/images/logo/monari.png" />
       </Head>
       <Component {...pageProps} />
     </AuthProvider>
