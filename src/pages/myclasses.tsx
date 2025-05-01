@@ -109,6 +109,11 @@ const MyClasses = () => {
     setCurrentPage(newPage);
   };
 
+  const handleEditLesson = (e: React.MouseEvent, lessonId: number) => {
+    e.preventDefault(); // Link 컴포넌트의 기본 동작 방지
+    router.push(`/lessons/${lessonId}/edit`);
+  };
+
   // 로딩 중 표시
   if (isLoading) {
     return (
@@ -202,21 +207,27 @@ const MyClasses = () => {
                     <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
                       {lesson.title}
                     </h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        lesson.status === "RECRUITING"
-                          ? "bg-green-100 text-green-800"
-                          : lesson.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {lesson.status === "RECRUITING"
-                        ? "모집중"
-                        : lesson.status === "IN_PROGRESS"
-                        ? "진행중"
-                        : "모집완료"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                          lesson.status === 'ACTIVE'
+                            ? lesson.currentStudent >= lesson.maxStudent
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-green-100 text-green-800'
+                            : lesson.status === 'CANCELED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {lesson.status === 'ACTIVE'
+                          ? lesson.currentStudent >= lesson.maxStudent
+                            ? '모집 완료'
+                            : '모집중'
+                          : lesson.status === 'CANCELED'
+                          ? '취소'
+                          : '종료'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1 mb-3">
@@ -282,25 +293,47 @@ const MyClasses = () => {
                         </span>
                       </div>
                     </div>
-                    <Link
-                      href={`/lessons/${lesson.lessonId}/payments`}
-                      className="mt-2 flex items-center justify-center gap-2 px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                    <div className="flex gap-2 mt-2">
+                      <Link
+                        href={`/lessons/${lesson.lessonId}/payments`}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      결제 현황 상세보기
-                    </Link>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        결제 현황
+                      </Link>
+                      <button
+                        onClick={(e) => handleEditLesson(e, lesson.lessonId)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        수업 수정
+                      </button>
+                    </div>
                   </div>
                 </Link>
               ))}

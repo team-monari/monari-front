@@ -104,19 +104,25 @@ const LessonCard: React.FC<LessonCardProps> = ({
 
   const getStatusInfo = (status: string) => {
     const isFull = currentStudent >= maxStudent;
-    if (isFull) {
-      return { text: '모집완료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
+    
+    // 수업이 취소되었거나 종료된 경우
+    if (status === 'CANCELED') {
+      return { text: '취소', bgColor: 'bg-red-100', textColor: 'text-red-800' };
     }
-    switch (status) {
-      case 'ACTIVE':
-        return { text: '모집중', bgColor: 'bg-green-100', textColor: 'text-green-800' };
-      case 'CLOSED':
-        return { text: '종료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
-      case 'CANCELED':
-        return { text: '취소', bgColor: 'bg-red-100', textColor: 'text-red-800' };
-      default:
-        return { text: '알 수 없음', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
+    if (status === 'CLOSED') {
+      return { text: '종료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
     }
+    
+    // 수업이 활성 상태일 때
+    if (status === 'ACTIVE') {
+      if (isFull) {
+        return { text: '모집 완료', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
+      }
+      return { text: '모집중', bgColor: 'bg-green-100', textColor: 'text-green-800' };
+    }
+    
+    // 기본값
+    return { text: '알 수 없음', bgColor: 'bg-gray-100', textColor: 'text-gray-800' };
   };
 
   const statusInfo = getStatusInfo(status);

@@ -115,51 +115,34 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
     if (totalPages <= 0 || lessons.length === 0) return null;
 
     return (
-      <div className="flex justify-center mt-8 gap-1">
+      <div className="flex justify-center mt-8 gap-2">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white"
+          className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition-all duration-200"
         >
           &lt;
         </button>
         {Array.from({ length: totalPages }, (_, i) => {
           const pageNumber = i + 1;
-          if (
-            pageNumber === 1 ||
-            pageNumber === totalPages ||
-            Math.abs(pageNumber - currentPage) <= 1
-          ) {
-            return (
-              <button
-                key={i}
-                onClick={() => handlePageChange(pageNumber)}
-                className={`w-8 h-8 flex items-center justify-center rounded-md ${
-                  currentPage === pageNumber
-                    ? 'text-[#1B9AF5] font-semibold'
-                    : 'text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          }
-          if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
-            return (
-              <span
-                key={i}
-                className="w-8 h-8 flex items-center justify-center text-gray-500"
-              >
-                ...
-              </span>
-            );
-          }
-          return null;
+          return (
+            <button
+              key={pageNumber}
+              onClick={() => handlePageChange(pageNumber)}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${
+                currentPage === pageNumber
+                  ? 'bg-blue-50 text-blue-600 font-semibold transform scale-110'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {pageNumber}
+            </button>
+          );
         })}
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white"
+          className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition-all duration-200"
         >
           &gt;
         </button>

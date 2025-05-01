@@ -648,18 +648,22 @@ const TeacherMyPage = () => {
                     </h3>
                     <span
                       className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        lesson.status === "RECRUITING"
-                          ? "bg-green-100 text-green-800"
-                          : lesson.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
+                        lesson.status === 'ACTIVE'
+                          ? lesson.currentStudent >= lesson.maxStudent
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-green-100 text-green-800'
+                          : lesson.status === 'CANCELED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {lesson.status === "RECRUITING"
-                        ? "모집중"
-                        : lesson.status === "IN_PROGRESS"
-                        ? "진행중"
-                        : "모집완료"}
+                      {lesson.status === 'ACTIVE'
+                        ? lesson.currentStudent >= lesson.maxStudent
+                          ? '모집 완료'
+                          : '모집중'
+                        : lesson.status === 'CANCELED'
+                        ? '취소'
+                        : '종료'}
                     </span>
                   </div>
 
