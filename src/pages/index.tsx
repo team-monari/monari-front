@@ -47,6 +47,7 @@ interface Lesson {
   status: string;
   schoolLevel: string;
   subject: string;
+  lessonType: "ONLINE" | "OFFLINE";
 }
 
 interface PageResponse<T> {
@@ -350,7 +351,7 @@ const Home = () => {
                   startDate={lesson.startDate}
                   endDate={lesson.endDate}
                   status={lesson.status}
-                  lessonType="OFFLINE"
+                  lessonType={lesson.lessonType}
                 />
               ))}
             </div>
