@@ -18,6 +18,7 @@ export interface Location {
   cancellationPolicyInfo?: string;
   x?: string;
   y?: string;
+  region: string;
 }
 
 // API URL 설정

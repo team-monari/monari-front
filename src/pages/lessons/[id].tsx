@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { getRegionText, Region } from '../../utils/region';
 import Image from 'next/image';
 import Link from 'next/link';
+import { naverToKakao } from '../../utils/coordinate';
 
 interface TeacherProfile {
   name: string;
@@ -178,7 +179,7 @@ const LessonDetail: React.FC = () => {
         // 장소 정보 가져오기
         if (data.locationId) {
           try {
-            const locationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/locations/${data.locationId}`);
+            const locationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/general_locations/${data.locationId}`);
             if (locationResponse.ok) {
               const locationData = await locationResponse.json();
               setLocation(locationData);
@@ -237,10 +238,14 @@ const LessonDetail: React.FC = () => {
 
         let coords;
         if (location.x && location.y) {
-          // x, y 좌표가 있는 경우
+          // 네이버 좌표를 카카오 좌표로 변환
+          const kakaoCoords = naverToKakao(
+            parseFloat(location.x),
+            parseFloat(location.y)
+          );
           coords = new window.kakao.maps.LatLng(
-            parseFloat(location.y),
-            parseFloat(location.x)
+            kakaoCoords.lat,
+            kakaoCoords.lng
           );
         } else {
           // x, y 좌표가 없는 경우 서울시청 좌표 사용

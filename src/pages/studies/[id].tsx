@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Region, regionToKorean } from '../../utils/region';
 import Image from 'next/image';
+import { naverToKakao } from '../../utils/coordinate';
 
 // 스터디 상태 타입
 type StudyStatus = 'ACTIVE' | 'CLOSED';
@@ -146,10 +147,14 @@ export default function StudyDetail() {
 
         let coords;
         if (study.locationX && study.locationY) {
-          // x, y 좌표가 있는 경우
+          // 네이버 좌표를 카카오 좌표로 변환
+          const kakaoCoords = naverToKakao(
+            parseFloat(study.locationX),
+            parseFloat(study.locationY)
+          );
           coords = new window.kakao.maps.LatLng(
-            parseFloat(study.locationY),
-            parseFloat(study.locationX)
+            kakaoCoords.lat,
+            kakaoCoords.lng
           );
         } else {
           // x, y 좌표가 없는 경우 서울시청 좌표 사용

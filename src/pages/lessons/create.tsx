@@ -7,6 +7,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import Swal from 'sweetalert2';
 import { regions, getRegionText } from '../../utils/region';
 import { inputStyles } from '../../utils/styles';
+import { naverToKakao } from '../../utils/coordinate';
 
 interface FormData {
   title: string;
@@ -74,6 +75,8 @@ const CreateLessonPage = () => {
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const locationListRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
+  const [allLocations, setAllLocations] = useState<Location[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -133,8 +136,13 @@ const CreateLessonPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await locationApi.getLocations();
-      setLocations(data);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/general_locations`);
+      if (!response.ok) {
+        throw new Error('장소 목록을 불러오는데 실패했습니다.');
+      }
+      const data = await response.json();
+      setAllLocations(data);
+      setFilteredLocations(data);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -146,6 +154,16 @@ const CreateLessonPage = () => {
       setLoading(false);
     }
   };
+
+  // 지역 선택 시 장소 필터링
+  useEffect(() => {
+    if (formData.region && formData.region !== '온라인') {
+      const filtered = allLocations.filter(location => location.region === formData.region);
+      setFilteredLocations(filtered);
+    } else {
+      setFilteredLocations(allLocations);
+    }
+  }, [formData.region, allLocations]);
 
   const handleDateRangeChange = (dates: [Date | null, Date | null]) => {
     setFormData(prev => ({
@@ -181,7 +199,11 @@ const CreateLessonPage = () => {
       setLoading(true);
       setError(null);
       
-      const detailedLocation = await locationApi.getLocation(location.id);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/general_locations/${location.id}`);
+      if (!response.ok) {
+        throw new Error('장소 상세 정보를 불러오는데 실패했습니다.');
+      }
+      const detailedLocation = await response.json();
       
       // 상태 업데이트를 batch로 처리
       React.startTransition(() => {
@@ -481,10 +503,14 @@ const CreateLessonPage = () => {
 
         let coords;
         if (selectedLocation.x && selectedLocation.y) {
-          // x, y 좌표가 있는 경우
+          // 네이버 좌표를 카카오 좌표로 변환
+          const kakaoCoords = naverToKakao(
+            parseFloat(selectedLocation.x),
+            parseFloat(selectedLocation.y)
+          );
           coords = new window.kakao.maps.LatLng(
-            parseFloat(selectedLocation.y),
-            parseFloat(selectedLocation.x)
+            kakaoCoords.lat,
+            kakaoCoords.lng
           );
         } else {
           // x, y 좌표가 없는 경우 서울시청 좌표 사용
@@ -924,11 +950,13 @@ const CreateLessonPage = () => {
                             닫기
                           </button>
                         </div>
-                      ) : locations.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                      ) : filteredLocations.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          {formData.region ? '선택한 지역에 등록된 장소가 없습니다' : '장소 목록이 없습니다'}
+                        </div>
                       ) : (
                         <ul className="divide-y divide-gray-200">
-                          {locations.map((location) => (
+                          {filteredLocations.map((location) => (
                             <li
                               key={location.id}
                               className="p-4 hover:bg-gray-50 cursor-pointer"
