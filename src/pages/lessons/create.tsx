@@ -8,6 +8,8 @@ import Swal from 'sweetalert2';
 import { regions, getRegionText } from '../../utils/region';
 import { inputStyles } from '../../utils/styles';
 import { naverToKakao } from '../../utils/coordinate';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface FormData {
   title: string;
@@ -77,6 +79,7 @@ const CreateLessonPage = () => {
   const scrollPositionRef = useRef<number>(0);
   const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -437,6 +440,35 @@ const CreateLessonPage = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
+          if (errorData.code === 'TEACHER4043') {
+            const result = await Swal.fire({
+              title: '은행계좌 설정 필요',
+              html: `
+                <div class="text-left">
+                  <p class="mb-4">수업을 개설하기 위해서는 은행계좌 정보를 설정해야 합니다.</p>
+                  <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-blue-800 font-semibold mb-2">💳 계좌 정보 설정 안내</p>
+                    <ul class="text-blue-700 text-sm list-disc pl-4">
+                      <li>은행명, 계좌번호, 예금주 정보를 입력해야 합니다.</li>
+                      <li>계좌 정보는 수업료 정산에 사용됩니다.</li>
+                      <li>정확한 정보를 입력해주세요.</li>
+                    </ul>
+                  </div>
+                </div>
+              `,
+              icon: 'info',
+              showCancelButton: true,
+              confirmButtonText: '계좌 설정하기',
+              cancelButtonText: '나중에',
+              confirmButtonColor: '#1B9AF5',
+              cancelButtonColor: '#6B7280',
+            });
+
+            if (result.isConfirmed) {
+              router.push('/edit-teacher-profile');
+            }
+            return;
+          }
           if (errorData.data) {
             setFormErrors(errorData.data);
             return;
@@ -709,13 +741,64 @@ const CreateLessonPage = () => {
                   수업 설명
                 </label>
                 <div className="space-y-4">
-                  <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
-                    className={`w-full px-4 py-3 border ${formErrors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px] break-words whitespace-pre-wrap`}
-                    placeholder={`1. 수업 목표\n- 중2 수학 내신 1등급 달성\n- 기초 개념부터 심화 문제까지 체계적 학습\n- 개인별 맞춤형 학습 관리\n\n2. 수업 방식\n- 매주 수요일 오후 3시~5시 수업 진행\n- 실시간 문제 풀이 및 개념 설명\n- 주간 테스트로 성취도 확인\n\n3. 커리큘럼\n- 1개월차: 기초 개념 정리\n- 2개월차: 심화 문제 풀이\n- 3개월차: 실전 문제 및 기출 분석\n\n4. 환불 규정 (필수)\n- 환불 규정을 반드시 명시해 주세요. (예: 모집 마감일 이후 환불 불가, 모집 마감일 이전 100% 환불 등)`}
-                  />
+                  <div className="flex space-x-4 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreview(false)}
+                      className={`px-4 py-2 rounded-lg ${
+                        !showPreview
+                          ? 'bg-[#1B9AF5] text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      편집
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreview(true)}
+                      className={`px-4 py-2 rounded-lg ${
+                        showPreview
+                          ? 'bg-[#1B9AF5] text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      미리보기
+                    </button>
+                  </div>
+
+                  {!showPreview ? (
+                    <textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleChange('description', e.target.value)}
+                      className={`w-full px-4 py-3 border ${formErrors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px] break-words whitespace-pre-wrap`}
+                      placeholder={`# 수업 목표
+- 중2 수학 내신 1등급 달성
+- 기초 개념부터 심화 문제까지 체계적 학습
+- 개인별 맞춤형 학습 관리
+
+## 수업 방식
+- 매주 수요일 오후 3시~5시 수업 진행
+- 실시간 문제 풀이 및 개념 설명
+- 주간 테스트로 성취도 확인
+
+## 커리큘럼
+- 1개월차: 기초 개념 정리
+- 2개월차: 심화 문제 풀이
+- 3개월차: 실전 문제 및 기출 분석
+
+## 환불 규정 (필수)
+- 환불 규정을 반드시 명시해 주세요. (예: 모집 마감일 이후 환불 불가, 모집 마감일 이전 100% 환불 등)`}
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 border border-gray-200 rounded-xl min-h-[400px] bg-white overflow-auto">
+                      <div className="prose max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {formData.description || '작성된 내용이 없습니다.'}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
                   {formErrors.description && (
                     <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
                   )}

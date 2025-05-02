@@ -9,6 +9,8 @@ import { getRegionText, Region } from '../../utils/region';
 import Image from 'next/image';
 import Link from 'next/link';
 import { naverToKakao } from '../../utils/coordinate';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface TeacherProfile {
   name: string;
@@ -531,9 +533,11 @@ const LessonDetail: React.FC = () => {
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">수업 설명</h2>
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <p className="text-gray-700 whitespace-pre-wrap break-words">
-                {lesson.description}
-              </p>
+              <div className="prose max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {lesson.description}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
 
