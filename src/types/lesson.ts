@@ -88,4 +88,29 @@ export enum SearchType {
   TITLE = 'TITLE',
   DESCRIPTION = 'DESCRIPTION',
   ALL = 'ALL'
-} 
+}
+
+export enum Subject {
+  MATH = 'MATH',
+  SCIENCE = 'SCIENCE',
+  ENGLISH = 'ENGLISH',
+  KOREAN = 'KOREAN',
+  SOCIETY = 'SOCIETY'
+}
+
+export const getSubjectText = (subject: Subject): string => {
+  switch (subject) {
+    case Subject.MATH:
+      return '수학';
+    case Subject.SCIENCE:
+      return '과학';
+    case Subject.ENGLISH:
+      return '영어';
+    case Subject.KOREAN:
+      return '국어';
+    case Subject.SOCIETY:
+      return '사회';
+    default:
+      return subject;
+  }
+}; 

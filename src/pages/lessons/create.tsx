@@ -10,6 +10,7 @@ import { inputStyles } from '../../utils/styles';
 import { naverToKakao } from '../../utils/coordinate';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Subject, getSubjectText } from '../../types/lesson';
 
 interface FormData {
   title: string;
@@ -909,11 +910,14 @@ const CreateLessonPage = () => {
                 </label>
                 <select
                   value={formData.subject}
-                  onChange={(e) => handleChange('subject', e.target.value as 'MATH' | 'SCIENCE')}
+                  onChange={(e) => handleChange('subject', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white"
                 >
-                  <option value="MATH">수학</option>
-                  <option value="SCIENCE">과학</option>
+                  <option value={Subject.MATH}>{getSubjectText(Subject.MATH)}</option>
+                  <option value={Subject.SCIENCE}>{getSubjectText(Subject.SCIENCE)}</option>
+                  <option value={Subject.ENGLISH}>{getSubjectText(Subject.ENGLISH)}</option>
+                  <option value={Subject.KOREAN}>{getSubjectText(Subject.KOREAN)}</option>
+                  <option value={Subject.SOCIETY}>{getSubjectText(Subject.SOCIETY)}</option>
                 </select>
               </div>
 

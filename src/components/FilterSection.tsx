@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { regions, getRegionText } from '../utils/region';
-import { SearchType } from '../types/lesson';
+import { SearchType, Subject, getSubjectText } from '../types/lesson';
 
 interface FilterSectionProps {
   filters: {
@@ -103,8 +103,11 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
           >
             <option value="">전체</option>
-            <option value="MATH">수학</option>
-            <option value="SCIENCE">과학</option>
+            <option value={Subject.MATH}>{getSubjectText(Subject.MATH)}</option>
+            <option value={Subject.SCIENCE}>{getSubjectText(Subject.SCIENCE)}</option>
+            <option value={Subject.ENGLISH}>{getSubjectText(Subject.ENGLISH)}</option>
+            <option value={Subject.KOREAN}>{getSubjectText(Subject.KOREAN)}</option>
+            <option value={Subject.SOCIETY}>{getSubjectText(Subject.SOCIETY)}</option>
           </select>
         </div>
 

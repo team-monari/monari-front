@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { naverToKakao } from '../../utils/coordinate';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { getSubjectText, Subject } from '../../types/lesson';
 
 interface TeacherProfile {
   name: string;
@@ -48,21 +49,6 @@ const LessonDetail: React.FC = () => {
         return '고등학교';
       default:
         return level;
-    }
-  };
-
-  const getSubjectText = (subject: string) => {
-    switch (subject) {
-      case 'MATH':
-        return '수학';
-      case 'SCIENCE':
-        return '과학';
-      case 'ENGLISH':
-        return '영어';
-      case 'KOREAN':
-        return '국어';
-      default:
-        return subject;
     }
   };
 
@@ -523,7 +509,7 @@ const LessonDetail: React.FC = () => {
                   {getSchoolLevelText(lesson.schoolLevel)}
                 </span>
                 <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                  {getSubjectText(lesson.subject)}
+                  {getSubjectText(lesson.subject as Subject)}
                 </span>
               </div>
             </div>
@@ -549,7 +535,7 @@ const LessonDetail: React.FC = () => {
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex justify-between py-3 border-b border-gray-100">
                   <span className="text-gray-600">과목</span>
-                  <span className="text-gray-900 font-medium">{getSubjectText(lesson.subject)}</span>
+                  <span className="text-gray-900 font-medium">{getSubjectText(lesson.subject as Subject)}</span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-gray-100">
                   <span className="text-gray-600">교육 수준</span>
