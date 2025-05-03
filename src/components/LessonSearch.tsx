@@ -114,6 +114,11 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
   const renderPagination = () => {
     if (totalPages <= 0 || lessons.length === 0) return null;
 
+    // Calculate page window for pagination (10 pages per window)
+    const pageLimit = 10;
+    const startPage = Math.floor((currentPage - 1) / pageLimit) * pageLimit + 1;
+    const endPage = Math.min(startPage + pageLimit - 1, totalPages);
+
     return (
       <div className="flex justify-center mt-8 gap-2">
         <button
@@ -123,8 +128,8 @@ const LessonSearch: React.FC<LessonSearchProps> = ({ onSearch }) => {
         >
           &lt;
         </button>
-        {Array.from({ length: totalPages }, (_, i) => {
-          const pageNumber = i + 1;
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+          const pageNumber = startPage + i;
           return (
             <button
               key={pageNumber}
