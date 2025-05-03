@@ -56,52 +56,48 @@ const EmptyState = () => (
 );
 
 const StudyCard = ({ study }: { study: Study }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 group">
-    <div className="mb-5">
-      <Link href={`/studies/${study.id}`} className="block">
+  <Link href={`/studies/${study.id}`} className="block">
+    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 group">
+      <div className="mb-5">
         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
           {study.title}
         </h3>
-      </Link>
-    </div>
+      </div>
 
-    <div className="flex flex-wrap gap-2 mb-4">
-      <span className="px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200">
-        {study.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
-      </span>
-      <span className="px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200">
-        {study.subject === "MATH" ? "수학" :
-         study.subject === "ENGLISH" ? "영어" :
-         study.subject === "KOREAN" ? "국어" :
-         study.subject === "SCIENCE" ? "과학" : "사회"}
-      </span>
-    </div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200">
+          {study.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+        </span>
+        <span className="px-3 py-1 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200">
+          {study.subject === "MATH" ? "수학" :
+           study.subject === "ENGLISH" ? "영어" :
+           study.subject === "KOREAN" ? "국어" :
+           study.subject === "SCIENCE" ? "과학" : "사회"}
+        </span>
+      </div>
 
-    <p className="text-gray-600 text-sm mb-5 line-clamp-2">
-      {study.description}
-    </p>
+      <p className="text-gray-600 text-sm mb-5 line-clamp-2">
+        {study.description}
+      </p>
 
-    <div className="mt-auto">
-      <div className="flex items-center gap-3 text-gray-500 mb-4">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        <div className="flex items-center gap-1 text-sm">
-          <span>{study.locationName}</span>
-          <span className="text-gray-400">·</span>
-          <span>{regionToKorean[study.region]}</span>
+      <div className="mt-auto">
+        <div className="flex items-center gap-3 text-gray-500 mb-4">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <div className="flex items-center gap-1 text-sm">
+            <span>{study.locationName}</span>
+            <span className="text-gray-400">·</span>
+            <span>{regionToKorean[study.region]}</span>
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">작성자:</span>
-        <span className="font-medium text-gray-900">{study.studentName}</span>
       </div>
     </div>
-  </div>
+  </Link>
 );
 
 const Sidebar = ({ currentPath }: { currentPath: string }) => {
