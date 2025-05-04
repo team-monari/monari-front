@@ -399,7 +399,13 @@ export default function StudyDetail() {
 
             {/* 스터디 상태 변경 버튼 (작성자만 보임) */}
             {study && studentProfile && studentProfile.publicId === study.studentPublicId && (
-              <div className="mt-8 flex justify-end">
+              <div className="mt-8 flex justify-end gap-4">
+                <button
+                  onClick={() => router.push(`/studies/${study.id}/edit`)}
+                  className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                >
+                  수정하기
+                </button>
                 <button
                   onClick={handleStatusToggle}
                   disabled={isUpdatingStatus}
