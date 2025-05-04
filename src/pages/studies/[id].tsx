@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Region, regionToKorean } from '../../utils/region';
 import Image from 'next/image';
 import { naverToKakao } from '../../utils/coordinate';
+import Swal from 'sweetalert2';
 
 // 스터디 상태 타입
 type StudyStatus = 'ACTIVE' | 'CLOSED';
@@ -64,13 +65,45 @@ const getStatusColor = (status: StudyStatus) => {
 export default function StudyDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [study, setStudy] = useState<StudyDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [studentProfile, setStudentProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchStudentProfile = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const apiUrl = `${baseUrl}/api/v1/students/me`;
+
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`API 요청 실패: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setStudentProfile(data);
+      } catch (err) {
+        console.error("학생 프로필 조회 실패:", err);
+      }
+    };
+
+    if (accessToken) {
+      fetchStudentProfile();
+    }
+  }, [accessToken]);
 
   useEffect(() => {
     const fetchStudyDetail = async () => {
@@ -195,6 +228,53 @@ export default function StudyDetail() {
     }
   }, [isMapLoaded, study]);
 
+  const handleStatusToggle = async () => {
+    if (!study || isUpdatingStatus) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const newStatus = study.status === 'ACTIVE' ? 'CLOSED' : 'ACTIVE';
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies/${study.id}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('스터디 상태 변경에 실패했습니다.');
+      }
+
+      // Update local state
+      setStudy(prev => prev ? { ...prev, status: newStatus } : null);
+
+      // Show success modal
+      await Swal.fire({
+        title: '상태 변경 완료',
+        text: `스터디가 ${getStatusLabel(newStatus)} 상태로 변경되었습니다.`,
+        icon: 'success',
+        confirmButtonColor: '#1B9AF5',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      // Show error modal
+      await Swal.fire({
+        title: '오류 발생',
+        text: err instanceof Error ? err.message : '스터디 상태 변경 중 오류가 발생했습니다.',
+        icon: 'error',
+        confirmButtonColor: '#1B9AF5',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -316,6 +396,27 @@ export default function StudyDetail() {
                 </div>
               </div>
             </div>
+
+            {/* 스터디 상태 변경 버튼 (작성자만 보임) */}
+            {study && studentProfile && studentProfile.publicId === study.studentPublicId && (
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={handleStatusToggle}
+                  disabled={isUpdatingStatus}
+                  className="px-6 py-3 bg-[#1B9AF5] text-white rounded-lg font-medium hover:bg-[#1688D4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdatingStatus ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span>변경중...</span>
+                    </div>
+                  ) : (
+                    <span>모집 상태 변경</span>
+                  )}
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       </main>
