@@ -9,8 +9,6 @@ import { regions, getRegionText } from '../../utils/region';
 import { inputStyles } from '../../utils/styles';
 import { naverToKakao } from '../../utils/coordinate';
 import MDEditor from '@uiw/react-md-editor';
-import '@uiw/react-md-editor/markdown-editor.css';
-import '@uiw/react-markdown-preview/markdown.css';
 import { Subject, getSubjectText } from '../../types/lesson';
 
 interface FormData {
