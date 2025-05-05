@@ -182,8 +182,8 @@ export default function StudyDetail() {
         if (study.locationX && study.locationY) {
           // 네이버 좌표를 카카오 좌표로 변환
           const kakaoCoords = naverToKakao(
-            parseFloat(study.locationX),
-            parseFloat(study.locationY)
+            parseFloat(study.locationX as string),
+            parseFloat(study.locationY as string)
           );
           coords = new window.kakao.maps.LatLng(
             kakaoCoords.lat,
