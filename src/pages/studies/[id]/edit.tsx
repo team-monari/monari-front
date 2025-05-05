@@ -622,15 +622,20 @@ export default function EditStudy() {
             </div>
 
             {/* 제출 버튼 */}
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                취소
+              </button>
               <button
                 type="submit"
                 disabled={loading}
-                className={`bg-[#1B9AF5] text-white px-6 py-3 rounded-lg font-medium 
-                  ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1B9AF5]/90'} 
-                  transition-colors`}
+                className="px-6 py-3 text-sm font-medium text-white bg-[#1B9AF5] rounded-xl hover:bg-[#1B9AF5]/90 transition-colors"
               >
-                {loading ? '수정 중...' : '수정'}
+                {loading ? '수정 중...' : '수정하기'}
               </button>
             </div>
           </form>

@@ -70,7 +70,7 @@ const AboutUsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
       <Head>
-        <title>모나리 - 1:1 맞춤 과외/스터디 매칭 서비스</title>
+        <title>모나리 - 강의 서비스</title>
         <meta
           name="description"
           content="나에게 딱 맞는 과외 선생님과 스터디 그룹을 찾아보세요."

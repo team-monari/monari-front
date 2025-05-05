@@ -577,7 +577,7 @@ export default function CreateStudy() {
                   {showLocationList && !formData.isOnline && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
                       <div className="p-4 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-800 mb-2">스터디룸</h3>
+                        <h3 className="font-medium text-gray-800 mb-2">서울시 공공시설</h3>
                         {loading ? (
                           <div className="p-4 text-center text-gray-500">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
@@ -786,15 +786,20 @@ export default function CreateStudy() {
             </div>
 
             {/* 제출 버튼 */}
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                취소
+              </button>
               <button
                 type="submit"
                 disabled={loading}
-                className={`bg-[#1B9AF5] text-white px-6 py-3 rounded-lg font-medium 
-                  ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1B9AF5]/90'} 
-                  transition-colors`}
+                className="px-6 py-3 text-sm font-medium text-white bg-[#1B9AF5] rounded-xl hover:bg-[#1B9AF5]/90 transition-colors"
               >
-                {loading ? '생성 중...' : '등록'}
+                {loading ? '생성 중...' : '개설하기'}
               </button>
             </div>
           </form>

@@ -320,6 +320,8 @@ const Home = () => {
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-20">
         <section className="text-center mb-16">
+          <br></br>
+          <br></br>
           <h1 className="text-3xl font-bold mb-4">
             공부의 문턱을 낮추다, 모나리
           </h1>
@@ -434,7 +436,7 @@ const Home = () => {
 
         <section className="mb-16">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">스터디 모집</h2>
+            <h2 className="text-2xl font-bold">스터디 팀원 모집</h2>
             <Link
               href="/studies"
               className="flex items-center gap-1 text-[#1B9AF5] hover:text-[#1B9AF5]/80 transition-colors"
