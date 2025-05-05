@@ -7,12 +7,14 @@ import { Region, regionToKorean } from '../../utils/region';
 import Image from 'next/image';
 import { naverToKakao } from '../../utils/coordinate';
 import Swal from 'sweetalert2';
+import { generalLocationApi, GeneralLocation } from '../../services/generalLocation';
+import { locationApi, Location } from '../../services/location';
 
 // 스터디 상태 타입
 type StudyStatus = 'ACTIVE' | 'CLOSED';
 
 // 과목 타입
-type Subject = 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIAL';
+type Subject = 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIETY';
 
 // 학교 레벨 타입
 type SchoolLevel = 'MIDDLE' | 'HIGH';
@@ -22,17 +24,16 @@ interface StudyDetail {
   id: number;
   title: string;
   description: string;
-  subject: Subject;
-  schoolLevel: SchoolLevel;
-  status: StudyStatus;
+  subject: 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIETY';
+  schoolLevel: 'MIDDLE' | 'HIGH';
+  status: 'ACTIVE' | 'CLOSED';
   createdAt: string;
-  locationName: string;
-  locationServiceUrl: string;
+  studyType: 'ONLINE' | 'OFFLINE';
+  locationId: number | null;
+  generalLocationId: number | null;
   studentPublicId: string;
   studentName: string;
   region: Region;
-  locationX?: string;
-  locationY?: string;
 }
 
 const getSubjectLabel = (subject: Subject) => {
@@ -41,7 +42,7 @@ const getSubjectLabel = (subject: Subject) => {
     case 'ENGLISH': return '영어';
     case 'KOREAN': return '국어';
     case 'SCIENCE': return '과학';
-    case 'SOCIAL': return '사회';
+    case 'SOCIETY': return '사회';
     default: return subject;
   }
 };
@@ -74,6 +75,8 @@ export default function StudyDetail() {
   const [marker, setMarker] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [studentProfile, setStudentProfile] = useState<any>(null);
+  const [locationDetails, setLocationDetails] = useState<Record<number, GeneralLocation>>({});
+  const [studyLocations, setStudyLocations] = useState<Record<number, Location>>({});
 
   useEffect(() => {
     const fetchStudentProfile = async () => {
@@ -131,6 +134,31 @@ export default function StudyDetail() {
 
         const data = await response.json();
         setStudy(data);
+
+        // Fetch location details if it's an offline study
+        if (data.studyType === 'OFFLINE') {
+          if (data.generalLocationId) {
+            try {
+              const location = await generalLocationApi.getLocation(data.generalLocationId);
+              setLocationDetails(prev => ({
+                ...prev,
+                [data.generalLocationId]: location
+              }));
+            } catch (err) {
+              console.error('Failed to fetch general location details:', err);
+            }
+          } else if (data.locationId) {
+            try {
+              const location = await locationApi.getLocation(data.locationId);
+              setStudyLocations(prev => ({
+                ...prev,
+                [data.locationId]: location
+              }));
+            } catch (err) {
+              console.error('Failed to fetch location details:', err);
+            }
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '스터디 정보를 불러오는데 실패했습니다.');
       } finally {
@@ -166,6 +194,16 @@ export default function StudyDetail() {
     };
   }, []);
 
+  const getLocationName = (study: StudyDetail): string | null => {
+    if (study.generalLocationId && locationDetails[study.generalLocationId]) {
+      return locationDetails[study.generalLocationId].locationName;
+    }
+    if (study.locationId && studyLocations[study.locationId]) {
+      return studyLocations[study.locationId].locationName;
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (isMapLoaded && study && window.kakao) {
       const container = document.getElementById('map');
@@ -179,23 +217,48 @@ export default function StudyDetail() {
         };
 
         let coords;
-        if (study.locationX && study.locationY) {
-          // 네이버 좌표를 카카오 좌표로 변환
-          const kakaoCoords = naverToKakao(
-            parseFloat(study.locationX as string),
-            parseFloat(study.locationY as string)
-          );
-          coords = new window.kakao.maps.LatLng(
-            kakaoCoords.lat,
-            kakaoCoords.lng
-          );
+        let locationName;
+        
+        if (study.studyType === 'OFFLINE') {
+          if (study.locationId && studyLocations[study.locationId]) {
+            // location API 데이터 사용
+            const location = studyLocations[study.locationId];
+            if (location.x && location.y) {
+              coords = new window.kakao.maps.LatLng(
+                parseFloat(location.y),
+                parseFloat(location.x)
+              );
+              locationName = location.locationName;
+            } else {
+              coords = new window.kakao.maps.LatLng(defaultCoords.lat, defaultCoords.lng);
+              locationName = '위치 정보 없음';
+            }
+          } else if (study.generalLocationId && locationDetails[study.generalLocationId]) {
+            // generalLocation API 데이터 사용
+            const location = locationDetails[study.generalLocationId];
+            if (location.x && location.y) {
+              const kakaoCoords = naverToKakao(
+                parseFloat(location.x),
+                parseFloat(location.y)
+              );
+              coords = new window.kakao.maps.LatLng(
+                kakaoCoords.lat,
+                kakaoCoords.lng
+              );
+              locationName = location.locationName;
+            } else {
+              coords = new window.kakao.maps.LatLng(defaultCoords.lat, defaultCoords.lng);
+              locationName = '위치 정보 없음';
+            }
+          } else {
+            // 좌표가 없는 경우 기본 좌표 사용
+            coords = new window.kakao.maps.LatLng(defaultCoords.lat, defaultCoords.lng);
+            locationName = '위치 정보 없음';
+          }
         } else {
-          // x, y 좌표가 없는 경우 서울시청 좌표 사용
-          coords = new window.kakao.maps.LatLng(
-            defaultCoords.lat,
-            defaultCoords.lng
-          );
-          console.warn('Location coordinates not found, using default coordinates (Seoul City Hall)');
+          // 온라인 스터디인 경우 기본 좌표 사용
+          coords = new window.kakao.maps.LatLng(defaultCoords.lat, defaultCoords.lng);
+          locationName = '온라인 스터디';
         }
 
         const options = {
@@ -214,8 +277,8 @@ export default function StudyDetail() {
         // 인포윈도우로 장소에 대한 설명을 표시
         const infowindow = new window.kakao.maps.InfoWindow({
           content: `<div style="padding:5px;font-size:12px;">
-            ${study.locationName}
-            ${!study.locationX || !study.locationY ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
+            ${locationName}
+            ${(!study.locationId && !study.generalLocationId) ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
           </div>`
         });
         infowindow.open(newMap, marker);
@@ -226,7 +289,7 @@ export default function StudyDetail() {
         console.error('Failed to initialize map:', error);
       }
     }
-  }, [isMapLoaded, study]);
+  }, [isMapLoaded, study, locationDetails, studyLocations]);
 
   const handleStatusToggle = async () => {
     if (!study || isUpdatingStatus) return;
@@ -377,22 +440,19 @@ export default function StudyDetail() {
                       </svg>
                     </div>
                     <div>
-                      {study.locationServiceUrl ? (
-                        <a 
-                          href={study.locationServiceUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="font-medium text-gray-900 hover:text-[#1B9AF5] hover:underline"
-                        >
-                          {study.locationName}
-                        </a>
+                      {study.studyType === 'ONLINE' ? (
+                        <p className="font-medium text-gray-900">온라인 스터디</p>
                       ) : (
-                        <p className="font-medium text-gray-900">{study.locationName}</p>
+                        <>
+                          <p className="font-medium text-gray-900">{getLocationName(study)}</p>
+                          <p className="text-sm text-gray-500 mt-1">({regionToKorean[study.region]})</p>
+                        </>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">({regionToKorean[study.region]})</p>
                     </div>
                   </div>
-                  <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
+                  {study.studyType === 'OFFLINE' && (
+                    <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
+                  )}
                 </div>
               </div>
             </div>

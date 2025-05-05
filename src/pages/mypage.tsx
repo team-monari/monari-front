@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import Header from "../components/Header";
 import ProfileHeader from "../components/ProfileHeader";
-import StudyCard, { StudyData } from "../components/StudyCard";
+import StudyCard from "../components/StudyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -25,15 +25,18 @@ interface Study {
   id: number;
   title: string;
   description: string;
-  subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIAL";
+  subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIETY";
   schoolLevel: "MIDDLE" | "HIGH";
   status: "ACTIVE" | "CLOSED" | "IN_PROGRESS";
   createdAt: string;
-  locationName: string;
-  locationServiceUrl: string;
+  studyType: "ONLINE" | "OFFLINE";
+  locationId: number | null;
+  generalLocationId: number | null;
   studentPublicId: string;
   studentName: string;
   region: Region;
+  locationName: string;
+  locationServiceUrl: string;
 }
 
 interface Lesson {
@@ -209,7 +212,14 @@ const MyPage = () => {
       }
 
       const data = await response.json();
-      setMyStudies(data.content);
+      // API 응답을 StudyCard 인터페이스에 맞게 변환
+      const transformedStudies = data.content.map((study: any) => ({
+        ...study,
+        studyType: study.locationId || study.generalLocationId ? 'OFFLINE' : 'ONLINE',
+        locationId: study.locationId || null,
+        generalLocationId: study.generalLocationId || null,
+      }));
+      setMyStudies(transformedStudies);
     } catch (err) {
       setStudiesError(
         err instanceof Error
@@ -493,70 +503,12 @@ const MyPage = () => {
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {myStudies.slice(0, 3).map((study) => (
-                <Link
+                <StudyCard
                   key={study.id}
-                  href={`/studies/${study.id}`}
-                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 truncate max-w-[80%]">
-                      {study.title}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        study.status === "ACTIVE"
-                          ? "bg-green-100 text-green-800"
-                          : study.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {study.status === "ACTIVE" ? "모집중" : study.status === "IN_PROGRESS" ? "진행중" : "모집완료"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
-                    </span>
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {study.subject === "MATH" ? "수학" :
-                       study.subject === "ENGLISH" ? "영어" :
-                       study.subject === "KOREAN" ? "국어" :
-                       study.subject === "SCIENCE" ? "과학" : "사회"}
-                    </span>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-4 truncate">
-                    {study.description}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-600">{study.locationName}</span>
-                      <span className="text-sm text-gray-600">({regionToKorean[study.region]})</span>
-                    </div>
-                  </div>
-                </Link>
-            ))}
+                  study={study}
+                  locationName={study.locationName}
+                />
+              ))}
           </div>
           )}
         </section>

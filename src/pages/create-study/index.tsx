@@ -5,6 +5,8 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { regions, getRegionText } from '../../utils/region';
 import { locationApi, Location } from '../../services/location';
+import { generalLocationApi, GeneralLocation } from '../../services/generalLocation';
+import { naverToKakao } from '../../utils/coordinate';
 import Swal from 'sweetalert2';
 import LoginModal from '@/components/LoginModal';
 
@@ -15,7 +17,9 @@ interface FormData {
   schoolLevel: string;
   location: string;
   locationId: number | null;
-  region: string;
+  generalLocationId: number | null;
+  region: string | null;
+  isOnline: boolean;
 }
 
 interface FormErrors {
@@ -39,8 +43,10 @@ export default function CreateStudy() {
     subject: '',
     location: '',
     locationId: null,
+    generalLocationId: null,
     description: '',
-    region: ''
+    region: null,
+    isOnline: false
   });
   const [locations, setLocations] = useState<Location[]>([]);
   const [showLocationList, setShowLocationList] = useState(false);
@@ -51,6 +57,9 @@ export default function CreateStudy() {
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [generalLocations, setGeneralLocations] = useState<GeneralLocation[]>([]);
+  const [selectedGeneralLocation, setSelectedGeneralLocation] = useState<GeneralLocation | null>(null);
+  const [showGeneralLocationList, setShowGeneralLocationList] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -98,9 +107,28 @@ export default function CreateStudy() {
     }
   };
 
+  const fetchGeneralLocations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await generalLocationApi.getLocations();
+      setGeneralLocations(data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 목록을 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch general locations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (accessToken) {
       fetchLocations();
+      fetchGeneralLocations();
     }
   }, [accessToken]);
 
@@ -130,7 +158,7 @@ export default function CreateStudy() {
   }, []);
 
   useEffect(() => {
-    if (isMapLoaded && selectedLocation && window.kakao) {
+    if (isMapLoaded && (selectedLocation || selectedGeneralLocation) && window.kakao) {
       const container = document.getElementById('map');
       if (!container) return;
 
@@ -142,14 +170,22 @@ export default function CreateStudy() {
         };
 
         let coords;
-        if (selectedLocation.x && selectedLocation.y) {
-          // x, y 좌표가 있는 경우
+        let locationName;
+        
+        if (selectedLocation?.x && selectedLocation?.y) {
+          // location의 x, y 좌표가 있는 경우
           coords = new window.kakao.maps.LatLng(
             parseFloat(selectedLocation.y),
             parseFloat(selectedLocation.x)
           );
+          locationName = selectedLocation.locationName;
+        } else if (selectedGeneralLocation?.x && selectedGeneralLocation?.y) {
+          // generalLocation의 x, y 좌표가 있는 경우
+          const kakaoCoords = naverToKakao(parseFloat(selectedGeneralLocation.x), parseFloat(selectedGeneralLocation.y));
+          coords = new window.kakao.maps.LatLng(kakaoCoords.lat, kakaoCoords.lng);
+          locationName = selectedGeneralLocation.locationName;
         } else {
-          // x, y 좌표가 없는 경우 서울시청 좌표 사용
+          // 좌표가 없는 경우 서울시청 좌표 사용
           coords = new window.kakao.maps.LatLng(
             defaultCoords.lat,
             defaultCoords.lng
@@ -173,8 +209,8 @@ export default function CreateStudy() {
         // 인포윈도우로 장소에 대한 설명을 표시
         const infowindow = new window.kakao.maps.InfoWindow({
           content: `<div style="padding:5px;font-size:12px;">
-            ${selectedLocation.locationName}
-            ${!selectedLocation.x || !selectedLocation.y ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
+            ${locationName || '위치 정보 없음'}
+            ${(!selectedLocation?.x || !selectedLocation?.y) && (!selectedGeneralLocation?.x || !selectedGeneralLocation?.y) ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
           </div>`
         });
         infowindow.open(newMap, marker);
@@ -185,7 +221,7 @@ export default function CreateStudy() {
         console.error('Failed to initialize map:', error);
       }
     }
-  }, [isMapLoaded, selectedLocation]);
+  }, [isMapLoaded, selectedLocation, selectedGeneralLocation]);
 
   if (isLoading) {
     return (
@@ -222,10 +258,12 @@ export default function CreateStudy() {
       setError(null);
       const detailedLocation = await locationApi.getLocation(location.id);
       setSelectedLocation(detailedLocation);
+      setSelectedGeneralLocation(null);
       setFormData(prev => ({
         ...prev,
         location: `${location.locationName}`,
-        locationId: location.id
+        locationId: location.id,
+        generalLocationId: null
       }));
       setShowLocationList(false);
     } catch (err) {
@@ -235,6 +273,32 @@ export default function CreateStudy() {
         setError('장소 상세 정보를 불러오는데 실패했습니다.');
       }
       console.error('Failed to fetch location details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectGeneralLocation = async (location: GeneralLocation) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const detailedLocation = await generalLocationApi.getLocation(location.id);
+      setSelectedGeneralLocation(detailedLocation);
+      setSelectedLocation(null);
+      setFormData(prev => ({
+        ...prev,
+        location: `${location.locationName}`,
+        locationId: null,
+        generalLocationId: location.id
+      }));
+      setShowLocationList(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 상세 정보를 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch general location details:', err);
     } finally {
       setLoading(false);
     }
@@ -257,6 +321,7 @@ export default function CreateStudy() {
           subject: formData.subject,
           schoolLevel: formData.schoolLevel,
           locationId: formData.locationId,
+          generalLocationId: formData.generalLocationId,
           region: formData.region
         })
       });
@@ -289,10 +354,46 @@ export default function CreateStudy() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [name]: value
+      };
+      
+      // If study type is changed to online, reset location information
+      if (name === 'isOnline') {
+        if (value === 'true') {
+          newFormData.location = '온라인';  // UI 표시용
+          newFormData.locationId = null;    // 서버 전송용
+          newFormData.generalLocationId = null; // 서버 전송용
+          newFormData.region = null;    // UI 표시용
+          setSelectedLocation(null);
+          setSelectedGeneralLocation(null);
+        } else {
+          newFormData.location = '';  // UI 표시용
+          newFormData.locationId = null;    // 서버 전송용
+          newFormData.generalLocationId = null; // 서버 전송용
+          newFormData.region = '';    // UI 표시용
+          setSelectedLocation(null);
+          setSelectedGeneralLocation(null);
+        }
+      }
+      
+      return newFormData;
+    });
+  };
+
+  const handleOnlineToggle = (isOnline: boolean) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      isOnline,
+      location: isOnline ? '온라인' : '',
+      locationId: null,
+      generalLocationId: null,
+      region: isOnline ? null : ''
     }));
+    setSelectedLocation(null);
+    setSelectedGeneralLocation(null);
   };
 
   return (
@@ -309,6 +410,53 @@ export default function CreateStudy() {
           <h1 className="text-2xl font-bold mb-2">스터디 등록</h1>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 shadow-sm space-y-6">
+            {/* 스터디 유형 선택 */}
+            <div>
+              <label className="block text-base font-semibold text-gray-800 mb-2">
+                스터디 유형
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleOnlineToggle(false)}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    !formData.isOnline
+                      ? 'border-[#1B9AF5] bg-[#1B9AF5]/5'
+                      : 'border-gray-200 hover:border-[#1B9AF5]/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="font-medium">오프라인 스터디</span>
+                    <span className="text-sm text-gray-500 text-center">직접 만나서 진행하는 스터디</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOnlineToggle(true)}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    formData.isOnline
+                      ? 'border-[#1B9AF5] bg-[#1B9AF5]/5'
+                      : 'border-gray-200 hover:border-[#1B9AF5]/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-medium">온라인 스터디</span>
+                    <span className="text-sm text-gray-500 text-center">화상회의로 진행하는 스터디</span>
+                  </div>
+                </button>
+              </div>
+              {formData.isOnline === undefined && (
+                <p className="mt-2 text-sm text-red-500">스터디 유형을 선택해주세요.</p>
+              )}
+            </div>
+
             {/* 스터디 제목 */}
             <div>
               <label className="block text-base font-semibold text-gray-800 mb-2">
@@ -366,10 +514,10 @@ export default function CreateStudy() {
                 >
                   <option value="">과목을 선택하세요</option>
                   <option value="MATH">수학</option>
-                  <option value="영어">영어</option>
-                  <option value="국어">국어</option>
+                  <option value="ENGLISH">영어</option>
+                  <option value="KOREAN">국어</option>
                   <option value="SCIENCE">과학</option>
-                  <option value="사회">사회</option>
+                  <option value="SOCIETY">사회</option>
                 </select>
               </div>
             </div>
@@ -383,17 +531,24 @@ export default function CreateStudy() {
                 <select
                   id="region"
                   name="region"
-                  value={formData.region}
+                  value={formData.region || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-                  required
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent ${
+                    formData.isOnline ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  disabled={formData.isOnline}
+                  required={!formData.isOnline}
                 >
                   <option value="">지역을 선택해주세요</option>
-                  {Object.values(regions).map((region) => (
-                    <option key={region} value={region}>
-                      {getRegionText(region)}
-                    </option>
-                  ))}
+                  {formData.isOnline ? (
+                    <option value="온라인">온라인</option>
+                  ) : (
+                    Object.values(regions).map((region) => (
+                      <option key={region} value={region}>
+                        {getRegionText(region)}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -405,47 +560,90 @@ export default function CreateStudy() {
                   <button
                     id="locationId"
                     type="button"
-                    onClick={() => setShowLocationList(!showLocationList)}
-                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white`}
+                    onClick={() => {
+                      setShowLocationList(!showLocationList);
+                      setShowGeneralLocationList(false);
+                    }}
+                    disabled={formData.isOnline}
+                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white ${
+                      formData.isOnline ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
-                    {formData.location || '장소를 선택하세요'}
+                    {formData.isOnline ? '온라인' : formData.location || '장소를 선택하세요'}
                   </button>
                   {formErrors.locationId && (
                     <p className="mt-1 text-sm text-red-500">{formErrors.locationId}</p>
                   )}
-                  {showLocationList && (
+                  {showLocationList && !formData.isOnline && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
-                      {loading ? (
-                        <div className="p-4 text-center text-gray-500">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
-                          로딩 중...
-                        </div>
-                      ) : error ? (
-                        <div className="p-4 text-center">
-                          <div className="text-red-500 mb-2">{error}</div>
-                          <button
-                            onClick={fetchLocations}
-                            className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
-                          >
-                            다시 시도
-                          </button>
-                        </div>
-                      ) : locations.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
-                      ) : (
-                        <ul className="divide-y divide-gray-200">
-                          {locations.map((location) => (
-                            <li
-                              key={location.id}
-                              className="p-4 hover:bg-gray-50 cursor-pointer"
-                              onClick={() => handleSelectLocation(location)}
+                      <div className="p-4 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-800 mb-2">스터디룸</h3>
+                        {loading ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
+                            로딩 중...
+                          </div>
+                        ) : error ? (
+                          <div className="p-4 text-center">
+                            <div className="text-red-500 mb-2">{error}</div>
+                            <button
+                              onClick={fetchLocations}
+                              className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
                             >
-                              <div className="font-medium">{location.locationName}</div>
-                              <div className="text-sm text-gray-500">{location.serviceSubcategory}</div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                              다시 시도
+                            </button>
+                          </div>
+                        ) : locations.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                        ) : (
+                          <ul className="divide-y divide-gray-200">
+                            {locations.map((location) => (
+                              <li
+                                key={location.id}
+                                className="p-4 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => handleSelectLocation(location)}
+                              >
+                                <div className="font-medium">{location.locationName}</div>
+                                <div className="text-sm text-gray-500">{location.serviceSubcategory}</div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium text-gray-800 mb-2">일반 장소</h3>
+                        {loading ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
+                            로딩 중...
+                          </div>
+                        ) : error ? (
+                          <div className="p-4 text-center">
+                            <div className="text-red-500 mb-2">{error}</div>
+                            <button
+                              onClick={fetchGeneralLocations}
+                              className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
+                            >
+                              다시 시도
+                            </button>
+                          </div>
+                        ) : generalLocations.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                        ) : (
+                          <ul className="divide-y divide-gray-200">
+                            {generalLocations.map((location) => (
+                              <li
+                                key={location.id}
+                                className="p-4 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => handleSelectGeneralLocation(location)}
+                              >
+                                <div className="font-medium">{location.locationName}</div>
+                                <div className="text-sm text-gray-500">{location.region}</div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -510,6 +708,36 @@ export default function CreateStudy() {
                       <div className="mt-4">
                         <a
                           href={selectedLocation.serviceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          서비스 바로가기
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {selectedGeneralLocation && (
+                <div className="mt-4 p-6 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">장소명</div>
+                      <div className="font-medium text-gray-800">{selectedGeneralLocation.locationName}</div>
+                    </div>
+                    
+                    {selectedGeneralLocation.serviceUrl && (
+                      <div className="mt-4">
+                        <a
+                          href={selectedGeneralLocation.serviceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"

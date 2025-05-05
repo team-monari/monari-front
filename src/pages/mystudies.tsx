@@ -6,21 +6,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import { regionToKorean, Region } from '../utils/region';
-
-interface Study {
-  id: number;
-  title: string;
-  description: string;
-  subject: "MATH" | "ENGLISH" | "KOREAN" | "SCIENCE" | "SOCIAL";
-  schoolLevel: "MIDDLE" | "HIGH";
-  status: "ACTIVE" | "CLOSED" | "IN_PROGRESS";
-  createdAt: string;
-  locationName: string;
-  locationServiceUrl: string;
-  studentPublicId: string;
-  studentName: string;
-  region: Region;
-}
+import { Study } from '../types/study';
 
 interface PageResponse<T> {
   content: T[];
@@ -74,6 +60,13 @@ const StudyCard = ({ study }: { study: Study }) => (
            study.subject === "KOREAN" ? "국어" :
            study.subject === "SCIENCE" ? "과학" : "사회"}
         </span>
+        <span className={`px-3 py-1 rounded-lg text-sm font-medium border ${
+          study.studyType === "ONLINE" 
+            ? "bg-blue-50 text-blue-600 border-blue-100" 
+            : "bg-purple-50 text-purple-600 border-purple-100"
+        }`}>
+          {study.studyType === "ONLINE" ? "온라인" : "오프라인"}
+        </span>
       </div>
 
       <p className="text-gray-600 text-sm mb-5 line-clamp-2">
@@ -81,20 +74,21 @@ const StudyCard = ({ study }: { study: Study }) => (
       </p>
 
       <div className="mt-auto">
-        <div className="flex items-center gap-3 text-gray-500 mb-4">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <div className="flex items-center gap-1 text-sm">
-            <span>{study.locationName}</span>
-            <span className="text-gray-400">·</span>
-            <span>{regionToKorean[study.region]}</span>
+        {study.studyType === "OFFLINE" && study.locationName && (
+          <div className="flex items-center gap-3 text-gray-500 mb-4">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <div className="flex items-center gap-1 text-sm">
+              <span>{study.locationName}</span>
+              <span className="text-gray-400">·</span>
+              <span>{regionToKorean[study.region]}</span>
+            </div>
           </div>
-        </div>
-
+        )}
       </div>
     </div>
   </Link>

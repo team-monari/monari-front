@@ -4,21 +4,10 @@ import Header from '../../components/Header';
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import { regions, getRegionText, Region, regionToKorean } from '../../utils/region';
-
-interface Study {
-  id: number;
-  title: string;
-  description: string;
-  subject: 'MATH' | 'ENGLISH' | 'KOREAN' | 'SCIENCE' | 'SOCIAL';
-  schoolLevel: 'MIDDLE' | 'HIGH';
-  status: 'ACTIVE' | 'CLOSED';
-  createdAt: string;
-  locationName: string;
-  locationServiceUrl: string;
-  studentPublicId: string;
-  studentName: string;
-  region: Region;
-}
+import { generalLocationApi, GeneralLocation } from '../../services/generalLocation';
+import { locationApi, Location } from '../../services/location';
+import StudyCard from '../../components/StudyCard';
+import { Study } from '../../types/study';
 
 interface PageResponse<T> {
   content: T[];
@@ -36,7 +25,7 @@ const getSubjectLabel = (subject: Study['subject']) => {
     case 'ENGLISH': return '영어';
     case 'KOREAN': return '국어';
     case 'SCIENCE': return '과학';
-    case 'SOCIAL': return '사회';
+    case 'SOCIETY': return '사회';
     default: return subject;
   }
 };
@@ -77,6 +66,8 @@ export default function Studies() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationDetails, setLocationDetails] = useState<Record<number, GeneralLocation>>({});
+  const [studyLocations, setStudyLocations] = useState<Record<number, Location>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -122,6 +113,35 @@ export default function Studies() {
 
       const data = await response.json();
       setPageResponse(data);
+
+      // Fetch location details for offline studies
+      const locationPromises = data.content
+        .filter((study: Study) => study.studyType === 'OFFLINE')
+        .map(async (study: Study) => {
+          if (study.generalLocationId && !locationDetails[study.generalLocationId]) {
+            try {
+              const location = await generalLocationApi.getLocation(study.generalLocationId);
+              setLocationDetails(prev => ({
+                ...prev,
+                [study.generalLocationId!]: location
+              }));
+            } catch (err) {
+              console.error('Failed to fetch general location details:', err);
+            }
+          } else if (study.locationId && !studyLocations[study.locationId]) {
+            try {
+              const location = await locationApi.getLocation(study.locationId);
+              setStudyLocations(prev => ({
+                ...prev,
+                [study.locationId!]: location
+              }));
+            } catch (err) {
+              console.error('Failed to fetch location details:', err);
+            }
+          }
+        });
+
+      await Promise.all(locationPromises);
     } catch (err) {
       setError(err instanceof Error ? err.message : '검색에 실패했습니다.');
       setPageResponse(prev => ({ ...prev, content: [] }));
@@ -143,6 +163,16 @@ export default function Studies() {
 
   const handlePageChange = (newPage: number) => {
     handleSearch(newPage);
+  };
+
+  const getLocationName = (study: Study): string | null => {
+    if (study.generalLocationId && locationDetails[study.generalLocationId]) {
+      return locationDetails[study.generalLocationId].locationName;
+    }
+    if (study.locationId && studyLocations[study.locationId]) {
+      return studyLocations[study.locationId].locationName;
+    }
+    return null;
   };
 
   return (
@@ -218,7 +248,7 @@ export default function Studies() {
                   <option value="ENGLISH">영어</option>
                   <option value="KOREAN">국어</option>
                   <option value="SCIENCE">과학</option>
-                  <option value="SOCIAL">사회</option>
+                  <option value="SOCIETY">사회</option>
                 </select>
               </div>
 
@@ -258,56 +288,11 @@ export default function Studies() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pageResponse.content.map((study) => (
-                <Link
+                <StudyCard
                   key={study.id}
-                  href={`/studies/${study.id}`}
-                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
-                      {study.title}
-                    </h3>
-                    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getStatusColor(study.status)}`}>
-                      {getStatusLabel(study.status)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {study.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
-                    </span>
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {getSubjectLabel(study.subject)}
-                    </span>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-4 truncate">{study.description}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                      <svg 
-                        className="w-4 h-4 text-gray-500" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-600">{study.locationName}</span>
-                      <span className="text-sm text-gray-600">({regionToKorean[study.region]})</span>
-                    </div>
-                  </div>
-                </Link>
+                  study={study}
+                  locationName={getLocationName(study)}
+                />
               ))}
             </div>
 
