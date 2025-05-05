@@ -176,8 +176,8 @@ export default function EditStudy() {
 
       try {
         const coords = new window.kakao.maps.LatLng(
-          parseFloat(selectedLocation.y),
-          parseFloat(selectedLocation.x)
+          parseFloat(selectedLocation.y as string),
+          parseFloat(selectedLocation.x as string)
         );
 
         const options = {
