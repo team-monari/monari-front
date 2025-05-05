@@ -1,6 +1,4 @@
 import "../styles/globals.css";
-import "@uiw/react-md-editor/markdown-editor.css";
-import "@uiw/react-markdown-preview/markdown.css";
 import type { AppProps } from "next/app";
 import { AuthProvider } from "../contexts/AuthContext";
 import Head from 'next/head';

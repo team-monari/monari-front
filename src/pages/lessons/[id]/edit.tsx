@@ -9,6 +9,8 @@ import { regions, getRegionText } from '../../../utils/region';
 import { inputStyles } from '../../../utils/styles';
 import { naverToKakao } from '../../../utils/coordinate';
 import Head from 'next/head';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface FormData {
   title: string;
@@ -80,6 +82,7 @@ const EditLessonPage = () => {
   const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
   const [lessonStatus, setLessonStatus] = useState<'ACTIVE' | 'CLOSED' | 'CANCELED'>('ACTIVE');
+  const [showPreview, setShowPreview] = useState(false);
 
   const statusConfig = {
     ACTIVE: {
@@ -955,18 +958,223 @@ const EditLessonPage = () => {
                 <label className="block text-base font-semibold text-gray-800 mb-2">
                   수업 설명
                 </label>
-                <div className="space-y-4">
-                  <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
-                    className={`w-full px-4 py-3 border ${formErrors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all min-h-[400px] break-words whitespace-pre-wrap`}
-                    placeholder={`1. 수업 목표\n- 중2 수학 내신 1등급 달성\n- 기초 개념부터 심화 문제까지 체계적 학습\n- 개인별 맞춤형 학습 관리\n\n2. 수업 방식\n- 매주 수요일 오후 3시~5시 수업 진행\n- 실시간 문제 풀이 및 개념 설명\n- 주간 테스트로 성취도 확인\n\n3. 커리큘럼\n- 1개월차: 기초 개념 정리\n- 2개월차: 심화 문제 풀이\n- 3개월차: 실전 문제 및 기출 분석\n\n4. 환불 규정 (필수)\n- 환불 규정을 반드시 명시해 주세요. (예: 모집 마감일 이후 환불 불가, 모집 마감일 이전 100% 환불 등)`}
-                  />
-                  {formErrors.description && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
-                  )}
+                <div className="border border-gray-200 rounded-xl">
+                  <div className="border-b border-gray-200 p-2 bg-gray-50 flex justify-between items-center">
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea');
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            const newText = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
+                            handleChange('description', newText);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="굵게 (Ctrl+B)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12h8a4 4 0 100-8H6v8zm0 0h8a4 4 0 110 8H6v-8z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea');
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            const newText = text.substring(0, start) + '*' + text.substring(start, end) + '*' + text.substring(end);
+                            handleChange('description', newText);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="기울임 (Ctrl+I)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l-4 4-4-4" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea');
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            const newText = text.substring(0, start) + '### ' + text.substring(start, end) + text.substring(end);
+                            handleChange('description', newText);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="제목 (Ctrl+H)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea');
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            const newText = text.substring(0, start) + '- ' + text.substring(start, end) + text.substring(end);
+                            handleChange('description', newText);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="목록 (Ctrl+L)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea');
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            const newText = text.substring(0, start) + '> ' + text.substring(start, end) + text.substring(end);
+                            handleChange('description', newText);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="인용구 (Ctrl+Q)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.querySelector('textarea');
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            const newText = text.substring(0, start) + '```\n' + text.substring(start, end) + '\n```' + text.substring(end);
+                            handleChange('description', newText);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="코드 블록 (Ctrl+K)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l-4 4-4-4" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">단축키 안내:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          Swal.fire({
+                            title: '마크다운 단축키',
+                            html: `
+                              <div class="text-left space-y-2">
+                                <p><kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + B</kbd> 굵게</p>
+                                <p><kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + I</kbd> 기울임</p>
+                                <p><kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + H</kbd> 제목</p>
+                                <p><kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + L</kbd> 목록</p>
+                                <p><kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + Q</kbd> 인용구</p>
+                                <p><kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + K</kbd> 코드 블록</p>
+                              </div>
+                            `,
+                            confirmButtonText: '확인',
+                            confirmButtonColor: '#1B9AF5',
+                          });
+                        }}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="단축키 안내"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPreview(!showPreview)}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="미리보기 전환"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={showPreview ? 'hidden' : 'block'}>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => handleChange('description', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.ctrlKey) {
+                            const textarea = e.target as HTMLTextAreaElement;
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = formData.description;
+                            let newText = text;
+
+                            switch (e.key.toLowerCase()) {
+                              case 'b':
+                                e.preventDefault();
+                                newText = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
+                                break;
+                              case 'i':
+                                e.preventDefault();
+                                newText = text.substring(0, start) + '*' + text.substring(start, end) + '*' + text.substring(end);
+                                break;
+                              case 'h':
+                                e.preventDefault();
+                                newText = text.substring(0, start) + '### ' + text.substring(start, end) + text.substring(end);
+                                break;
+                              case 'l':
+                                e.preventDefault();
+                                newText = text.substring(0, start) + '- ' + text.substring(start, end) + text.substring(end);
+                                break;
+                              case 'q':
+                                e.preventDefault();
+                                newText = text.substring(0, start) + '> ' + text.substring(start, end) + text.substring(end);
+                                break;
+                              case 'k':
+                                e.preventDefault();
+                                newText = text.substring(0, start) + '```\n' + text.substring(start, end) + '\n```' + text.substring(end);
+                                break;
+                            }
+                            handleChange('description', newText);
+                          }
+                        }}
+                        placeholder="수업 설명을 입력하세요"
+                        className="w-full h-[500px] p-4 focus:outline-none resize-none"
+                      />
+                    </div>
+                    <div className={`border border-gray-200 rounded-xl p-4 bg-gray-50 ${showPreview ? 'col-span-2' : ''}`}>
+                      <div className="prose max-w-none h-[500px] overflow-y-auto">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {formData.description}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                {formErrors.description && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-8">
