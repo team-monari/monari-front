@@ -142,49 +142,49 @@ const LessonDetail: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchLesson = async () => {
-      if (!id) return;
-      
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/${id}`);
-        if (!response.ok) {
-          throw new Error('수업 정보를 불러오는데 실패했습니다.');
-        }
-        
-        const data = await response.json();
-        setLesson(data);
-        
-        // 선생님 프로필 정보 설정
-        setTeacherProfile({
-          name: data.name || '이름 미입력',
-          university: data.university || '미입력',
-          major: data.major || '미입력',
-          career: data.career || '미입력',
-          profileImageUrl: data.profileImageUrl
-        });
-
-        // 장소 정보 가져오기
-        if (data.locationId) {
-          try {
-            const locationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/general_locations/${data.locationId}`);
-            if (locationResponse.ok) {
-              const locationData = await locationResponse.json();
-              setLocation(locationData);
-            }
-          } catch (err) {
-            console.error('Error fetching location:', err);
-          }
-        }
-      } catch (err) {
-        setError('수업 정보를 불러오는데 실패했습니다.');
-        console.error('Error fetching lesson:', err);
-      } finally {
-        setLoading(false);
+  const fetchLessonData = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons/${id}`);
+      if (!response.ok) {
+        throw new Error('수업 정보를 불러오는데 실패했습니다.');
       }
-    };
+      const data = await response.json();
+      setLesson(data);
 
-    fetchLesson();
+      // 장소 정보 설정
+      if (data.locationId) {
+        setLocation({
+          id: Number(data.locationId),
+          locationName: data.locationName,
+          address: data.locationName, // 주소 정보가 없어서 locationName으로 대체
+          latitude: data.y ? parseFloat(data.y) / 1000000 : 0,
+          longitude: data.x ? parseFloat(data.x) / 1000000 : 0,
+          serviceUrl: data.serviceUrl || '',
+          serviceStatus: '예약가능',
+          serviceSubcategory: '학원',
+          paymentMethod: '현장결제',
+          cancellationDeadline: 24, // 24시간 전
+          region: data.region || '서울'
+        });
+      }
+
+      // 선생님 프로필 정보 설정
+      setTeacherProfile({
+        name: data.name || '이름 미입력',
+        university: data.university || '미입력',
+        major: data.major || '미입력',
+        career: data.career || '미입력'
+      });
+    } catch (err) {
+      setError('수업 정보를 불러오는데 실패했습니다.');
+      console.error('Error fetching lesson:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLessonData();
   }, [id, router.query.refresh]);
 
   useEffect(() => {
