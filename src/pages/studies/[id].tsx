@@ -432,14 +432,8 @@ export default function StudyDetail() {
             {/* 스터디 설명 */}
             <div className="mb-8">
               <div className="bg-gray-50 rounded-lg p-6">
-                <div className="whitespace-pre-line text-gray-700">
-                  {study.description.split('\n').map((line, index) => (
-                    line.trim() && (
-                      <p key={index} className="mb-2">
-                        {line}
-                      </p>
-                    )
-                  ))}
+                <div className="whitespace-pre-wrap text-gray-700">
+                  {study.description}
                 </div>
               </div>
             </div>
