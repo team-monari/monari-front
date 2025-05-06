@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { regions, getRegionText } from '../utils/region';
+import React, { useState, useRef, useEffect } from 'react';
+import { regions, getRegionText, Region } from '../utils/region';
 import { SearchType, Subject, getSubjectText } from '../types/lesson';
 
 interface FilterSectionProps {
@@ -15,26 +15,51 @@ interface FilterSectionProps {
 }
 
 const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }) => {
+  const [localFilters, setLocalFilters] = useState(filters);
   const [searchKeyword, setSearchKeyword] = useState(filters.keyword || '');
+  const [showSchoolLevelDropdown, setShowSchoolLevelDropdown] = useState(false);
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+  const [showRegionDropdown, setShowRegionDropdown] = useState(false);
+  const [showLessonTypeDropdown, setShowLessonTypeDropdown] = useState(false);
+  const schoolLevelRef = useRef<HTMLDivElement>(null);
+  const subjectRef = useRef<HTMLDivElement>(null);
+  const regionRef = useRef<HTMLDivElement>(null);
+  const lessonTypeRef = useRef<HTMLDivElement>(null);
+
+  // 드롭다운 외부 클릭 시 닫기 (모든 필터)
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (schoolLevelRef.current && !schoolLevelRef.current.contains(event.target as Node)) {
+        setShowSchoolLevelDropdown(false);
+      }
+      if (subjectRef.current && !subjectRef.current.contains(event.target as Node)) {
+        setShowSubjectDropdown(false);
+      }
+      if (regionRef.current && !regionRef.current.contains(event.target as Node)) {
+        setShowRegionDropdown(false);
+      }
+      if (lessonTypeRef.current && !lessonTypeRef.current.contains(event.target as Node)) {
+        setShowLessonTypeDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
     if (name === 'keyword') {
       setSearchKeyword(value);
     } else {
-      // 검색어 이외의 필터는 즉시 적용
-      const updatedFilters = {
-        ...filters,
-        [name]: value
-      };
-      onFilterChange(updatedFilters);
+      setLocalFilters(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleSearch = () => {
     const updatedFilters = {
-      ...filters,
+      ...localFilters,
       keyword: searchKeyword
     };
     onFilterChange(updatedFilters);
@@ -52,7 +77,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
       <div className="flex items-center gap-4">
         <select
           name="searchType"
-          value={filters.searchType}
+          value={localFilters.searchType}
           onChange={handleChange}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
         >
@@ -80,66 +105,206 @@ const FilterSection: React.FC<FilterSectionProps> = ({ filters, onFilterChange }
 
       {/* 필터 영역 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
+        {/* 교육 대상 드롭다운 */}
+        <div className="relative" ref={schoolLevelRef}>
           <label className="block text-sm font-medium text-gray-700 mb-1">교육 대상</label>
-          <select
-            name="schoolLevel"
-            value={filters.schoolLevel}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+          <button
+            type="button"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+            onClick={() => setShowSchoolLevelDropdown((prev) => !prev)}
           >
-            <option value="">전체</option>
-            <option value="MIDDLE">중학교</option>
-            <option value="HIGH">고등학교</option>
-          </select>
+            <span>
+              {localFilters.schoolLevel === '' ? '전체' : localFilters.schoolLevel === 'MIDDLE' ? '중학교' : '고등학교'}
+            </span>
+            <svg className={`w-4 h-4 ml-2 transition-transform ${showSchoolLevelDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showSchoolLevelDropdown && (
+            <div
+              className="absolute left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-10 animate-dropdown"
+              style={{
+                animation: 'dropdown 0.4s ease',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.schoolLevel === '' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, schoolLevel: '' }));
+                  setShowSchoolLevelDropdown(false);
+                }}
+              >
+                전체
+              </div>
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.schoolLevel === 'MIDDLE' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, schoolLevel: 'MIDDLE' }));
+                  setShowSchoolLevelDropdown(false);
+                }}
+              >
+                중학교
+              </div>
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.schoolLevel === 'HIGH' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, schoolLevel: 'HIGH' }));
+                  setShowSchoolLevelDropdown(false);
+                }}
+              >
+                고등학교
+              </div>
+            </div>
+          )}
+          <style jsx>{`
+            @keyframes dropdown {
+              0% { transform: translateY(-100%); opacity: 0; }
+              100% { transform: translateY(0); opacity: 1; }
+            }
+          `}</style>
         </div>
-
-        <div>
+        {/* 과목 드롭다운 */}
+        <div className="relative" ref={subjectRef}>
           <label className="block text-sm font-medium text-gray-700 mb-1">과목</label>
-          <select
-            name="subject"
-            value={filters.subject}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+          <button
+            type="button"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+            onClick={() => setShowSubjectDropdown((prev) => !prev)}
           >
-            <option value="">전체</option>
-            <option value={Subject.MATH}>{getSubjectText(Subject.MATH)}</option>
-            <option value={Subject.SCIENCE}>{getSubjectText(Subject.SCIENCE)}</option>
-            <option value={Subject.ENGLISH}>{getSubjectText(Subject.ENGLISH)}</option>
-            <option value={Subject.KOREAN}>{getSubjectText(Subject.KOREAN)}</option>
-            <option value={Subject.SOCIETY}>{getSubjectText(Subject.SOCIETY)}</option>
-          </select>
+            <span>
+              {localFilters.subject === '' ? '전체' : getSubjectText(localFilters.subject as Subject)}
+            </span>
+            <svg className={`w-4 h-4 ml-2 transition-transform ${showSubjectDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showSubjectDropdown && (
+            <div
+              className="absolute left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-10 animate-dropdown"
+              style={{ animation: 'dropdown 0.4s ease', overflow: 'hidden' }}
+            >
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.subject === '' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, subject: '' }));
+                  setShowSubjectDropdown(false);
+                }}
+              >전체</div>
+              {Object.values(Subject).map((subj) => (
+                <div
+                  key={subj}
+                  className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.subject === subj ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                  onClick={() => {
+                    setLocalFilters((prev) => ({ ...prev, subject: subj }));
+                    setShowSubjectDropdown(false);
+                  }}
+                >{getSubjectText(subj)}</div>
+              ))}
+            </div>
+          )}
+          <style jsx>{`
+            @keyframes dropdown {
+              0% { transform: translateY(-100%); opacity: 0; }
+              100% { transform: translateY(0); opacity: 1; }
+            }
+          `}</style>
         </div>
-
-        <div>
+        {/* 지역 드롭다운 */}
+        <div className="relative" ref={regionRef}>
           <label className="block text-sm font-medium text-gray-700 mb-1">지역</label>
-          <select
-            name="region"
-            value={filters.region}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+          <button
+            type="button"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+            onClick={() => setShowRegionDropdown((prev) => !prev)}
           >
-            <option value="">전체</option>
-            {Object.values(regions).map((region) => (
-              <option key={region} value={region}>
-                {getRegionText(region)}
-              </option>
-            ))}
-          </select>
+            <span>
+              {localFilters.region === '' ? '전체' : getRegionText(localFilters.region as Region)}
+            </span>
+            <svg className={`w-4 h-4 ml-2 transition-transform ${showRegionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showRegionDropdown && (
+            <div
+              className={`absolute left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-10 animate-dropdown ${regions.length > 8 ? 'max-h-64 overflow-y-auto' : ''}`}
+              style={{ animation: 'dropdown 0.4s ease' }}
+            >
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.region === '' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, region: '' }));
+                  setShowRegionDropdown(false);
+                }}
+              >전체</div>
+              {Object.values(regions).map((region) => (
+                <div
+                  key={region}
+                  className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.region === region ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                  onClick={() => {
+                    setLocalFilters((prev) => ({ ...prev, region: region as Region }));
+                    setShowRegionDropdown(false);
+                  }}
+                >{getRegionText(region as Region)}</div>
+              ))}
+            </div>
+          )}
+          <style jsx>{`
+            @keyframes dropdown {
+              0% { transform: translateY(-100%); opacity: 0; }
+              100% { transform: translateY(0); opacity: 1; }
+            }
+          `}</style>
         </div>
-
-        <div>
+        {/* 수업 유형 드롭다운 */}
+        <div className="relative" ref={lessonTypeRef}>
           <label className="block text-sm font-medium text-gray-700 mb-1">수업 유형</label>
-          <select
-            name="lessonType"
-            value={filters.lessonType}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+          <button
+            type="button"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+            onClick={() => setShowLessonTypeDropdown((prev) => !prev)}
           >
-            <option value="">전체</option>
-            <option value="ONLINE">온라인</option>
-            <option value="OFFLINE">오프라인</option>
-          </select>
+            <span>
+              {localFilters.lessonType === '' ? '전체' : localFilters.lessonType === 'ONLINE' ? '온라인' : '오프라인'}
+            </span>
+            <svg className={`w-4 h-4 ml-2 transition-transform ${showLessonTypeDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showLessonTypeDropdown && (
+            <div
+              className="absolute left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-10 animate-dropdown"
+              style={{ animation: 'dropdown 0.4s ease', overflow: 'hidden' }}
+            >
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.lessonType === '' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, lessonType: '' }));
+                  setShowLessonTypeDropdown(false);
+                }}
+              >전체</div>
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.lessonType === 'ONLINE' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, lessonType: 'ONLINE' }));
+                  setShowLessonTypeDropdown(false);
+                }}
+              >온라인</div>
+              <div
+                className={`px-4 py-2 cursor-pointer hover:bg-[#1B9AF5]/10 ${localFilters.lessonType === 'OFFLINE' ? 'font-semibold text-[#1B9AF5]' : ''}`}
+                onClick={() => {
+                  setLocalFilters((prev) => ({ ...prev, lessonType: 'OFFLINE' }));
+                  setShowLessonTypeDropdown(false);
+                }}
+              >오프라인</div>
+            </div>
+          )}
+          <style jsx>{`
+            @keyframes dropdown {
+              0% { transform: translateY(-100%); opacity: 0; }
+              100% { transform: translateY(0); opacity: 1; }
+            }
+          `}</style>
         </div>
       </div>
     </div>

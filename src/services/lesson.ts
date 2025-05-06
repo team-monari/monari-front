@@ -2,6 +2,7 @@ export interface Lesson {
   lessonId: number;
   locationId: number;
   teacherId: number;
+  publicTeacherId?: string;
   title: string;
   description: string;
   amount: number;

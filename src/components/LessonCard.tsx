@@ -153,119 +153,81 @@ const LessonCard: React.FC<LessonCardProps> = ({
       href={`/lessons/${lessonId}`}
       className="block bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100 h-full flex flex-col"
     >
-      <div className="p-5 flex-1">
-        <div className="flex justify-between items-start mb-3 gap-3">
-          <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors truncate max-w-[75%]">
-            {title}
-          </h3>
-          <div className="flex gap-2">
-            <div className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1 ${lessonTypeInfo.bgColor} ${lessonTypeInfo.textColor}`}>
-              {lessonTypeInfo.icon}
-              {lessonTypeInfo.text}
+      <div className="p-6 flex flex-col h-full">
+        {/* 위쪽 정보들 */}
+        <div className="flex-1 flex flex-col">
+          {/* 제목/태그 */}
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors break-words flex-1 min-h-[2.5rem]">
+              {title}
+            </h3>
+            <div className="flex flex-row items-center gap-1 ml-2">
+              <div className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1 ${lessonTypeInfo.bgColor} ${lessonTypeInfo.textColor}`}>{lessonTypeInfo.icon}{lessonTypeInfo.text}</div>
+              <div className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor}`}>{statusInfo.text}</div>
             </div>
-            <div className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor}`}>
-              {statusInfo.text}
+          </div>
+
+          {/* 위치/기간 */}
+          <div className="flex justify-between items-center text-sm text-gray-500 mb-2">
+            <div className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {lessonType === 'OFFLINE' ? '서울시 강남구' : '온라인'}
+            </div>
+            <div className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {new Date(startDate).toLocaleDateString()} ~ {new Date(endDate).toLocaleDateString()}
+            </div>
+          </div>
+
+          {/* 모집/태그 */}
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-sm text-gray-700">
+              모집 <span className="font-bold">{currentStudent}/{maxStudent}</span>명 <span className="text-gray-400">(최소 {minStudent}명)</span>
+            </div>
+            <div className="flex gap-1">
+              <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-xs font-medium border border-gray-100">{getSchoolLevelText(schoolLevel)}</span>
+              <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-xs font-medium border border-gray-100">{getSubjectText(subject)}</span>
             </div>
           </div>
         </div>
-
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4 break-words whitespace-pre-wrap min-h-[40px]">{description}</p>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-              {getSchoolLevelText(schoolLevel)}
+        {/* 모집 현황 progress bar */}
+        <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+          <div className={`${isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'} h-1.5 rounded-full transition-all duration-300`} style={{ width: `${progress}%` }} />
+        </div>
+        {/* 하단: 가격/버튼 */}
+        <div className="flex items-end justify-between pt-2 border-t border-gray-100 min-h-[72px]">
+          <div className="flex flex-col">
+            {/* 원래 가격 (할인 시만 보임, 아니면 invisible) */}
+            <span className={`text-xs text-gray-500 line-through ${currentStudent > minStudent ? '' : 'invisible'}`}>
+              ₩{(amount || 0).toLocaleString()}
             </span>
-            <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-              {getSubjectText(subject)}
+            <div className="flex items-baseline gap-2 min-h-[28px]">
+              <span className="text-lg font-bold text-gray-900">
+                ₩{(calculatedAmount || 0).toLocaleString()}
+              </span>
+              {/* 할인율 (할인 시만 보임, 아니면 invisible) */}
+              <span className={`px-2 py-0.5 bg-[#1B9AF5]/10 text-[#1B9AF5] rounded-full text-xs font-medium ${currentStudent > minStudent ? '' : 'invisible'}`}>
+                {discountRate}% 할인
+              </span>
+            </div>
+            {/* 안내문구 (항상 보이게) */}
+            <span className="text-xs text-[#1B9AF5] mt-1">
+              최소 {minStudent}명 초과 시 할인 적용
             </span>
           </div>
-
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            {new Date(startDate).toLocaleDateString()} ~ {new Date(endDate).toLocaleDateString()}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">모집 인원</span>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-500">모집</span>
-                  <span className="font-medium text-gray-700">{currentStudent}/{maxStudent}명</span>
-                </div>
-                {currentStudent > minStudent ? (
-                  <div className="flex items-center gap-1">
-                    <span className="text-[#1B9AF5]">1인당</span>
-                    <span className="font-bold text-[#1B9AF5]">₩{(calculatedAmount || 0).toLocaleString()}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-500">최소</span>
-                    <span className="font-medium text-gray-700">{minStudent}명</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-1.5">
-              <div
-                className={`${isFull ? 'bg-red-500' : 'bg-[#1B9AF5]'} h-1.5 rounded-full transition-all duration-300`}
-                style={{ width: `${(currentStudent / maxStudent) * 100}%` }}
-              />
-            </div>
-          </div>
+          <button
+            disabled={isDisabled}
+            className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ml-4 ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90 hover:shadow-md'}`}
+            aria-disabled={isDisabled}
+          >
+            {getButtonText()}
+          </button>
         </div>
-      </div>
-
-      <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50/50 mt-auto">
-        <div className="flex flex-col justify-center">
-          {currentStudent > minStudent ? (
-            <div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-600">총 수강료</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-gray-900">₩{(calculatedAmount || 0).toLocaleString()}</span>
-                  <span className="px-2 py-0.5 bg-[#1B9AF5]/10 text-[#1B9AF5] rounded-full text-xs font-medium">
-                    {discountRate}% 할인
-                  </span>
-                </div>
-                <span className="text-sm text-gray-400 line-through">₩{(amount || 0).toLocaleString()}</span>
-                <div className="flex items-center gap-1 text-xs text-[#1B9AF5] mt-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>최소 {minStudent}명 초과 시 할인 적용</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <span className="text-sm font-medium text-gray-600">수강료</span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-lg font-bold text-gray-900">₩{(amount || 0).toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>최소 {minStudent}명 초과 시 할인 적용</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <button
-          disabled={isDisabled}
-          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
-            isDisabled
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90 hover:shadow-md'
-          }`}
-          aria-disabled={isDisabled}
-        >
-          {getButtonText()}
-        </button>
       </div>
     </Link>
   );

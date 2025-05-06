@@ -81,6 +81,7 @@ const CreateLessonPage = () => {
   const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
 
   const debounceTimeout = useRef<NodeJS.Timeout>();
 
@@ -1097,35 +1098,6 @@ const CreateLessonPage = () => {
 
               <div className="space-y-2">
                 <label className="block text-base font-semibold text-gray-800">
-                  지역
-                </label>
-                <select
-                  id="region"
-                  name="region"
-                  value={formData.lessonType === 'ONLINE' ? '온라인' : formData.region}
-                  onChange={(e) => handleChange('region', e.target.value)}
-                  className={`${inputStyles.base} ${formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={formData.lessonType === 'ONLINE'}
-                  required={formData.lessonType === 'OFFLINE'}
-                >
-                  <option value="">지역을 선택해주세요</option>
-                  {formData.lessonType === 'ONLINE' ? (
-                    <option value="온라인">온라인</option>
-                  ) : (
-                    Object.values(regions).map((region) => (
-                      <option key={region} value={region}>
-                        {getRegionText(region)}
-                      </option>
-                    ))
-                  )}
-                </select>
-                {formErrors.region && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.region}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-base font-semibold text-gray-800">
                   수업 기간
                 </label>
                 <div id="dateRange" className="w-full">
@@ -1168,6 +1140,35 @@ const CreateLessonPage = () => {
                 </div>
                 {formErrors.dateRange && (
                   <p className="mt-1 text-sm text-red-500">{formErrors.dateRange}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-base font-semibold text-gray-800">
+                  지역
+                </label>
+                <select
+                  id="region"
+                  name="region"
+                  value={formData.lessonType === 'ONLINE' ? '온라인' : formData.region}
+                  onChange={(e) => handleChange('region', e.target.value)}
+                  className={`${inputStyles.base} ${formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={formData.lessonType === 'ONLINE'}
+                  required={formData.lessonType === 'OFFLINE'}
+                >
+                  <option value="">지역을 선택해주세요</option>
+                  {formData.lessonType === 'ONLINE' ? (
+                    <option value="온라인">온라인</option>
+                  ) : (
+                    Object.values(regions).map((region) => (
+                      <option key={region} value={region}>
+                        {getRegionText(region)}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {formErrors.region && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.region}</p>
                 )}
               </div>
 
@@ -1223,8 +1224,9 @@ const CreateLessonPage = () => {
                               className="p-4 hover:bg-gray-50 cursor-pointer"
                               onClick={() => handleSelectLocation(location)}
                             >
-                              <div className="font-medium">{location.locationName}</div>
-                              <div className="text-sm text-gray-500">{location.serviceSubcategory}</div>
+                              <div className="font-medium flex items-center gap-2">
+                                {location.locationName}
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -1234,75 +1236,25 @@ const CreateLessonPage = () => {
                 </div>
                 {selectedLocation && formData.lessonType !== 'ONLINE' && (
                   <div className="mt-4 p-6 bg-gray-50 rounded-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedLocation.serviceStatus === '예약마감' 
-                          ? 'bg-red-100 text-red-700' 
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {selectedLocation.serviceStatus}
-                      </span>
-                    </div>
                     <div className="space-y-4">
                       <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">장소명</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.locationName}</div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">서비스 소분류</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.serviceSubcategory}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white p-4 rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">결제 방법</div>
-                        <div className="font-medium text-gray-800">{selectedLocation.paymentMethod}</div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">등록 가능 기간</div>
-                          <div className="font-medium text-gray-800">
-                            {selectedLocation.registrationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.registrationEndDateTime?.split('T')[0] ?? '미정'}
-                          </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">취소 가능 기간</div>
-                          <div className="font-medium text-gray-800">
-                            {selectedLocation.cancellationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.cancellationEndDateTime?.split('T')[0] ?? '미정'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">취소 정책</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.cancellationPolicyInfo}</div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">취소 마감일</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.cancellationDeadline}일 전</div>
-                        </div>
-                      </div>
-
-                      {selectedLocation.serviceUrl && (
-                        <div className="mt-4">
+                      <div className="flex items-center gap-4 bg-white p-4 rounded-lg">
+                        <span className="text-base font-semibold text-gray-800 whitespace-nowrap">장소명 :</span>
+                        <span className="text-base font-medium text-gray-900 truncate">{selectedLocation.locationName}</span>
+                        {selectedLocation.serviceUrl && (
                           <a
                             href={selectedLocation.serviceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                            className="ml-auto inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
                           >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                             서비스 바로가기
                           </a>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1321,7 +1273,7 @@ const CreateLessonPage = () => {
                 type="submit"
                 className="px-6 py-3 text-sm font-medium text-white bg-[#1B9AF5] rounded-xl hover:bg-[#1B9AF5]/90 transition-colors"
               >
-                수업 개설하기
+                개설하기
               </button>
             </div>
           </form>

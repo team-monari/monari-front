@@ -143,22 +143,57 @@ const EditLessonPage = () => {
       const startDate = data.startDate ? new Date(data.startDate) : null;
       const endDate = data.endDate ? new Date(data.endDate) : null;
 
+      let locationName = '온라인';
+      let selectedLoc = null;
+      if (data.lessonType === 'OFFLINE' && data.locationId !== null && data.locationId !== undefined) {
+        // 장소 상세정보를 반드시 fetch
+        try {
+          const locationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/general_locations/${data.locationId}`);
+          if (locationResponse.ok) {
+            const locationData = await locationResponse.json();
+            locationName = locationData.locationName || '';
+            selectedLoc = locationData;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      console.log('fetchLessonData data:', data);
+      console.log('fetchLessonData locationName:', locationName);
+      console.log('fetchLessonData selectedLoc:', selectedLoc);
       setFormData({
         title: data.title,
         description: data.description,
         price: data.amount.toString(),
         minStudents: data.minStudent.toString(),
         maxStudents: data.maxStudent.toString(),
-        location: data.locationId ? '' : '온라인',
-        locationId: data.locationId,
+        location: data.lessonType === 'OFFLINE' ? locationName : '온라인',
+        locationId: data.lessonType === 'OFFLINE' ? data.locationId : null,
         startDate,
         endDate,
         educationLevel: data.schoolLevel,
         subject: data.subject,
         grade: data.grade,
-        region: data.region || '온라인',
+        region: data.lessonType === 'OFFLINE' ? data.region : '온라인',
         lessonType: data.lessonType,
       });
+      console.log('setFormData:', {
+        title: data.title,
+        description: data.description,
+        price: data.amount.toString(),
+        minStudents: data.minStudent.toString(),
+        maxStudents: data.maxStudent.toString(),
+        location: data.lessonType === 'OFFLINE' ? locationName : '온라인',
+        locationId: data.lessonType === 'OFFLINE' ? data.locationId : null,
+        startDate,
+        endDate,
+        educationLevel: data.schoolLevel,
+        subject: data.subject,
+        grade: data.grade,
+        region: data.lessonType === 'OFFLINE' ? data.region : '온라인',
+        lessonType: data.lessonType,
+      });
+      if (selectedLoc) setSelectedLocation(selectedLoc);
 
       // Ensure the status is one of the allowed values
       const validStatus = ['ACTIVE', 'CLOSED', 'CANCELED'].includes(data.status) 
@@ -166,19 +201,6 @@ const EditLessonPage = () => {
         : 'ACTIVE';
       setLessonStatus(validStatus as 'ACTIVE' | 'CLOSED' | 'CANCELED');
       setFormattedPrice(data.amount.toLocaleString());
-
-      // 오프라인 수업인 경우 위치 정보 가져오기
-      if (data.locationId) {
-        const locationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/general_locations/${data.locationId}`);
-        if (locationResponse.ok) {
-          const locationData = await locationResponse.json();
-          setSelectedLocation(locationData);
-          setFormData(prev => ({
-            ...prev,
-            location: locationData.locationName
-          }));
-        }
-      }
     } catch (err) {
       console.error('Error fetching lesson:', err);
       setError(err instanceof Error ? err.message : '수업 정보를 불러오는데 실패했습니다.');
@@ -1291,35 +1313,6 @@ const EditLessonPage = () => {
 
               <div className="space-y-2">
                 <label className="block text-base font-semibold text-gray-800">
-                  지역
-                </label>
-                <select
-                  id="region"
-                  name="region"
-                  value={formData.lessonType === 'ONLINE' ? '온라인' : formData.region}
-                  onChange={(e) => handleChange('region', e.target.value)}
-                  className={`${inputStyles.base} ${formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={formData.lessonType === 'ONLINE'}
-                  required={formData.lessonType === 'OFFLINE'}
-                >
-                  <option value="">지역을 선택해주세요</option>
-                  {formData.lessonType === 'ONLINE' ? (
-                    <option value="온라인">온라인</option>
-                  ) : (
-                    Object.values(regions).map((region) => (
-                      <option key={region} value={region}>
-                        {getRegionText(region)}
-                      </option>
-                    ))
-                  )}
-                </select>
-                {formErrors.region && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.region}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-base font-semibold text-gray-800">
                   수업 기간
                 </label>
                 <div id="dateRange" className="w-full">
@@ -1362,6 +1355,35 @@ const EditLessonPage = () => {
                 </div>
                 {formErrors.dateRange && (
                   <p className="mt-1 text-sm text-red-500">{formErrors.dateRange}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-base font-semibold text-gray-800">
+                  지역
+                </label>
+                <select
+                  id="region"
+                  name="region"
+                  value={formData.lessonType === 'ONLINE' ? '온라인' : formData.region}
+                  onChange={(e) => handleChange('region', e.target.value)}
+                  className={`${inputStyles.base} ${formData.lessonType === 'ONLINE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={formData.lessonType === 'ONLINE'}
+                  required={formData.lessonType === 'OFFLINE'}
+                >
+                  <option value="">지역을 선택해주세요</option>
+                  {formData.lessonType === 'ONLINE' ? (
+                    <option value="온라인">온라인</option>
+                  ) : (
+                    Object.values(regions).map((region) => (
+                      <option key={region} value={region}>
+                        {getRegionText(region)}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {formErrors.region && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.region}</p>
                 )}
               </div>
 
@@ -1428,32 +1450,24 @@ const EditLessonPage = () => {
                 </div>
                 {selectedLocation && formData.lessonType !== 'ONLINE' && (
                   <div className="mt-4 p-6 bg-gray-50 rounded-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedLocation.serviceStatus === '예약마감' 
-                          ? 'bg-red-100 text-red-700' 
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {selectedLocation.serviceStatus}
-                      </span>
-                    </div>
                     <div className="space-y-4">
                       <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">장소명</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.locationName}</div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">서비스 소분류</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.serviceSubcategory}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white p-4 rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">결제 방법</div>
-                        <div className="font-medium text-gray-800">{selectedLocation.paymentMethod}</div>
+                      <div className="flex items-center gap-4 bg-white p-4 rounded-lg">
+                        <span className="text-base font-semibold text-gray-800 whitespace-nowrap">장소명 :</span>
+                        <span className="text-base font-medium text-gray-900 truncate">{selectedLocation.locationName}</span>
+                        {selectedLocation.serviceUrl && (
+                          <a
+                            href={selectedLocation.serviceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            서비스 바로가기
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>

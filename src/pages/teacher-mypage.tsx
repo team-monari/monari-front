@@ -28,6 +28,7 @@ interface Lesson {
   lessonId: number;
   locationId: number;
   teacherId: number;
+  publicTeacherId?: string;
   title: string;
   currentStudent: number;
   description: string;
@@ -338,6 +339,14 @@ const TeacherMyPage = () => {
     }
   }, [accessToken]);
 
+  // 디버깅을 위한 useEffect 추가
+  useEffect(() => {
+    if (teacherProfile && lessons.length > 0) {
+      console.log('Teacher Profile:', teacherProfile);
+      console.log('Lessons:', lessons);
+    }
+  }, [teacherProfile, lessons]);
+
   // 선생님 프로필 정보 가져오기
   useEffect(() => {
     if (!isAuthenticated) {
@@ -637,102 +646,105 @@ const TeacherMyPage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {lessons.slice(0, 3).map((lesson) => (
-                <Link
-                  key={lesson.lessonId}
-                  href={`/lessons/${lesson.lessonId}`}
-                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
-                      {lesson.title}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        lesson.status === 'ACTIVE'
+                <div key={lesson.lessonId} className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+                  <Link
+                    href={`/lessons/${lesson.lessonId}`}
+                    className="flex-1"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-lg font-medium text-gray-900 line-clamp-1 max-w-[80%]">
+                        {lesson.title}
+                      </h3>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                          lesson.status === 'ACTIVE'
+                            ? lesson.currentStudent >= lesson.maxStudent
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-green-100 text-green-800'
+                            : lesson.status === 'CANCELED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {lesson.status === 'ACTIVE'
                           ? lesson.currentStudent >= lesson.maxStudent
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-green-100 text-green-800'
+                            ? '모집 완료'
+                            : '모집중'
                           : lesson.status === 'CANCELED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {lesson.status === 'ACTIVE'
-                        ? lesson.currentStudent >= lesson.maxStudent
-                          ? '모집 완료'
-                          : '모집중'
-                        : lesson.status === 'CANCELED'
-                        ? '취소'
-                        : '종료'}
-                    </span>
-                  </div>
+                          ? '취소'
+                          : '종료'}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center gap-1 mb-3">
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
-                    </span>
-                    <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
-                      {lesson.subject === "MATH"
-                        ? "수학"
-                        : lesson.subject === "ENGLISH"
-                        ? "영어"
-                        : lesson.subject === "KOREAN"
-                        ? "국어"
-                        : lesson.subject === "SCIENCE"
-                        ? "과학"
-                        : "사회"}
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-1 mb-3">
+                      <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                        {lesson.schoolLevel === "MIDDLE" ? "중학교" : "고등학교"}
+                      </span>
+                      <span className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-100">
+                        {lesson.subject === "MATH"
+                          ? "수학"
+                          : lesson.subject === "ENGLISH"
+                          ? "영어"
+                          : lesson.subject === "KOREAN"
+                          ? "국어"
+                          : lesson.subject === "SCIENCE"
+                          ? "과학"
+                          : "사회"}
+                      </span>
+                    </div>
 
-                  <p className="text-gray-600 text-sm mb-4 truncate">
-                    {lesson.description}
-                  </p>
+                    <p className="text-gray-600 text-sm mb-4 truncate">
+                      {lesson.description}
+                    </p>
 
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                        <svg
-                          className="w-4 h-4 text-gray-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="text-sm text-gray-600">
-                          {new Date(lesson.startDate).toLocaleDateString()} -{" "}
-                          {new Date(lesson.endDate).toLocaleDateString()}
-                        </span>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                          <svg
+                            className="w-4 h-4 text-gray-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          <span className="text-sm text-gray-600">
+                            {new Date(lesson.startDate).toLocaleDateString()} -{" "}
+                            {new Date(lesson.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
+                          <svg
+                            className="w-4 h-4 text-gray-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                          <span className="text-sm text-gray-600">
+                            {lesson.currentStudent}/{lesson.maxStudent}명
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full">
-                        <svg
-                          className="w-4 h-4 text-gray-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                        <span className="text-sm text-gray-600">
-                          {lesson.currentStudent}/{lesson.maxStudent}명
-                        </span>
-                      </div>
-                    </div>
+                  </Link>
+                  <div className="flex flex-row gap-2 mt-3">
                     <Link
                       href={`/lessons/${lesson.lessonId}/payments`}
-                      className="mt-2 flex items-center justify-center gap-2 px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors w-1/2"
                     >
                       <svg
                         className="w-4 h-4"
@@ -747,10 +759,32 @@ const TeacherMyPage = () => {
                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      결제 현황 상세보기
+                      결제 현황
                     </Link>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.href = `/lessons/${lesson.lessonId}/edit`;
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors w-1/2"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                      수정하기
+                    </button>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

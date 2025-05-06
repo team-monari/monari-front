@@ -12,6 +12,7 @@ import { naverToKakao } from '../../utils/coordinate';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getSubjectText, Subject } from '../../types/lesson';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TeacherProfile {
   name: string;
@@ -38,6 +39,8 @@ const LessonDetail: React.FC = () => {
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const { user } = useAuth();
+  const [myTeacherProfile, setMyTeacherProfile] = useState<any>(null);
 
   const getSchoolLevelText = (level: string) => {
     switch (level) {
@@ -153,12 +156,18 @@ const LessonDetail: React.FC = () => {
 
       // 장소 정보 설정
       if (data.locationId) {
+        let latitude = 0, longitude = 0;
+        if (data.x && data.y) {
+          const kakaoCoords = naverToKakao(parseFloat(data.x), parseFloat(data.y));
+          latitude = kakaoCoords.lat;
+          longitude = kakaoCoords.lng;
+        }
         setLocation({
           id: Number(data.locationId),
           locationName: data.locationName,
           address: data.locationName, // 주소 정보가 없어서 locationName으로 대체
-          latitude: data.y ? parseFloat(data.y) / 1000000 : 0,
-          longitude: data.x ? parseFloat(data.x) / 1000000 : 0,
+          latitude,
+          longitude,
           serviceUrl: data.serviceUrl || '',
           serviceStatus: '예약가능',
           serviceSubcategory: '학원',
@@ -225,22 +234,10 @@ const LessonDetail: React.FC = () => {
         };
 
         let coords;
-        if (location.x && location.y) {
-          // 네이버 좌표를 카카오 좌표로 변환
-          const kakaoCoords = naverToKakao(
-            parseFloat(location.x),
-            parseFloat(location.y)
-          );
-          coords = new window.kakao.maps.LatLng(
-            kakaoCoords.lat,
-            kakaoCoords.lng
-          );
+        if (location.longitude && location.latitude) {
+          coords = new window.kakao.maps.LatLng(location.latitude, location.longitude);
         } else {
-          // x, y 좌표가 없는 경우 서울시청 좌표 사용
-          coords = new window.kakao.maps.LatLng(
-            defaultCoords.lat,
-            defaultCoords.lng
-          );
+          coords = new window.kakao.maps.LatLng(defaultCoords.lat, defaultCoords.lng);
           console.warn('Location coordinates not found, using default coordinates (Seoul City Hall)');
         }
 
@@ -250,7 +247,6 @@ const LessonDetail: React.FC = () => {
         };
 
         const newMap = new window.kakao.maps.Map(container, options);
-        
         // 마커 생성
         const marker = new window.kakao.maps.Marker({
           position: coords,
@@ -261,7 +257,7 @@ const LessonDetail: React.FC = () => {
         const infowindow = new window.kakao.maps.InfoWindow({
           content: `<div style="padding:5px;font-size:12px;">
             ${location.locationName}
-            ${!location.x || !location.y ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
+            ${!location.longitude || !location.latitude ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
           </div>`
         });
         infowindow.open(newMap, marker);
@@ -273,6 +269,17 @@ const LessonDetail: React.FC = () => {
       }
     }
   }, [isMapLoaded, location]);
+
+  useEffect(() => {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (accessToken) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/teachers/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+        .then(res => res.json())
+        .then(data => setMyTeacherProfile(data));
+    }
+  }, []);
 
   const handleEnroll = async () => {
     if (lesson && lesson.status !== 'ACTIVE') {
@@ -667,50 +674,63 @@ const LessonDetail: React.FC = () => {
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">수업 금액</h2>
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-gray-600 mb-1">총 수강료</p>
-                  {lesson.currentStudent > lesson.minStudent ? (
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900">
-                        <span className="line-through text-gray-400 mr-2">₩{lesson.amount.toLocaleString()}</span>
-                        ₩{calculatedAmount.toLocaleString()}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-1 bg-[#1B9AF5]/10 text-[#1B9AF5] rounded-full text-sm font-medium">
-                          {discountRate}% 할인
-                        </span>
-                        <div className="flex items-center gap-1 text-sm text-[#1B9AF5]">
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-600 mb-1">총 수강료</p>
+                    {lesson.currentStudent > lesson.minStudent ? (
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">
+                          <span className="line-through text-gray-400 mr-2">₩{lesson.amount.toLocaleString()}</span>
+                          ₩{calculatedAmount.toLocaleString()}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="px-2 py-1 bg-[#1B9AF5]/10 text-[#1B9AF5] rounded-full text-sm font-medium">
+                            {discountRate}% 할인
+                          </span>
+                          <div className="flex items-center gap-1 text-sm text-[#1B9AF5]">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>최소 {lesson.minStudent}명 이상 모집 시 할인 적용</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">₩{lesson.amount.toLocaleString()}</p>
+                        <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>최소 {lesson.minStudent}명 이상 모집 시 할인 적용</span>
+                          <span>최소 {lesson.minStudent}명 모집 시 할인 적용</span>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900">₩{lesson.amount.toLocaleString()}</p>
-                      <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>최소 {lesson.minStudent}명 모집 시 할인 적용</span>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      className={`px-6 py-3 text-sm font-medium rounded-lg transition-colors w-full ${
+                        isFull || lesson.status !== 'ACTIVE'
+                          ? 'bg-gray-500 text-white cursor-not-allowed'
+                          : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
+                      }`}
+                      disabled={isFull || lesson.status !== 'ACTIVE'}
+                      onClick={handleEnroll}
+                    >
+                      {isFull ? '모집 완료' : lesson.status !== 'ACTIVE' ? '신청 불가' : '수업 신청하기'}
+                    </button>
+                    {/* 개설자에게만 노출되는 수정 버튼 */}
+                    {myTeacherProfile && lesson.publicTeacherId && myTeacherProfile.publicId && String(myTeacherProfile.publicId) === String(lesson.publicTeacherId) && (
+                      <button
+                        className="px-6 py-3 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors w-full"
+                        onClick={() => router.push(`/lessons/${lesson.lessonId}/edit`)}
+                      >
+                        수정하기
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button
-                  className={`px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isFull || lesson.status !== 'ACTIVE'
-                      ? 'bg-gray-500 text-white cursor-not-allowed'
-                      : 'bg-[#1B9AF5] text-white hover:bg-[#1B9AF5]/90'
-                  }`}
-                  disabled={isFull || lesson.status !== 'ACTIVE'}
-                  onClick={handleEnroll}
-                >
-                  {isFull ? '모집 완료' : lesson.status !== 'ACTIVE' ? '신청 불가' : '수업 신청하기'}
-                </button>
               </div>
             </div>
           </div>
@@ -720,4 +740,4 @@ const LessonDetail: React.FC = () => {
   );
 };
 
-export default LessonDetail; 
+export default LessonDetail;  
