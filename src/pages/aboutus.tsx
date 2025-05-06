@@ -197,24 +197,16 @@ const AboutUsPage = () => {
                   },
                   {
                     category: "수수료",
-                    monari: "수수료 없음",
+                    monari: "2.5% 수수료 발생",
                     others: "10~20% 수수료 발생"
                   },
-                  {
-                    category: "스케줄",
-                    monari: "자유로운 시간 조정 가능",
-                    others: "고정된 시간표 운영"
-                  },
+
                   {
                     category: "결제 방식",
                     monari: "선생님과 직접 협의",
                     others: "플랫폼 통한 강제 결제"
                   },
-                  {
-                    category: "환불 정책",
-                    monari: "유연한 환불 가능",
-                    others: "환불 제한적"
-                  }
+                  
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="p-8 text-lg font-medium text-gray-700">{row.category}</td>

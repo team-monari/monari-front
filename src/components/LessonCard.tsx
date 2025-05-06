@@ -131,15 +131,14 @@ const LessonCard: React.FC<LessonCardProps> = ({
   const isFull = currentStudent >= maxStudent;
   const isDisabled = isFull || status === 'CANCELED' || status === 'CLOSED';
   
-  // 할인된 금액 계산 - N빵 계산
-  const calculatedAmount = currentStudent > minStudent
-    ? Math.round(amount / currentStudent)
-    : amount;
-  
-  // 할인율 계산
-  const discountRate = currentStudent > minStudent
-    ? Math.round(((amount - calculatedAmount) / amount) * 100)
-    : 0;
+  // 할인된 금액 계산 - 공동 참여 기반 수강료 절감
+  let calculatedAmount = amount;
+  let discountRate = 0;
+  if (currentStudent > minStudent) {
+    const extra = currentStudent - minStudent;
+    discountRate = Math.min(extra * 2.5, 50); 
+    calculatedAmount = Math.round(amount * (1 - discountRate / 100));
+  }
 
   const getButtonText = () => {
     if (status === 'CANCELED') return '취소된 수업';
