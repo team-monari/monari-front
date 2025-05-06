@@ -20,7 +20,7 @@ const LessonsPage: React.FC = () => {
       </Head>
       <Header />
       <main className="container mx-auto px-6 py-8 max-w-[1280px]">
-        <h1 className="text-2xl font-bold mb-2">과외 목록</h1>
+        <h1 className="text-2xl font-bold mb-2">수업 찾기</h1>
         <div className="mb-12">
           <LessonSearch onSearch={handleSearch} />
         </div>
