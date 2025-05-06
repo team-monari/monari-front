@@ -1487,7 +1487,7 @@ const EditLessonPage = () => {
                 type="submit"
                 className="px-6 py-3 text-sm font-medium text-white bg-[#1B9AF5] rounded-xl hover:bg-[#1B9AF5]/90 transition-colors"
               >
-                수업 수정하기
+                수정하기
               </button>
             </div>
           </form>

@@ -436,15 +436,14 @@ const LessonDetail: React.FC = () => {
 
   const isFull = lesson.currentStudent >= lesson.maxStudent;
   
-  // 할인된 금액 계산 - N빵 계산
-  const calculatedAmount = lesson.currentStudent > lesson.minStudent
-    ? Math.round(lesson.amount / lesson.currentStudent)
-    : lesson.amount;
-  
-  // 할인율 계산
-  const discountRate = lesson.currentStudent > lesson.minStudent
-    ? Math.round(((lesson.amount - calculatedAmount) / lesson.amount) * 100)
-    : 0;
+  // 할인된 금액 계산 - 공동 참여 기반 수강료 절감
+  let calculatedAmount = lesson.amount;
+  let discountRate = 0;
+  if (lesson.currentStudent > lesson.minStudent) {
+    const extra = lesson.currentStudent - lesson.minStudent;
+    discountRate = Math.min(extra * 2.5, 50);
+    calculatedAmount = Math.round(lesson.amount * (1 - discountRate / 100));
+  }
 
   // getStatusInfo 호출 부분 수정
   const statusInfo = getStatusInfo(lesson.status, lesson.currentStudent, lesson.maxStudent);

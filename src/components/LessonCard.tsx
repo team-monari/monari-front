@@ -157,7 +157,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
         <div className="flex-1 flex flex-col">
           {/* 제목/태그 */}
           <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors break-words flex-1 min-h-[2.5rem] line-clamp-2">
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1B9AF5] transition-colors break-words flex-1 min-h-[3rem] line-clamp-2">
               {title}
             </h3>
             <div className="flex flex-row items-center gap-1 ml-2">
