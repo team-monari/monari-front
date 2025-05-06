@@ -386,7 +386,7 @@ const MyPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>마이페이지 | 모나리</title>
+        <title>마이페이지 - 모나리</title>
         <meta name="description" content="모나리 학생 마이페이지" />
       </Head>
 

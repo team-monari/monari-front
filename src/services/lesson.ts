@@ -24,6 +24,13 @@ export interface Lesson {
   teacherCareer: string;
   teacherProfileImageUrl: string;
   lessonType: string;
+  x?: string;
+  y?: string;
+  locationName?: string;
+  serviceUrl?: string;
+  name?: string;
+  university?: string;
+  major?: string;
 }
 
 export interface LessonResponse {

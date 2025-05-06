@@ -273,7 +273,7 @@ const MyStudies = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Head>
-        <title>내가 개설한 스터디 | 모나리</title>
+        <title>내가 개설한 스터디 - 모나리</title>
         <meta name="description" content="내가 개설한 스터디 목록과 관리" />
       </Head>
 

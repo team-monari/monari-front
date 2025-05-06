@@ -472,7 +472,7 @@ const TeacherMyPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>선생님 마이페이지 | 모나리</title>
+        <title>선생님 마이페이지 - 모나리</title>
         <meta name="description" content="모나리 선생님 마이페이지" />
       </Head>
 

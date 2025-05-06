@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getSubjectText, Subject } from '../../types/lesson';
 import { useAuth } from '../../contexts/AuthContext';
+import Head from 'next/head';
 
 interface TeacherProfile {
   name: string;
@@ -395,6 +396,10 @@ const LessonDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <Head>
+          <title>{lesson ? `${lesson.title} - 모나리` : '과외 상세 - 모나리'}</title>
+          <meta name="description" content="모나리 과외 상세 페이지" />
+        </Head>
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-[1280px]">
           <div className="text-center py-12">Loading...</div>
@@ -406,6 +411,10 @@ const LessonDetail: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <Head>
+          <title>{lesson ? `${lesson.title} - 모나리` : '과외 상세 - 모나리'}</title>
+          <meta name="description" content="모나리 과외 상세 페이지" />
+        </Head>
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-[1280px]">
           <div className="text-center py-12 text-red-500">{error}</div>
@@ -442,6 +451,10 @@ const LessonDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Head>
+        <title>{lesson ? `${lesson.title} - 모나리` : '과외 상세 - 모나리'}</title>
+        <meta name="description" content="모나리 과외 상세 페이지" />
+      </Head>
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-[1280px]">
         <div className="container mx-auto px-4 py-8 max-w-4xl">

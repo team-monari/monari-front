@@ -11,6 +11,7 @@ import { naverToKakao } from '../../utils/coordinate';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Subject, getSubjectText } from '../../types/lesson';
+import Head from 'next/head';
 
 interface FormData {
   title: string;
@@ -612,6 +613,10 @@ const CreateLessonPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <Head>
+          <title>과외 등록 - 모나리</title>
+          <meta name="description" content="모나리 과외 등록 페이지" />
+        </Head>
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-[1280px]">
           <div className="text-center py-12">Loading...</div>
@@ -623,6 +628,10 @@ const CreateLessonPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <Head>
+          <title>수업 개설 - 모나리</title>
+          <meta name="description" content="모나리 과외 등록 페이지" />
+        </Head>
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-[1280px]">
           <div className="text-center py-12 text-red-500">{error}</div>
@@ -633,6 +642,10 @@ const CreateLessonPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Head>
+        <title>과외 등록 - 모나리</title>
+        <meta name="description" content="모나리 과외 등록 페이지" />
+      </Head>
       <Header />
       <main className="container mx-auto px-6 py-8 max-w-[1280px]">
         <div className="bg-white rounded-lg p-8 shadow-sm">

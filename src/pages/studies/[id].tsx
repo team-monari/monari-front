@@ -204,6 +204,23 @@ export default function StudyDetail() {
     return null;
   };
 
+  const getLocationUrl = (study: StudyDetail): string | null => {
+    if (study.generalLocationId && locationDetails[study.generalLocationId]) {
+      return locationDetails[study.generalLocationId].serviceUrl;
+    }
+    if (study.locationId && studyLocations[study.locationId]) {
+      return studyLocations[study.locationId].serviceUrl;
+    }
+    return null;
+  };
+
+  const handleLocationClick = (study: StudyDetail) => {
+    const url = getLocationUrl(study);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   useEffect(() => {
     if (isMapLoaded && study && window.kakao) {
       const container = document.getElementById('map');
@@ -444,8 +461,13 @@ export default function StudyDetail() {
                         <p className="font-medium text-gray-900">온라인 스터디</p>
                       ) : (
                         <>
-                          <p className="font-medium text-gray-900">{getLocationName(study)}</p>
-                          <p className="text-sm text-gray-500 mt-1">({regionToKorean[study.region]})</p>
+                          <p 
+                            className="font-medium text-gray-900 cursor-pointer hover:text-[#1B9AF5] transition-colors"
+                            onClick={() => handleLocationClick(study)}
+                          >
+                            {getLocationName(study)}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">{regionToKorean[study.region]}</p>
                         </>
                       )}
                     </div>

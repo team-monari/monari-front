@@ -288,27 +288,25 @@ export default function EditStudy() {
   // 지역 선택에 따른 장소 필터링
   useEffect(() => {
     const filterLocationsByRegion = async () => {
-      if (!formData.region) {
-        setFilteredLocations([]);
-        setFilteredGeneralLocations([]);
-        return;
-      }
-
       try {
         // 공공시설 장소 필터링
         const locations = await locationApi.getLocations();
-        const filtered = locations.filter(location => {
-          const locationRegion = location.region?.toUpperCase() as Region;
-          return locationRegion === formData.region;
-        });
+        const filtered = formData.region
+          ? locations.filter(location => {
+              const locationRegion = location.region?.toUpperCase() as Region;
+              return locationRegion === formData.region;
+            })
+          : locations;
         setFilteredLocations(filtered);
 
         // 일반 장소 필터링
         const generalLocations = await generalLocationApi.getLocations();
-        const filteredGeneral = generalLocations.filter(location => {
-          const locationRegion = location.region?.toUpperCase() as Region;
-          return locationRegion === formData.region;
-        });
+        const filteredGeneral = formData.region
+          ? generalLocations.filter(location => {
+              const locationRegion = location.region?.toUpperCase() as Region;
+              return locationRegion === formData.region;
+            })
+          : generalLocations;
         setFilteredGeneralLocations(filteredGeneral);
       } catch (err) {
         console.error('Failed to filter locations by region:', err);

@@ -149,7 +149,7 @@ const MyClasses = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>개설 수업 | 모나리</title>
+        <title>개설 수업 - 모나리</title>
         <meta name="description" content="모나리 개설 수업" />
       </Head>
 

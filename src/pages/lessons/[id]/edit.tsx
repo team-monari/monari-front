@@ -790,7 +790,7 @@ const EditLessonPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>수업 수정 | 모나리</title>
+        <title>수업 수정 - 모나리</title>
         <meta name="description" content="모나리 수업 수정" />
       </Head>
 

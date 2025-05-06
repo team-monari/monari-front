@@ -152,7 +152,7 @@ const Home = () => {
     setError(null);
     try {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/studies`);
-      url.searchParams.append("size", "3"); // 메인 페이지에는 3개만 표시
+      url.searchParams.append("pageSize", "6"); // 메인 페이지에는 6개 표시
 
       const headers: HeadersInit = {};
       if (accessToken) {
@@ -222,7 +222,7 @@ const Home = () => {
     setLessonsError(null);
     try {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lessons`);
-      url.searchParams.append("size", "3");
+      url.searchParams.append("pageSize", "10"); // 취소된 수업을 고려하여 더 많은 수업을 가져옴
 
       const headers: HeadersInit = {};
       if (accessToken) {
@@ -242,10 +242,10 @@ const Home = () => {
       }
 
       const data = await response.json();
-      // CANCELED 상태의 수업은 제외
-      const filteredLessons = data.content.filter(
-        (lesson: Lesson) => lesson.status !== "CANCELED"
-      );
+      // CANCELED 상태의 수업은 제외하고 최대 6개까지만 표시
+      const filteredLessons = data.content
+        .filter((lesson: Lesson) => lesson.status !== "CANCELED")
+        .slice(0, 6);
       setLessons(filteredLessons);
     } catch (err) {
       setLessonsError(
@@ -309,7 +309,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>모나리 - 스터디 & 과외 매칭 플랫폼</title>
+        <title>모나리 - 공부의 문턱을 낮추다</title>
         <meta
           name="description"
           content="학생과 선생님을 위한 스터디 & 과외 매칭 서비스"
@@ -378,7 +378,7 @@ const Home = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lessons.slice(0, 3).map((lesson) => (
+              {lessons.map((lesson) => (
                 <LessonCard
                   key={lesson.lessonId}
                   lessonId={lesson.lessonId}
@@ -465,7 +465,7 @@ const Home = () => {
             <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {studies.slice(0, 3).map((study) => (
+              {studies.map((study) => (
                 <StudyCard
                   key={study.id}
                   study={study}

@@ -232,27 +232,25 @@ export default function CreateStudy() {
   // 지역 선택에 따른 장소 필터링
   useEffect(() => {
     const filterLocationsByRegion = async () => {
-      if (!formData.region) {
-        setFilteredLocations([]);
-        setFilteredGeneralLocations([]);
-        return;
-      }
-
       try {
         // 공공시설 장소 필터링
         const locations = await locationApi.getLocations();
-        const filtered = locations.filter(location => {
-          const locationRegion = location.region?.toUpperCase() as Region;
-          return locationRegion === formData.region;
-        });
+        const filtered = formData.region
+          ? locations.filter(location => {
+              const locationRegion = location.region?.toUpperCase() as Region;
+              return locationRegion === formData.region;
+            })
+          : locations;
         setFilteredLocations(filtered);
 
         // 일반 장소 필터링
         const generalLocations = await generalLocationApi.getLocations();
-        const filteredGeneral = generalLocations.filter(location => {
-          const locationRegion = location.region?.toUpperCase() as Region;
-          return locationRegion === formData.region;
-        });
+        const filteredGeneral = formData.region
+          ? generalLocations.filter(location => {
+              const locationRegion = location.region?.toUpperCase() as Region;
+              return locationRegion === formData.region;
+            })
+          : generalLocations;
         setFilteredGeneralLocations(filteredGeneral);
       } catch (err) {
         console.error('Failed to filter locations by region:', err);
@@ -393,7 +391,7 @@ export default function CreateStudy() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>스터디 등록 - 모나리</title>
+        <title>스터디 개설 - 모나리</title>
         <meta name="description" content="모나리 스터디 모집 페이지" />
       </Head>
 
