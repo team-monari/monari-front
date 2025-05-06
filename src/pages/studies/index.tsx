@@ -53,7 +53,8 @@ export default function Studies() {
     schoolLevel: '',
     region: '' as Region | '',
     searchType: 'title',
-    keyword: ''
+    keyword: '',
+    studyType: ''
   });
   const [pageResponse, setPageResponse] = useState<PageResponse<Study>>({
     content: [],
@@ -94,6 +95,7 @@ export default function Studies() {
       if (filters.subject) searchParams.append('subject', filters.subject);
       if (filters.schoolLevel) searchParams.append('schoolLevel', filters.schoolLevel);
       if (filters.region) searchParams.append('region', filters.region);
+      if (filters.studyType) searchParams.append('studyType', filters.studyType);
       searchParams.append('pageNum', String(page + 1));
       searchParams.append('pageSize', '6');
 
@@ -220,7 +222,7 @@ export default function Studies() {
             </div>
 
             {/* 필터 영역 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">교육 대상</label>
                 <select
@@ -266,6 +268,20 @@ export default function Studies() {
                       {getRegionText(region)}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">스터디 유형</label>
+                <select
+                  name="studyType"
+                  value={filters.studyType}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
+                >
+                  <option value="">전체</option>
+                  <option value="ONLINE">온라인</option>
+                  <option value="OFFLINE">오프라인</option>
                 </select>
               </div>
             </div>

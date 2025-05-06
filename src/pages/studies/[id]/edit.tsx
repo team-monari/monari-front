@@ -3,9 +3,10 @@ import Head from 'next/head';
 import Header from '../../../components/Header';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-import { regions, getRegionText } from '../../../utils/region';
+import { regions, Region, getRegionText } from '../../../utils/region';
 import { locationApi, Location } from '../../../services/location';
 import { generalLocationApi, GeneralLocation } from '../../../services/generalLocation';
+import { naverToKakao } from '../../../utils/coordinate';
 import Swal from 'sweetalert2';
 import LoginModal from '@/components/LoginModal';
 
@@ -17,8 +18,10 @@ interface FormData {
   location: string;
   locationId: number | null;
   generalLocationId: number | null;
-  region: string;
-  studyType: 'ONLINE' | 'OFFLINE';
+  region: Region | null;
+  isOnline: boolean;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface FormErrors {
@@ -45,8 +48,10 @@ export default function EditStudy() {
     locationId: null,
     generalLocationId: null,
     description: '',
-    region: '',
-    studyType: 'OFFLINE'
+    region: null,
+    isOnline: false,
+    latitude: null,
+    longitude: null
   });
   const [locations, setLocations] = useState<Location[]>([]);
   const [showLocationList, setShowLocationList] = useState(false);
@@ -57,7 +62,11 @@ export default function EditStudy() {
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [generalLocation, setGeneralLocation] = useState<GeneralLocation | null>(null);
+  const [generalLocations, setGeneralLocations] = useState<GeneralLocation[]>([]);
+  const [selectedGeneralLocation, setSelectedGeneralLocation] = useState<GeneralLocation | null>(null);
+  const [showGeneralLocationList, setShowGeneralLocationList] = useState(false);
+  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+  const [filteredGeneralLocations, setFilteredGeneralLocations] = useState<GeneralLocation[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -111,8 +120,10 @@ export default function EditStudy() {
           location: data.locationName,
           locationId: data.locationId,
           generalLocationId: data.generalLocationId,
-          region: data.region,
-          studyType: data.studyType
+          region: data.region as Region | null,
+          isOnline: data.studyType === 'ONLINE',
+          latitude: data.latitude,
+          longitude: data.longitude
         });
 
         if (data.studyType === 'OFFLINE') {
@@ -121,7 +132,7 @@ export default function EditStudy() {
             setSelectedLocation(location);
           } else if (data.generalLocationId) {
             const generalLocation = await generalLocationApi.getLocation(data.generalLocationId);
-            setGeneralLocation(generalLocation);
+            setSelectedGeneralLocation(generalLocation);
           }
         }
       } catch (err) {
@@ -151,9 +162,28 @@ export default function EditStudy() {
     }
   };
 
+  const fetchGeneralLocations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await generalLocationApi.getLocations();
+      setGeneralLocations(data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 목록을 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch general locations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (accessToken) {
       fetchLocations();
+      fetchGeneralLocations();
     }
   }, [accessToken]);
 
@@ -183,15 +213,47 @@ export default function EditStudy() {
   }, []);
 
   useEffect(() => {
-    if (isMapLoaded && selectedLocation && window.kakao) {
+    if (isMapLoaded && (selectedLocation || selectedGeneralLocation) && window.kakao) {
       const container = document.getElementById('map');
       if (!container) return;
 
       try {
-        const coords = new window.kakao.maps.LatLng(
-          parseFloat(selectedLocation.y as string),
-          parseFloat(selectedLocation.x as string)
-        );
+        // 서울시청 좌표 (기본값)
+        const defaultCoords = {
+          lat: 37.5665,
+          lng: 126.9780
+        };
+
+        let coords;
+        let locationName;
+        let hasCoordinates = false;
+        
+        if (selectedLocation) {
+          locationName = selectedLocation.locationName;
+          if (selectedLocation.y && selectedLocation.x) {
+            coords = new window.kakao.maps.LatLng(
+              parseFloat(selectedLocation.y),
+              parseFloat(selectedLocation.x)
+            );
+            hasCoordinates = true;
+          }
+        } else if (selectedGeneralLocation) {
+          locationName = selectedGeneralLocation.locationName;
+          if (selectedGeneralLocation.y && selectedGeneralLocation.x) {
+            const kakaoCoords = naverToKakao(parseFloat(selectedGeneralLocation.x), parseFloat(selectedGeneralLocation.y));
+            coords = new window.kakao.maps.LatLng(kakaoCoords.lat, kakaoCoords.lng);
+            hasCoordinates = true;
+          }
+        }
+
+        // 좌표가 없는 경우 서울시청 좌표 사용
+        if (!hasCoordinates) {
+          coords = new window.kakao.maps.LatLng(
+            defaultCoords.lat,
+            defaultCoords.lng
+          );
+          console.warn('Location coordinates not found, using default coordinates (Seoul City Hall)');
+        }
 
         const options = {
           center: coords,
@@ -200,14 +262,17 @@ export default function EditStudy() {
 
         const newMap = new window.kakao.maps.Map(container, options);
         
+        // 마커 생성
         const marker = new window.kakao.maps.Marker({
           position: coords,
           map: newMap
         });
 
+        // 인포윈도우로 장소에 대한 설명을 표시
         const infowindow = new window.kakao.maps.InfoWindow({
           content: `<div style="padding:5px;font-size:12px;">
-            ${selectedLocation.locationName}
+            ${locationName || '위치 정보 없음'}
+            ${!hasCoordinates ? '<br><small style="color: #ff6b6b;">(좌표 정보 없음)</small>' : ''}
           </div>`
         });
         infowindow.open(newMap, marker);
@@ -218,7 +283,40 @@ export default function EditStudy() {
         console.error('Failed to initialize map:', error);
       }
     }
-  }, [isMapLoaded, selectedLocation]);
+  }, [isMapLoaded, selectedLocation, selectedGeneralLocation]);
+
+  // 지역 선택에 따른 장소 필터링
+  useEffect(() => {
+    const filterLocationsByRegion = async () => {
+      if (!formData.region) {
+        setFilteredLocations([]);
+        setFilteredGeneralLocations([]);
+        return;
+      }
+
+      try {
+        // 공공시설 장소 필터링
+        const locations = await locationApi.getLocations();
+        const filtered = locations.filter(location => {
+          const locationRegion = location.region?.toUpperCase() as Region;
+          return locationRegion === formData.region;
+        });
+        setFilteredLocations(filtered);
+
+        // 일반 장소 필터링
+        const generalLocations = await generalLocationApi.getLocations();
+        const filteredGeneral = generalLocations.filter(location => {
+          const locationRegion = location.region?.toUpperCase() as Region;
+          return locationRegion === formData.region;
+        });
+        setFilteredGeneralLocations(filteredGeneral);
+      } catch (err) {
+        console.error('Failed to filter locations by region:', err);
+      }
+    };
+
+    filterLocationsByRegion();
+  }, [formData.region]);
 
   if (isLoading) {
     return (
@@ -258,7 +356,10 @@ export default function EditStudy() {
       setFormData(prev => ({
         ...prev,
         location: `${location.locationName}`,
-        locationId: location.id
+        locationId: location.id,
+        generalLocationId: null,
+        latitude: location.y ? parseFloat(location.y) : null,
+        longitude: location.x ? parseFloat(location.x) : null
       }));
       setShowLocationList(false);
     } catch (err) {
@@ -268,6 +369,34 @@ export default function EditStudy() {
         setError('장소 상세 정보를 불러오는데 실패했습니다.');
       }
       console.error('Failed to fetch location details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectGeneralLocation = async (location: GeneralLocation) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const detailedLocation = await generalLocationApi.getLocation(location.id);
+      setSelectedGeneralLocation(detailedLocation);
+      setSelectedLocation(null);
+      setFormData(prev => ({
+        ...prev,
+        location: `${location.locationName}`,
+        locationId: null,
+        generalLocationId: location.id,
+        latitude: location.y ? parseFloat(location.y) : null,
+        longitude: location.x ? parseFloat(location.x) : null
+      }));
+      setShowLocationList(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('장소 상세 정보를 불러오는데 실패했습니다.');
+      }
+      console.error('Failed to fetch general location details:', err);
     } finally {
       setLoading(false);
     }
@@ -292,7 +421,7 @@ export default function EditStudy() {
           locationId: formData.locationId,
           generalLocationId: formData.generalLocationId,
           region: formData.region,
-          studyType: formData.studyType
+          studyType: formData.isOnline ? 'ONLINE' : 'OFFLINE'
         })
       });
 
@@ -326,8 +455,23 @@ export default function EditStudy() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'region' ? (value ? value as Region : null) : value
     }));
+  };
+
+  const handleOnlineToggle = () => {
+    setFormData(prev => ({
+      ...prev,
+      isOnline: !prev.isOnline,
+      location: !prev.isOnline ? '온라인' : '',
+      locationId: null,
+      generalLocationId: null,
+      region: null,
+      latitude: null,
+      longitude: null
+    }));
+    setSelectedLocation(null);
+    setSelectedGeneralLocation(null);
   };
 
   return (
@@ -344,6 +488,50 @@ export default function EditStudy() {
           <h1 className="text-2xl font-bold mb-2">스터디 수정</h1>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 shadow-sm space-y-6">
+            {/* 스터디 유형 선택 */}
+            <div>
+              <label className="block text-base font-semibold text-gray-800 mb-2">
+                스터디 유형
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleOnlineToggle()}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    !formData.isOnline
+                      ? 'border-[#1B9AF5] bg-[#1B9AF5]/5'
+                      : 'border-gray-200 hover:border-[#1B9AF5]/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="font-medium">오프라인 스터디</span>
+                    <span className="text-sm text-gray-500 text-center">직접 만나서 진행하는 스터디</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOnlineToggle()}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    formData.isOnline
+                      ? 'border-[#1B9AF5] bg-[#1B9AF5]/5'
+                      : 'border-gray-200 hover:border-[#1B9AF5]/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-medium">온라인 스터디</span>
+                    <span className="text-sm text-gray-500 text-center">화상회의로 진행하는 스터디</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* 스터디 제목 */}
             <div>
               <label className="block text-base font-semibold text-gray-800 mb-2">
@@ -409,66 +597,67 @@ export default function EditStudy() {
               </div>
             </div>
 
-            {/* 스터디 유형 선택 */}
-            <div>
-              <label className="block text-base font-semibold text-gray-800 mb-2">
-                스터디 유형
-              </label>
-              <select
-                id="studyType"
-                name="studyType"
-                value={formData.studyType}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-                required
-              >
-                <option value="OFFLINE">오프라인</option>
-                <option value="ONLINE">온라인</option>
-              </select>
-            </div>
-
-            {/* 장소 선택 - 오프라인인 경우에만 표시 */}
-            {formData.studyType === 'OFFLINE' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    지역
-                  </label>
-                  <select
-                    id="region"
-                    name="region"
-                    value={formData.region}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent"
-                    required
-                  >
-                    <option value="">지역을 선택해주세요</option>
-                    {Object.values(regions).map((region) => (
+            {/* 장소 선택 */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-base font-semibold text-gray-800 mb-2">
+                  지역
+                </label>
+                <select
+                  id="region"
+                  name="region"
+                  value={formData.region || ''}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent ${
+                    formData.isOnline ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  disabled={formData.isOnline}
+                  required={!formData.isOnline}
+                >
+                  <option value="">지역을 선택해주세요</option>
+                  {formData.isOnline ? (
+                    <option value="ONLINE">온라인</option>
+                  ) : (
+                    Object.values(regions).map((region) => (
                       <option key={region} value={region}>
                         {getRegionText(region)}
                       </option>
-                    ))}
-                  </select>
-                </div>
+                    ))
+                  )}
+                </select>
+                {formData.region && !formData.isOnline && (
+                  <div className="mt-2 text-sm text-gray-500">
+                    {getRegionText(formData.region)} 지역의 장소만 표시됩니다.
+                  </div>
+                )}
+              </div>
 
-                <div className="space-y-2">
-                  <label className="block text-base font-semibold text-gray-800">
-                    스터디 장소
-                  </label>
-                  <div className="relative">
-                    <button
-                      id="locationId"
-                      type="button"
-                      onClick={() => setShowLocationList(!showLocationList)}
-                      className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white`}
-                    >
-                      {formData.location || '장소를 선택하세요'}
-                    </button>
-                    {formErrors.locationId && (
-                      <p className="mt-1 text-sm text-red-500">{formErrors.locationId}</p>
-                    )}
-                    {showLocationList && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+              <div className="space-y-2">
+                <label className="block text-base font-semibold text-gray-800">
+                  스터디 장소
+                </label>
+                <div className="relative">
+                  <button
+                    id="locationId"
+                    type="button"
+                    onClick={() => {
+                      setShowLocationList(!showLocationList);
+                      setShowGeneralLocationList(false);
+                    }}
+                    disabled={formData.isOnline}
+                    className={`w-full px-4 py-3 text-left border ${formErrors.locationId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B9AF5] focus:border-transparent transition-all bg-white ${
+                      formData.isOnline ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {formData.isOnline ? '온라인' : formData.location || '장소를 선택하세요'}
+                  </button>
+                  {formErrors.locationId && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.locationId}</p>
+                  )}
+                  {showLocationList && !formData.isOnline && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+                      <div className="p-4 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-800 mb-2">서울시 공공시설</h3>
                         {loading ? (
                           <div className="p-4 text-center text-gray-500">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
@@ -484,11 +673,13 @@ export default function EditStudy() {
                               다시 시도
                             </button>
                           </div>
-                        ) : locations.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                        ) : filteredLocations.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            {formData.region ? '해당 지역의 장소가 없습니다.' : '장소 목록이 없습니다'}
+                          </div>
                         ) : (
                           <ul className="divide-y divide-gray-200">
-                            {locations.map((location) => (
+                            {filteredLocations.map((location) => (
                               <li
                                 key={location.id}
                                 className="p-4 hover:bg-gray-50 cursor-pointer"
@@ -501,94 +692,151 @@ export default function EditStudy() {
                           </ul>
                         )}
                       </div>
+                      <div className="p-4">
+                        <h3 className="font-medium text-gray-800 mb-2">일반 장소</h3>
+                        {loading ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B9AF5] mx-auto mb-2"></div>
+                            로딩 중...
+                          </div>
+                        ) : error ? (
+                          <div className="p-4 text-center">
+                            <div className="text-red-500 mb-2">{error}</div>
+                            <button
+                              onClick={fetchGeneralLocations}
+                              className="text-sm text-[#1B9AF5] hover:text-[#1B9AF5]/80"
+                            >
+                              다시 시도
+                            </button>
+                          </div>
+                        ) : filteredGeneralLocations.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            {formData.region ? '해당 지역의 장소가 없습니다.' : '장소 목록이 없습니다'}
+                          </div>
+                        ) : (
+                          <ul className="divide-y divide-gray-200">
+                            {filteredGeneralLocations.map((location) => (
+                              <li
+                                key={location.id}
+                                className="p-4 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => handleSelectGeneralLocation(location)}
+                              >
+                                <div className="font-medium">{location.locationName}</div>
+                                <div className="text-sm text-gray-500">{location.region}</div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {selectedLocation && (
+                <div className="mt-4 p-6 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedLocation.serviceStatus === '예약마감' 
+                        ? 'bg-red-100 text-red-700' 
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {selectedLocation.serviceStatus}
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">장소명</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.locationName}</div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">서비스 소분류</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.serviceSubcategory}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">결제 방법</div>
+                      <div className="font-medium text-gray-800">{selectedLocation.paymentMethod}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">등록 가능 기간</div>
+                        <div className="font-medium text-gray-800">
+                          {selectedLocation.registrationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.registrationEndDateTime?.split('T')[0] ?? '미정'}
+                        </div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">취소 가능 기간</div>
+                        <div className="font-medium text-gray-800">
+                          {selectedLocation.cancellationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.cancellationEndDateTime?.split('T')[0] ?? '미정'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">취소 정책</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.cancellationPolicyInfo}</div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">취소 마감일</div>
+                        <div className="font-medium text-gray-800">{selectedLocation.cancellationDeadline}일 전</div>
+                      </div>
+                    </div>
+
+                    {selectedLocation.serviceUrl && (
+                      <div className="mt-4">
+                        <a
+                          href={selectedLocation.serviceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          서비스 바로가기
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
-                {selectedLocation && (
-                  <div className="mt-4 p-6 bg-gray-50 rounded-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedLocation.serviceStatus === '예약마감' 
-                          ? 'bg-red-100 text-red-700' 
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {selectedLocation.serviceStatus}
-                      </span>
-                    </div>
-                    <div className="space-y-4">
-                      <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">장소명</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.locationName}</div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">서비스 소분류</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.serviceSubcategory}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white p-4 rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">결제 방법</div>
-                        <div className="font-medium text-gray-800">{selectedLocation.paymentMethod}</div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">등록 가능 기간</div>
-                          <div className="font-medium text-gray-800">
-                            {selectedLocation.registrationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.registrationEndDateTime?.split('T')[0] ?? '미정'}
-                          </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">취소 가능 기간</div>
-                          <div className="font-medium text-gray-800">
-                            {selectedLocation.cancellationStartDateTime?.split('T')[0] ?? '미정'} ~ {selectedLocation.cancellationEndDateTime?.split('T')[0] ?? '미정'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">취소 정책</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.cancellationPolicyInfo}</div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="text-sm text-gray-500 mb-1">취소 마감일</div>
-                          <div className="font-medium text-gray-800">{selectedLocation.cancellationDeadline}일 전</div>
-                        </div>
-                      </div>
-
-                      {selectedLocation.serviceUrl && (
-                        <div className="mt-4">
-                          <a
-                            href={selectedLocation.serviceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
-                          >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            서비스 바로가기
-                          </a>
-                        </div>
-                      )}
-                    </div>
+              )}
+              {selectedGeneralLocation && (
+                <div className="mt-4 p-6 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">선택된 장소 정보</h3>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* 온라인 스터디 안내 */}
-            {formData.studyType === 'ONLINE' && (
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-blue-800">
-                  온라인 스터디는 장소 선택이 필요하지 않습니다. 화상 회의 도구를 통해 진행됩니다.
-                </p>
-              </div>
-            )}
+                  <div className="space-y-4">
+                    <div id="map" className="w-full h-[300px] rounded-lg shadow-md" style={{ background: '#f8f9fa' }}></div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">장소명</div>
+                      <div className="font-medium text-gray-800">{selectedGeneralLocation.locationName}</div>
+                    </div>
+                    
+                    {selectedGeneralLocation.serviceUrl && (
+                      <div className="mt-4">
+                        <a
+                          href={selectedGeneralLocation.serviceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-4 py-2 bg-[#1B9AF5] text-white rounded-lg hover:bg-[#1B9AF5]/90 transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          서비스 바로가기
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 스터디 상세 설명 */}
             <div>

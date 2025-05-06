@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Header from '../../components/Header';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-import { regions, getRegionText } from '../../utils/region';
+import { regions, Region, getRegionText } from '../../utils/region';
 import { locationApi, Location } from '../../services/location';
 import { generalLocationApi, GeneralLocation } from '../../services/generalLocation';
 import { naverToKakao } from '../../utils/coordinate';
@@ -18,8 +18,10 @@ interface FormData {
   location: string;
   locationId: number | null;
   generalLocationId: number | null;
-  region: string | null;
+  region: Region | null;
   isOnline: boolean;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface FormErrors {
@@ -46,7 +48,9 @@ export default function CreateStudy() {
     generalLocationId: null,
     description: '',
     region: null,
-    isOnline: false
+    isOnline: false,
+    latitude: null,
+    longitude: null
   });
   const [locations, setLocations] = useState<Location[]>([]);
   const [showLocationList, setShowLocationList] = useState(false);
@@ -60,6 +64,8 @@ export default function CreateStudy() {
   const [generalLocations, setGeneralLocations] = useState<GeneralLocation[]>([]);
   const [selectedGeneralLocation, setSelectedGeneralLocation] = useState<GeneralLocation | null>(null);
   const [showGeneralLocationList, setShowGeneralLocationList] = useState(false);
+  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+  const [filteredGeneralLocations, setFilteredGeneralLocations] = useState<GeneralLocation[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -223,6 +229,39 @@ export default function CreateStudy() {
     }
   }, [isMapLoaded, selectedLocation, selectedGeneralLocation]);
 
+  // 지역 선택에 따른 장소 필터링
+  useEffect(() => {
+    const filterLocationsByRegion = async () => {
+      if (!formData.region) {
+        setFilteredLocations([]);
+        setFilteredGeneralLocations([]);
+        return;
+      }
+
+      try {
+        // 공공시설 장소 필터링
+        const locations = await locationApi.getLocations();
+        const filtered = locations.filter(location => {
+          const locationRegion = location.region?.toUpperCase() as Region;
+          return locationRegion === formData.region;
+        });
+        setFilteredLocations(filtered);
+
+        // 일반 장소 필터링
+        const generalLocations = await generalLocationApi.getLocations();
+        const filteredGeneral = generalLocations.filter(location => {
+          const locationRegion = location.region?.toUpperCase() as Region;
+          return locationRegion === formData.region;
+        });
+        setFilteredGeneralLocations(filteredGeneral);
+      } catch (err) {
+        console.error('Failed to filter locations by region:', err);
+      }
+    };
+
+    filterLocationsByRegion();
+  }, [formData.region]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -252,56 +291,30 @@ export default function CreateStudy() {
     );
   }
 
-  const handleSelectLocation = async (location: Location) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const detailedLocation = await locationApi.getLocation(location.id);
-      setSelectedLocation(detailedLocation);
-      setSelectedGeneralLocation(null);
-      setFormData(prev => ({
-        ...prev,
-        location: `${location.locationName}`,
-        locationId: location.id,
-        generalLocationId: null
-      }));
-      setShowLocationList(false);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('장소 상세 정보를 불러오는데 실패했습니다.');
-      }
-      console.error('Failed to fetch location details:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectLocation = (location: Location) => {
+    setSelectedLocation(location);
+    setFormData(prev => ({
+      ...prev,
+      location: `${location.locationName}`,
+      locationId: location.id,
+      generalLocationId: null,
+      latitude: location.y ? parseFloat(location.y) : null,
+      longitude: location.x ? parseFloat(location.x) : null
+    }));
+    setShowLocationList(false);
   };
 
-  const handleSelectGeneralLocation = async (location: GeneralLocation) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const detailedLocation = await generalLocationApi.getLocation(location.id);
-      setSelectedGeneralLocation(detailedLocation);
-      setSelectedLocation(null);
-      setFormData(prev => ({
-        ...prev,
-        location: `${location.locationName}`,
-        locationId: null,
-        generalLocationId: location.id
-      }));
-      setShowLocationList(false);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('장소 상세 정보를 불러오는데 실패했습니다.');
-      }
-      console.error('Failed to fetch general location details:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectGeneralLocation = (location: GeneralLocation) => {
+    setSelectedGeneralLocation(location);
+    setFormData(prev => ({
+      ...prev,
+      location: `${location.locationName}`,
+      locationId: null,
+      generalLocationId: location.id,
+      latitude: location.y ? parseFloat(location.y) : null,
+      longitude: location.x ? parseFloat(location.x) : null
+    }));
+    setShowLocationList(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -322,7 +335,9 @@ export default function CreateStudy() {
           schoolLevel: formData.schoolLevel,
           locationId: formData.locationId,
           generalLocationId: formData.generalLocationId,
-          region: formData.region
+          region: formData.region,
+          latitude: formData.latitude,
+          longitude: formData.longitude
         })
       });
 
@@ -352,48 +367,27 @@ export default function CreateStudy() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => {
-      const newFormData = {
-        ...prev,
-        [name]: value
-      };
-      
-      // If study type is changed to online, reset location information
-      if (name === 'isOnline') {
-        if (value === 'true') {
-          newFormData.location = '온라인';  // UI 표시용
-          newFormData.locationId = null;    // 서버 전송용
-          newFormData.generalLocationId = null; // 서버 전송용
-          newFormData.region = null;    // UI 표시용
-          setSelectedLocation(null);
-          setSelectedGeneralLocation(null);
-        } else {
-          newFormData.location = '';  // UI 표시용
-          newFormData.locationId = null;    // 서버 전송용
-          newFormData.generalLocationId = null; // 서버 전송용
-          newFormData.region = '';    // UI 표시용
-          setSelectedLocation(null);
-          setSelectedGeneralLocation(null);
-        }
-      }
-      
-      return newFormData;
-    });
-  };
-
-  const handleOnlineToggle = (isOnline: boolean) => {
+  const handleOnlineToggle = () => {
     setFormData(prev => ({
       ...prev,
-      isOnline,
-      location: isOnline ? '온라인' : '',
+      isOnline: !prev.isOnline,
+      location: !prev.isOnline ? '온라인' : '',
       locationId: null,
       generalLocationId: null,
-      region: isOnline ? null : ''
+      region: null,
+      latitude: null,
+      longitude: null
     }));
     setSelectedLocation(null);
     setSelectedGeneralLocation(null);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'region' ? (value ? value as Region : null) : value
+    }));
   };
 
   return (
@@ -418,7 +412,7 @@ export default function CreateStudy() {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => handleOnlineToggle(false)}
+                  onClick={() => handleOnlineToggle()}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     !formData.isOnline
                       ? 'border-[#1B9AF5] bg-[#1B9AF5]/5'
@@ -436,7 +430,7 @@ export default function CreateStudy() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleOnlineToggle(true)}
+                  onClick={() => handleOnlineToggle()}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     formData.isOnline
                       ? 'border-[#1B9AF5] bg-[#1B9AF5]/5'
@@ -541,7 +535,7 @@ export default function CreateStudy() {
                 >
                   <option value="">지역을 선택해주세요</option>
                   {formData.isOnline ? (
-                    <option value="온라인">온라인</option>
+                    <option value="ONLINE">온라인</option>
                   ) : (
                     Object.values(regions).map((region) => (
                       <option key={region} value={region}>
@@ -550,6 +544,11 @@ export default function CreateStudy() {
                     ))
                   )}
                 </select>
+                {formData.region && !formData.isOnline && (
+                  <div className="mt-2 text-sm text-gray-500">
+                    {getRegionText(formData.region)} 지역의 장소만 표시됩니다.
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -593,11 +592,13 @@ export default function CreateStudy() {
                               다시 시도
                             </button>
                           </div>
-                        ) : locations.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                        ) : filteredLocations.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            {formData.region ? '해당 지역의 장소가 없습니다.' : '장소 목록이 없습니다'}
+                          </div>
                         ) : (
                           <ul className="divide-y divide-gray-200">
-                            {locations.map((location) => (
+                            {filteredLocations.map((location) => (
                               <li
                                 key={location.id}
                                 className="p-4 hover:bg-gray-50 cursor-pointer"
@@ -627,11 +628,13 @@ export default function CreateStudy() {
                               다시 시도
                             </button>
                           </div>
-                        ) : generalLocations.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">장소 목록이 없습니다</div>
+                        ) : filteredGeneralLocations.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            {formData.region ? '해당 지역의 장소가 없습니다.' : '장소 목록이 없습니다'}
+                          </div>
                         ) : (
                           <ul className="divide-y divide-gray-200">
-                            {generalLocations.map((location) => (
+                            {filteredGeneralLocations.map((location) => (
                               <li
                                 key={location.id}
                                 className="p-4 hover:bg-gray-50 cursor-pointer"
