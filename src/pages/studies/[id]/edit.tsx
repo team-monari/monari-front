@@ -351,15 +351,17 @@ export default function EditStudy() {
       setError(null);
       const detailedLocation = await locationApi.getLocation(location.id);
       setSelectedLocation(detailedLocation);
+      setSelectedGeneralLocation(null);
       setFormData(prev => ({
         ...prev,
-        location: `${location.locationName}`,
+        location: location.locationName,
         locationId: location.id,
         generalLocationId: null,
         latitude: location.y ? parseFloat(location.y) : null,
         longitude: location.x ? parseFloat(location.x) : null
       }));
       setShowLocationList(false);
+      setShowGeneralLocationList(false);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -381,12 +383,13 @@ export default function EditStudy() {
       setSelectedLocation(null);
       setFormData(prev => ({
         ...prev,
-        location: `${location.locationName}`,
+        location: location.locationName,
         locationId: null,
         generalLocationId: location.id,
         latitude: location.y ? parseFloat(location.y) : null,
         longitude: location.x ? parseFloat(location.x) : null
       }));
+      setShowGeneralLocationList(false);
       setShowLocationList(false);
     } catch (err) {
       if (err instanceof Error) {

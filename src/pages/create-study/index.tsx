@@ -290,28 +290,40 @@ export default function CreateStudy() {
   }
 
   const handleSelectLocation = (location: Location) => {
+    if (!location.x || !location.y) {
+      console.warn('Location coordinates are missing');
+      return;
+    }
     setSelectedLocation(location);
+    setSelectedGeneralLocation(null);
     setFormData(prev => ({
       ...prev,
-      location: `${location.locationName}`,
       locationId: location.id,
       generalLocationId: null,
+      location: location.locationName,
       latitude: location.y ? parseFloat(location.y) : null,
       longitude: location.x ? parseFloat(location.x) : null
     }));
     setShowLocationList(false);
+    setShowGeneralLocationList(false);
   };
 
   const handleSelectGeneralLocation = (location: GeneralLocation) => {
+    if (!location.x || !location.y) {
+      console.warn('Location coordinates are missing');
+      return;
+    }
     setSelectedGeneralLocation(location);
+    setSelectedLocation(null);
     setFormData(prev => ({
       ...prev,
-      location: `${location.locationName}`,
-      locationId: null,
       generalLocationId: location.id,
+      locationId: null,
+      location: location.locationName,
       latitude: location.y ? parseFloat(location.y) : null,
       longitude: location.x ? parseFloat(location.x) : null
     }));
+    setShowGeneralLocationList(false);
     setShowLocationList(false);
   };
 
@@ -399,7 +411,7 @@ export default function CreateStudy() {
 
       <main className="container mx-auto px-6 py-8 max-w-[1280px]">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-2xl font-bold mb-2">스터디 등록</h1>
+          <h1 className="text-2xl font-bold mb-2">스터디 개설</h1>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 shadow-sm space-y-6">
             {/* 스터디 유형 선택 */}
