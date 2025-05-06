@@ -934,59 +934,44 @@ const CreateLessonPage = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className={showPreview ? 'hidden' : 'block'}>
+                  <div className={`grid ${showPreview ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                    <div>
                       <textarea
+                        id="description"
+                        name="description"
+                        rows={30}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#1B9AF5] focus:ring-[#1B9AF5] sm:text-sm"
+                        placeholder={`## 수업 목표
+- 중2 수학 내신 1등급 달성
+- 기초 개념부터 심화 문제까지 체계적 학습
+- 개인별 맞춤형 학습 관리
+
+## 수업 방식
+- 매주 수요일 오후 3시~5시 수업 진행
+- 실시간 문제 풀이 및 개념 설명
+- 주간 테스트로 성취도 확인
+
+## 커리큘럼
+- 1주차: 기초 개념 정리
+- 2주차: 심화 문제 풀이
+- 3주차: 실전 문제 및 기출 분석
+
+## 환불 규정 (필수)
+- 환불 규정을 반드시 명시해 주세요. (예: 모집 마감일 이후 환불 불가, 모집 마감일 이전 100% 환불 등)`}
                         value={formData.description}
                         onChange={(e) => handleChange('description', e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.ctrlKey) {
-                            const textarea = e.target as HTMLTextAreaElement;
-                            const start = textarea.selectionStart;
-                            const end = textarea.selectionEnd;
-                            const text = formData.description;
-                            let newText = text;
-
-                            switch (e.key.toLowerCase()) {
-                              case 'b':
-                                e.preventDefault();
-                                newText = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
-                                break;
-                              case 'i':
-                                e.preventDefault();
-                                newText = text.substring(0, start) + '*' + text.substring(start, end) + '*' + text.substring(end);
-                                break;
-                              case 'h':
-                                e.preventDefault();
-                                newText = text.substring(0, start) + '### ' + text.substring(start, end) + text.substring(end);
-                                break;
-                              case 'l':
-                                e.preventDefault();
-                                newText = text.substring(0, start) + '- ' + text.substring(start, end) + text.substring(end);
-                                break;
-                              case 'q':
-                                e.preventDefault();
-                                newText = text.substring(0, start) + '> ' + text.substring(start, end) + text.substring(end);
-                                break;
-                              case 'k':
-                                e.preventDefault();
-                                newText = text.substring(0, start) + '```\n' + text.substring(start, end) + '\n```' + text.substring(end);
-                                break;
-                            }
-                            handleChange('description', newText);
-                          }
-                        }}
-                        placeholder="수업 설명을 입력하세요"
-                        className="w-full h-[500px] p-4 focus:outline-none resize-none"
+                        required
                       />
                     </div>
-                    <div className={`border border-gray-200 rounded-xl p-4 bg-gray-50 ${showPreview ? 'col-span-2' : ''}`}>
-                      <div className="prose max-w-none h-[500px] overflow-y-auto">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {formData.description}
-                        </ReactMarkdown>
+                    {showPreview && (
+                      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                        <div className="prose max-w-none h-[500px] overflow-y-auto">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {formData.description}
+                          </ReactMarkdown>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
                 {formErrors.description && (
