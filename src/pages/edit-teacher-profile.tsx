@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Header from "../components/Header";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import Swal from "sweetalert2";
 
 // 선생님 프로필 인터페이스
 interface TeacherProfile {
@@ -195,19 +196,32 @@ const EditTeacherProfile = () => {
           throw new Error(`API 요청 실패: ${response.status} - ${errorText}`);
         }
 
-        // 성공 메시지 표시
-        setSaveSuccess(true);
-
-        // 3초 후 마이페이지로 이동
-        setTimeout(() => {
-          router.push("/teacher-mypage");
-        }, 3000);
+        // 성공 시 마이페이지로 이동 후 토스트 알림 표시
+        router.push("/teacher-mypage").then(() => {
+          Swal.fire({
+            toast: true,
+            position: "top",
+            icon: "success",
+            title: "프로필이 성공적으로 수정되었습니다",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#F8F9FA",
+            iconColor: "#1B9AF5",
+          });
+        });
       } catch (err) {
         console.error("프로필 업데이트 실패:", err);
-        setSaveError(
-          "프로필 정보 업데이트 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-        );
-      } finally {
+        Swal.fire({
+          toast: true,
+          position: "top",
+          icon: "error",
+          title: "프로필 업데이트에 실패했습니다",
+          showConfirmButton: false,
+          timer: 3000,
+          background: "#F8F9FA",
+          iconColor: "#E74C3C",
+        });
         setIsSaving(false);
       }
     }
@@ -244,17 +258,7 @@ const EditTeacherProfile = () => {
           선생님 프로필 수정
         </h1>
 
-        {saveSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
-            프로필이 성공적으로 업데이트되었습니다. 마이페이지로 이동합니다...
-          </div>
-        )}
-
-        {saveError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-            {saveError}
-          </div>
-        )}
+        {/* 성공 및 오류 메시지 UI 제거 - Sweet Alert로 대체 */}
 
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
           <form onSubmit={handleSubmit}>

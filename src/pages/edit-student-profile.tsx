@@ -3,6 +3,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "../components/Header";
 import { useAuth } from "@/contexts/AuthContext";
+import Swal from "sweetalert2";
 
 // 학교 타입 정의
 type SchoolType = "ELEMENTARY" | "MIDDLE" | "HIGH";
@@ -252,13 +253,33 @@ const EditStudentProfile = () => {
           throw new Error(`API 요청 실패: ${response.status} - ${errorData}`);
         }
 
-        // 성공 시 마이페이지로 이동
-        router.push("/mypage");
+        // 성공 시 마이페이지로 이동 후 토스트 알림 표시
+        router.push("/mypage").then(() => {
+          Swal.fire({
+            toast: true,
+            position: "top",
+            icon: "success",
+            title: "프로필이 성공적으로 수정되었습니다",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#F8F9FA",
+            iconColor: "#1B9AF5",
+          });
+        });
       } catch (error) {
         console.error("프로필 업데이트 오류:", error);
         // 사용자에게 오류 메시지 표시
-        alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
-      } finally {
+        Swal.fire({
+          toast: true,
+          position: "top",
+          icon: "error",
+          title: "프로필 업데이트에 실패했습니다",
+          showConfirmButton: false,
+          timer: 3000,
+          background: "#F8F9FA",
+          iconColor: "#E74C3C",
+        });
         setLoading(false);
       }
     }
