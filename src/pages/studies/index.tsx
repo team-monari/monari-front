@@ -220,10 +220,10 @@ export default function Studies() {
       <Header />
 
       <main className="container mx-auto px-6 py-8 max-w-[1280px]">
-        <h1 className="text-2xl font-bold mb-8">스터디 찾기</h1>
+        <h1 className="text-2xl font-bold mb-4">스터디 찾기</h1>
 
         {/* 검색 섹션 */}
-        <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
+        <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
           <div className="space-y-6">
             {/* 검색 영역 */}
             <div className="flex items-center gap-4">
