@@ -245,19 +245,19 @@ const AboutUsPage = () => {
             {[
               {
                 title: "1. 프로필 분석",
-                description: "학생의 학습 수준과 목표를 분석하여 최적의 학습 계획을 수립합니다."
+                description: "학생의 현재 성적과 목표 대학을 분석하여 최적의 학습 전략을 제시합니다."
               },
               {
                 title: "2. 맞춤형 매칭",
-                description: "학생의 특성에 맞는 선생님과 스터디 그룹을 추천합니다."
+                description: "학생의 수준과 목표에 맞는 선생님과 스터디 그룹을 추천해드립니다."
               },
               {
                 title: "3. 체계적 학습",
-                description: "개인별 맞춤 학습 계획에 따라 체계적인 학습을 진행합니다."
+                description: "1:1 맞춤 과외와 그룹 스터디를 통해 효율적인 학습을 진행합니다."
               },
               {
                 title: "4. 성과 관리",
-                description: "정기적인 피드백과 성과 분석으로 학습 효과를 극대화합니다."
+                description: "정기적인 모의고사와 성적 분석을 통해 학습 효과를 극대화합니다."
               }
             ].map((step, index) => (
               <motion.div
@@ -294,7 +294,7 @@ const AboutUsPage = () => {
                 </div>
                 <div>
                   <h4 className="text-xl font-bold mb-2">특별 할인</h4>
-                  <p className="text-lg text-gray-600">장기 수강 시 최대 20% 할인</p>
+                  <p className="text-lg text-gray-600">최소 인원 초과시 해당 인원의 초과분 만큼 수강료 할인</p>
                 </div>
               </div>
             </motion.div>
@@ -303,7 +303,7 @@ const AboutUsPage = () => {
               <div className="space-y-6">
                 <div>
                   <h4 className="text-xl font-bold mb-2">평균 절감액</h4>
-                  <p className="text-lg text-gray-600">월 30만원 ~ 50만원 절감</p>
+                  <p className="text-lg text-gray-600">월 10만원 ~ 40만원 절감</p>
                 </div>
                 <div>
                   <h4 className="text-xl font-bold mb-2">연간 절감액</h4>
@@ -311,7 +311,7 @@ const AboutUsPage = () => {
                 </div>
                 <div>
                   <h4 className="text-xl font-bold mb-2">학습 효율성</h4>
-                  <p className="text-lg text-gray-600">학습 시간 대비 성적 향상률 40% 증가</p>
+                  <p className="text-lg text-gray-600">학습 시간 대비 성적 향상률 20% 증가</p>
                 </div>
               </div>
             </motion.div>
@@ -574,7 +574,7 @@ const AboutUsPage = () => {
             {[
               {
                 question: "수업료는 어떻게 결제하나요?",
-                answer: "수업료는 선생님과 직접 협의하여 결정하며, 모나리 플랫폼을 통해 안전하게 결제할 수 있습니다."
+                answer: "수업료는 선생님과 직접 협의하여 결정하며, 결제 사항은 이메일로 전송이 됩니다."
               },
               {
                 question: "수업 시간은 어떻게 조정할 수 있나요?",
@@ -582,11 +582,11 @@ const AboutUsPage = () => {
               },
               {
                 question: "환불 정책은 어떻게 되나요?",
-                answer: "수업 시작 전에는 전액 환불이 가능하며, 수업 시작 후에는 진행된 수업 시간에 따라 환불이 가능합니다."
+                answer: "데드라인 이전에는 전액 환불이 가능하며, 데드라인 이후에는 각 수업에 명시된 규정을 따르게 됩니다."
               },
               {
                 question: "선생님 변경이 가능한가요?",
-                answer: "수업 진행 중에도 선생님 변경이 가능하며, 새로운 선생님과의 매칭을 지원합니다."
+                answer: "수업 진행 중에는 선생님 변경이 불가능합니다."
               }
             ].map((faq, index) => (
               <motion.div
